@@ -80,9 +80,9 @@ def monte_carlo_layer_means(
 def compare_against_monte_carlo(
     estimator: BaseEstimator,
     mlp: MLP,
-    sample_counts: tuple[int, ...] = (10, 100, 1_000, 10_000, 100_000),
-    estimator_budget: int = int(1e9),
-    sampling_budget: int = int(1e12),
+    sample_counts: tuple[int, ...] = (10, 100, 1_000, 10_000, 100_000, 1_000_000),
+    estimator_budget: int = int(2.72e11),
+    sampling_budget: int = int(4.24e15),
     seed: int = 0,
 ) -> None:
     """Run estimator once, then sweep MC at each sample count and print a table.

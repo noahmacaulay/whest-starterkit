@@ -11,15 +11,95 @@ import argparse
 import importlib.util
 from pathlib import Path
 
+import flopscope as flops
 import flopscope.numpy as fnp
 from whestbench import MLP, BaseEstimator
+
+_COV_RESCALE_THRESHOLD = 1e100
 
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         # TODO: replace this all-zeros baseline with your idea.
-        _ = budget
-        return fnp.zeros((mlp.depth, mlp.width))
+        # Per-MLP RNG seeded from the grader's seed; unused here (deterministic
+        # algorithm) but carried so every example shows the pattern.
+        _rng = fnp.random.default_rng(mlp.seed)
+        _ = _rng  # silences "unused variable" linters
+        _ = budget  # budget is unused by this estimator
+        width = mlp.width
+
+        # --- Step 1: initialise the input distribution ---
+        # Input is modelled as standard multivariate normal: mu=0, cov=I.
+        mu = fnp.zeros(width)  # shape (width,)
+        cov = fnp.eye(width)  # shape (width, width)
+        log_scale = 0.0  # tracks accumulated log of rescaling factor
+
+        rows = []
+        for w in mlp.weights:  # w has shape (width, width)
+            # --- Step 2: overflow prevention ---
+            # If the covariance has grown very large, rescale (mu, cov) by the
+            # square root of the largest variance so that downstream matmuls
+            # stay in a safe range.  We compensate in the recorded mean later.
+            cov_diag = fnp.diag(cov)
+            max_var_np = float(fnp.max(cov_diag))
+            if max_var_np > _COV_RESCALE_THRESHOLD:
+                s = float(fnp.sqrt(max_var_np))
+                mu = mu / s
+                cov = cov / (s * s)
+                log_scale += float(fnp.log(s))
+
+            # --- Step 3: propagate through the linear layer ---
+            # Pre-activation mean:         mu_pre  = W^T mu
+            # Pre-activation covariance:   cov_pre = W^T cov W
+            #
+            # Use einsum (not the chained matmul `w.T @ cov @ w`) so flopscope
+            # detects that the two `w` operands are the same tensor and tags
+            # cov_pre as symmetric. Symmetry then flows through the post-ReLU
+            # outer-product update below (line ~140), so the resulting `cov`
+            # is also tagged symmetric — no SymmetryLossWarning to suppress.
+            # See https://github.com/AIcrowd/whestbench/issues/27 for the
+            # background.
+            mu_pre = w.T @ mu
+            cov_pre = fnp.einsum("ij,ia,jb->ab", cov, w, w)
+
+            # Extract per-neuron pre-activation standard deviations from the
+            # diagonal of cov_pre.
+            var_pre = fnp.maximum(fnp.diag(cov_pre), 1e-12)
+            sigma_pre = fnp.sqrt(var_pre)
+
+            # --- Step 4: compute alpha = mu / sigma for each neuron ---
+            alpha = mu_pre / sigma_pre
+            phi_alpha = flops.stats.norm.pdf(alpha)
+            Phi_alpha = flops.stats.norm.cdf(alpha)
+
+            # --- Step 5: post-ReLU mean (exact per neuron) ---
+            # E[ReLU(pre)] = mu_pre * Phi(alpha) + sigma_pre * phi(alpha)
+            mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
+
+            # --- Step 6: post-ReLU diagonal variance (exact per neuron) ---
+            # E[z^2] = (mu_pre^2 + var_pre) * Phi(alpha) + mu_pre * sigma_pre * phi(alpha)
+            ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
+            var_post = fnp.maximum(ez2 - mu * mu, 0.0)
+
+            # --- Step 7: approximate post-ReLU covariance ---
+            # gain[i] = Phi(alpha[i])  when sigma_pre[i] > 0, else 0
+            sigma_np = fnp.asarray(sigma_pre, dtype=fnp.float64)
+            Phi_np = fnp.asarray(Phi_alpha, dtype=fnp.float64)
+            gain_np = fnp.where(sigma_np > 1e-12, Phi_np, 0.0)
+            gain = fnp.array(gain_np.astype(fnp.float32))
+
+            # Off-diagonal approximation:  cov_post[i,j] ≈ gain[i]*gain[j]*cov_pre[i,j]
+            cov = fnp.multiply(fnp.outer(gain, gain), cov_pre)
+
+            # Replace the diagonal with the exact marginal variances.
+            fnp.fill_diagonal(cov, var_post)
+
+            # --- Step 8: record mean in original (unscaled) coordinates ---
+            scale_factor = float(fnp.exp(log_scale))
+            rows.append(mu * scale_factor)
+
+        # Stack all layer means into a single (depth, width) array
+        return fnp.stack(rows, axis=0)
 
 
 def _load_baseline(name: str) -> type[BaseEstimator]:
@@ -48,7 +128,7 @@ if __name__ == "__main__":
         "or 'covariance_propagation'.",
     )
     parser.add_argument("--width", type=int, default=256)
-    parser.add_argument("--depth", type=int, default=8)
+    parser.add_argument("--depth", type=int, default=32)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
