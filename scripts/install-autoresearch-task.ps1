@@ -28,7 +28,7 @@ foreach ($requiredPath in @($configPath, $runnerPath, $profilesPath)) {
 }
 
 $config = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
-$topLevel = (& git -c "safe.directory=$RepoPath" -C $RepoPath rev-parse --show-toplevel 2>&1 | Out-String).Trim()
+$topLevel = (& git -c "safe.directory=$RepoPath" -c "core.excludesFile=" -C $RepoPath rev-parse --show-toplevel 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) {
     throw "RepoPath is not a Git worktree: $RepoPath"
 }
@@ -37,7 +37,7 @@ if (-not $resolvedTop.Equals($RepoPath.TrimEnd('\', '/'), [StringComparison]::Or
     throw "RepoPath must be the root of the GPT worktree: $resolvedTop"
 }
 
-$branch = (& git -c "safe.directory=$RepoPath" -C $RepoPath branch --show-current | Out-String).Trim()
+$branch = (& git -c "safe.directory=$RepoPath" -c "core.excludesFile=" -C $RepoPath branch --show-current | Out-String).Trim()
 if ($branch -ne [string]$config.expected_branch) {
     throw "Install from '$($config.expected_branch)', not '$branch'. See AUTORESEARCH.md."
 }
