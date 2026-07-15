@@ -225,7 +225,7 @@ function Get-UsageSummary {
 }
 
 $RepoPath = (Resolve-Path -LiteralPath $RepoPath).Path
-$configPath = Join-Path $RepoPath "autoresearch\config.json"
+$configPath = Join-Path $RepoPath "autoresearch-config\config.json"
 if (-not (Test-Path -LiteralPath $configPath)) {
     throw "Missing scheduler config: $configPath"
 }

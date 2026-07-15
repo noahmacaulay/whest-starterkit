@@ -14,19 +14,19 @@
       "profile": "whest-worker",
       "model": "gpt-5.6-terra",
       "reasoning_effort": "high",
-      "prompt": "autoresearch/prompts/worker.md"
+      "prompt": "autoresearch-config/prompts/worker.md"
     },
     "lead": {
       "profile": "whest-lead",
       "model": "gpt-5.6-sol",
       "reasoning_effort": "high",
-      "prompt": "autoresearch/prompts/lead.md"
+      "prompt": "autoresearch-config/prompts/lead.md"
     },
     "deep": {
       "profile": "whest-deep",
       "model": "gpt-5.6-sol",
       "reasoning_effort": "xhigh",
-      "prompt": "autoresearch/prompts/deep.md"
+      "prompt": "autoresearch-config/prompts/deep.md"
     }
   }
 }

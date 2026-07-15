@@ -17,9 +17,9 @@ if ($env:OS -ne "Windows_NT") {
 }
 
 $RepoPath = (Resolve-Path -LiteralPath $RepoPath).Path
-$configPath = Join-Path $RepoPath "autoresearch\config.json"
+$configPath = Join-Path $RepoPath "autoresearch-config\config.json"
 $runnerPath = Join-Path $RepoPath "scripts\autoresearch.ps1"
-$profilesPath = Join-Path $RepoPath "autoresearch\profiles"
+$profilesPath = Join-Path $RepoPath "autoresearch-config\profiles"
 
 foreach ($requiredPath in @($configPath, $runnerPath, $profilesPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {

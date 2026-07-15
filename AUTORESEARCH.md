@@ -23,9 +23,9 @@ consecutive failures pause the loop, with exponential backoff before then.
 
 ## Files
 
-- `autoresearch/config.json`: cadence, branch, profile, and failure policy.
-- `autoresearch/prompts/`: durable prompts for each role.
-- `autoresearch/profiles/`: templates copied into `$CODEX_HOME` by the
+- `autoresearch-config/config.json`: cadence, branch, profile, and failure policy.
+- `autoresearch-config/prompts/`: durable prompts for each role.
+- `autoresearch-config/profiles/`: templates copied into `$CODEX_HOME` by the
   installer.
 - `scripts/autoresearch.ps1`: role selection, locking, preflight, execution,
   failure handling, and token accounting.

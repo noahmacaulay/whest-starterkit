@@ -13,7 +13,7 @@ if ([string]::IsNullOrWhiteSpace($RepoPath)) {
 }
 
 $RepoPath = (Resolve-Path -LiteralPath $RepoPath).Path
-$configPath = Join-Path $RepoPath "autoresearch\config.json"
+$configPath = Join-Path $RepoPath "autoresearch-config\config.json"
 $config = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
 $taskName = [string]$config.task_name
 

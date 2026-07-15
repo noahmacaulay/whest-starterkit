@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($RepoPath)) {
 }
 
 $RepoPath = (Resolve-Path -LiteralPath $RepoPath).Path
-$config = Get-Content -Raw -LiteralPath (Join-Path $RepoPath "autoresearch\config.json") | ConvertFrom-Json
+$config = Get-Content -Raw -LiteralPath (Join-Path $RepoPath "autoresearch-config\config.json") | ConvertFrom-Json
 $runtimePath = Join-Path $RepoPath ".autoresearch-runtime"
 $statePath = Join-Path $runtimePath "state.json"
 $runnerPath = Join-Path $RepoPath "scripts\autoresearch.ps1"
