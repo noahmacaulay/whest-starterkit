@@ -141,7 +141,7 @@ function Assert-GitPreflight {
         [Parameter(Mandatory = $true)][string]$ExpectedBranch
     )
 
-    $topLevel = (& git -C $Repository rev-parse --show-toplevel 2>&1 | Out-String).Trim()
+    $topLevel = (& git -c "safe.directory=$Repository" -C $Repository rev-parse --show-toplevel 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) {
         throw "Not a Git worktree: $Repository`n$topLevel"
     }
@@ -152,7 +152,7 @@ function Assert-GitPreflight {
         throw "RepoPath must be the worktree root. Expected '$resolvedTop', got '$resolvedRepo'."
     }
 
-    $branch = (& git -C $Repository branch --show-current 2>&1 | Out-String).Trim()
+    $branch = (& git -c "safe.directory=$Repository" -C $Repository branch --show-current 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($branch)) {
         throw "Unable to determine the current branch. Detached HEAD is not supported."
     }
@@ -160,7 +160,7 @@ function Assert-GitPreflight {
         throw "Expected branch '$ExpectedBranch', but worktree is on '$branch'."
     }
 
-    $status = (& git -C $Repository status --porcelain --untracked-files=normal 2>&1 | Out-String).Trim()
+    $status = (& git -c "safe.directory=$Repository" -C $Repository status --porcelain --untracked-files=normal 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) {
         throw "git status failed: $status"
     }
