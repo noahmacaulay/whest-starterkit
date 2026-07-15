@@ -1,0 +1,38 @@
+{
+  "champion": {
+    "file": "estimator.py",
+    "description": "Full-covariance moment propagation, exact per-neuron post-ReLU mean/variance, gain-product (Phi_i*Phi_j) off-diagonal approximation, overflow rescaling.",
+    "adjusted_final_layer_score": null,
+    "final_layer_mse": null,
+    "flops_used": null,
+    "measured_at": null,
+    "measured_on": null,
+    "agent": null,
+    "note": "Score null until B0 baselines it on datasets/depth32-dev. Do not promote or submit before B0."
+  },
+  "noise_floor": null,
+  "bake_command": null,
+  "last_submitted_score": null,
+  "submissions_board": "https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026/submissions",
+  "team_names": ["noahmacaulay", "DalTeam"],
+  "submissions": [
+    {
+      "timestamp": "2026-06-11T05:00:33Z",
+      "submission_id": null,
+      "artifact": "submission-20260611-050033.tar.gz",
+      "local_score": null,
+      "leaderboard_score": null,
+      "status": "pending",
+      "note": "Pre-scaffold manual submission by the user. Backfill leaderboard_score from the submissions board (match by timestamp under the team names above)."
+    },
+    {
+      "timestamp": "2026-06-11T19:50:10Z",
+      "submission_id": null,
+      "artifact": "submission-20260611-195010.tar.gz",
+      "local_score": null,
+      "leaderboard_score": null,
+      "status": "pending",
+      "note": "Pre-scaffold manual submission by the user. Backfill leaderboard_score from the submissions board (match by timestamp under the team names above)."
+    }
+  ]
+}

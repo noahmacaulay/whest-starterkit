@@ -26,3 +26,10 @@ Thumbs.db
 
 # Internal process docs (specs, plans, scratch) — not for participant repo.
 .aicrowd/
+
+# Autoresearch: locally baked eval datasets (large; re-bake per machine)
+datasets/
+.ipynb_checkpoints/
+
+# Autoresearch scheduler state and run logs (machine-local)
+.autoresearch-runtime/

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "task_name": "WHEST-Codex-Autoresearch",
+  "mutex_name": "WHEST_Codex_Autoresearch_GPT",
+  "expected_branch": "agent/gpt",
+  "worker_interval_minutes": 30,
+  "lead_interval_hours": 6,
+  "deep_interval_hours": 24,
+  "task_execution_limit_minutes": 180,
+  "max_consecutive_failures": 3,
+  "failure_backoff_minutes": 30,
+  "roles": {
+    "worker": {
+      "profile": "whest-worker",
+      "model": "gpt-5.6-terra",
+      "reasoning_effort": "high",
+      "prompt": "autoresearch/prompts/worker.md"
+    },
+    "lead": {
+      "profile": "whest-lead",
+      "model": "gpt-5.6-sol",
+      "reasoning_effort": "high",
+      "prompt": "autoresearch/prompts/lead.md"
+    },
+    "deep": {
+      "profile": "whest-deep",
+      "model": "gpt-5.6-sol",
+      "reasoning_effort": "xhigh",
+      "prompt": "autoresearch/prompts/deep.md"
+    }
+  }
+}
