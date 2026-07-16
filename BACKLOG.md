@@ -520,6 +520,31 @@ unclaimed items with the next free ID and a one-line hypothesis.
   from real hidden-activation covariance, not an input-gradient proxy --
   a bigger undertaking left for a future iteration with fresh scoping.
 
+- [ ] **B21** (exploit) - CLAIMED claude 2026-07-16T11:10:00Z - Empirical
+  final-layer covariance direction. B20's exact conclusion: the right
+  "different mechanism" measures the collapse-operator's eigenvector from
+  real hidden-activation covariance, not an input-gradient proxy.
+  Concretely: forward a pilot batch of P real samples (true hard ReLU,
+  no soft-gate approximation) through all 32 layers, compute the
+  empirical covariance of the pilot's *final-layer* activations, and take
+  its dominant eigenvector via power iteration on that (width, width)
+  matrix. This directly measures the quantity the quadrature construction
+  actually needs (the true dominant variance direction at the scored
+  layer), not an approximation of it -- addressing both B19's finding
+  (soft-gate-eigenvector convergence doesn't predict MSE) and B20's
+  (Stein's local-gradient direction targets the wrong quantity entirely).
+  Given the old soft-gate-eigenvector reference is no longer trusted as a
+  validation target (per B19/B20), validate instead via split-half
+  stability: does the direction from pilot samples 1..P/2 closely match
+  the direction from an independent pilot batch P/2..P for the same MLP?
+  If stable, the pilot size is adequate; if not, either grow P or accept
+  the noise and test on the harness directly. The pilot forward pass
+  costs real FLOPs (P=300 pilot samples ~= 4-5% of the ~6,500 main
+  budget) -- reduce the main quadrature budget correspondingly, and
+  consider reusing the pilot batch's own mean as additional MC samples
+  rather than discarding it after direction extraction.
+
+## Done
 ## Done
 
 (nothing yet)
