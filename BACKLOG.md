@@ -28,30 +28,44 @@ unclaimed items with the next free ID and a one-line hypothesis.
   and its paired-comparison evidence. Use the independent Full split for the
   first submission gate. Until B0 is done, no other item may be claimed.
 
-- [ ] **B1** (exploit) - Productionize active-subspace Gauss-Hermite. CLAIMED gpt 2026-07-16T02:21:15Z
-  quadrature from `experiments/active_subspace_quadrature_depth32.ipynb`.
+- [ ] **B4** (explore, lead-priority 1) - QMC plus antithetic sampling. Sobol
+  points and/or antithetic pairs for whatever MC component the champion uses,
+  applied in the active subspace first. Hypothesis: error decays faster than
+  `N^(-1/2)`, strictly dominating plain MC at fixed FLOPs. Lead note
+  2026-07-16: the B0 champion is plain MC at C≈3.01e10 > the 2.72e10 floor,
+  so its adjusted score is approximately N-invariant (MSE∝1/N cancels
+  against multiplier∝N). Any variance reduction divides the score directly,
+  and faster-than-`N^(-1/2)` error decay makes the score fall with N all the
+  way up to the full 2.72e11 budget — the largest and cheapest expected win.
+
+- [ ] **B1** (exploit, lead-priority 2) - Productionize active-subspace Gauss-Hermite quadrature. CLAIMED gpt 2026-07-16T02:21:15Z
+  From `experiments/active_subspace_quadrature_depth32.ipynb`.
   Hypothesis: depth-32 collapse makes the net approximately 1-D along the
   dominant Jacobian direction; 8-32 GH nodes along it plus a cheap orthogonal
   correction beats both covariance propagation and the 6.5k-sample MC
-  baseline.
+  baseline. Lead note 2026-07-16: an analytic-only method must beat
+  9.39e-07, i.e. close a 9x gap versus covariance propagation; even if it
+  falls short outright, it becomes the analytic core for B2. (Claimed by gpt
+  before the lead reprioritization landed; the claim predates and therefore
+  supersedes the B4-first ordering for this iteration.)
 
-- [ ] **B2** (explore) - Control-variate hybrid. Deterministic estimate
-  (champion analytic method) plus a small MC batch correcting its bias:
-  `final = analytic + mean(MC_true - MC_analytic_prediction)` on shared
+- [ ] **B2** (explore, lead-priority 3) - Control-variate hybrid.
+  Deterministic estimate (best available analytic method — post-B1 core if it
+  exists, else covariance propagation) plus a small MC batch correcting its
+  bias: `final = analytic + mean(MC_true - MC_analytic_prediction)` on shared
   inputs. Hypothesis: residual variance is much smaller than raw variance, so
-  a few hundred samples suffice; unbiased by construction.
+  a few hundred samples suffice; unbiased by construction. Composes with B4's
+  QMC on the residual term.
 
-- [ ] **B3** (exploit) - Exact ReLU cross-moments in covariance propagation.
-  Replace the gain-product off-diagonal approximation in `estimator.py`
+- [ ] **B3** (exploit, lead-priority 4) - Exact ReLU cross-moments in
+  covariance propagation. Replace the gain-product off-diagonal approximation
+  from the B0-era analytic estimator
   (`cov_post[i,j] approximately Phi(alpha_i)Phi(alpha_j)cov_pre[i,j]`) with
   the exact bivariate Gaussian ReLU cross-moment (arccos-kernel form). FLOPs
   are irrelevant at the 0.1 floor; hypothesis: compounding off-diagonal bias
-  over 32 layers is a dominant error term.
-
-- [ ] **B4** (explore) - QMC plus antithetic sampling. Sobol points and/or
-  antithetic pairs for whatever MC component the champion uses, applied in
-  the active subspace first. Hypothesis: error decays faster than
-  `N^(-1/2)`, strictly dominating plain MC at fixed FLOPs.
+  over 32 layers is a dominant error term. Lead note 2026-07-16: value is
+  mainly as a better analytic core for B2, since covariance propagation alone
+  trails the MC champion by 9x.
 
 - [ ] **B5** (explore) - Rank-adaptive low-rank covariance propagation.
   Propagate `Sigma approximately D + UU^T` with rank chosen per MLP from the
@@ -65,6 +79,19 @@ unclaimed items with the next free ID and a one-line hypothesis.
   correction terms) as an analytic prior for deep layers; use early-layer
   exact propagation plus an asymptotic tail. Hypothesis: cheaper and possibly
   more accurate than propagating approximation error through all 32 layers.
+
+- [ ] **S1** (admin, user action required - not claimable as an experiment) -
+  Unblock the submission pipeline. `last_submitted_score` is null and the
+  ledger holds two pre-scaffold manual submissions (2026-06-11T05:00:33Z and
+  2026-06-11T19:50:10Z) with no submission IDs, so the required "5% better
+  than last submitted" gate is undecidable and workers correctly refuse to
+  submit. Per AGENTS.md these entries must never be reconciled by timestamp
+  matching (their embedded notes suggesting timestamp matching contradict the
+  protocol and should be ignored). The user must backfill exact
+  submission IDs/scores from the AIcrowd submissions board, or explicitly
+  rule that a null `last_submitted_score` permits a first scaffold
+  submission. Until then the Full gate can still be run and recorded, but no
+  network submission may happen.
 
 ## Done
 
