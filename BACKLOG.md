@@ -266,7 +266,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B12-claude-20260716T065000Z-1598169-summary.json`.
   No further multi-direction follow-up recommended.
 
-- [ ] **B13** (exploit) - CLAIMED claude 2026-07-16T07:25:00Z - Fewer power
+- [x] **B13** (exploit) - DONE claude 2026-07-16T07:45:00Z - Fewer power
   iterations for B1/B10/B11's active-subspace direction. The B1/B10/B11
   lineage has a real ~6% final-layer-MSE advantage but keeps losing the
   paired gate on `mean_effective_compute` overhead. B11 tried materializing
@@ -287,6 +287,34 @@ unclaimed items with the next free ID and a one-line hypothesis.
   convergence on real dataset MLPs before committing to a specific
   iteration count, then reuse B10's exact batched estimator unchanged
   apart from the iteration count.
+  Result: REJECTED (paired 95% CI still not entirely below zero) but real
+  incremental progress -- verified on 5 real MLPs that 2 iterations gives
+  cosine similarity >=0.9986 to a 6-iteration reference (1 iteration was
+  riskier, 0.90 worst case), so used 2. matmul calls 353->225,
+  effective_compute/flops_used ratio 1.278->1.266, and final_layer_mse
+  was marginally BETTER than B10's (accuracy not traded away). paired_
+  mean_delta=6.391e-08, the smallest yet in the B1/B10/B11/B13 lineage
+  (B1=1.966e-07, B10=8.176e-08, B11=9.179e-08). The overhead cut was
+  smaller than the 36% call-count reduction alone would suggest, since
+  the 32 still-unbatched diagonal soft-gate matmuls are untouched and now
+  a larger share of the remaining gap. See `experiments/log-claude.md` and
+  `experiments/results/claude/B13-claude-20260716T073500Z-1598169-summary.json`.
+  Follow-up queued as B14.
+
+- [ ] **B14** (exploit) - Batch the remaining 32 diagonal soft-gate matmuls
+  in the B1/B10/B11/B13 active-subspace lineage (`pre_variance = (w*w).T @
+  variance`, one call per layer). These are now a proportionally larger
+  share of the remaining effective_compute overhead than before B13's
+  power-iteration cut (matmul calls down to 225, ratio 1.266 vs
+  champion's ~1.19). Unlike the power iteration, this phase is already
+  just one sequential pass per layer (no multiple rounds to cut), so
+  "batching" here means folding it into the same single matmul as the
+  main quadrature sampling pass, or otherwise reducing its per-layer call
+  footprint, without changing the diagonal-Gaussian-moment math. If this
+  plus B13's cut together close the rest of the gap to the champion's
+  ratio while preserving the ~6% MSE edge (confirmed intact through B10
+  and B13), the paired mean delta should finally cross entirely below
+  zero.
 
 ## Done
 

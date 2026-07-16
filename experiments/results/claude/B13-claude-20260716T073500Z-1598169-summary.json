@@ -1,0 +1,74 @@
+{
+  "experiment_id": "B13-claude-20260716T073500Z",
+  "agent": "claude",
+  "hypothesis": "B1/B10/B11 all used 4 power iterations to find the dominant active-subspace direction, unchanged from the original B1 experiment. B12's failure mode (a deflated second direction carried ~no exploitable signal beyond noise) reconfirmed the covariance is strongly rank-1 dominated, which means power iteration should converge in far fewer than 4 steps. Verified directly first: on 5 real dataset MLPs, cosine similarity of the direction after 2 iterations to a 6-iteration reference was >=0.9986 in every case (1 iteration was riskier, dropping to 0.90 worst case). Reducing to 2 iterations should halve that phase's call count (256->128) at zero raw-FLOP cost per call, unlike B11's full-Jacobian materialization which traded call count for bigger, costlier calls and barely moved effective_compute.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "55d60ec",
+    "candidate_commit": "410ce40"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B13-claude-20260716T073500Z-1598169-champion-mini.json",
+      "candidate": "B13-claude-20260716T073500Z-1598169-candidate-mini.json",
+      "champion_stderr": "B13-claude-20260716T073500Z-1598169-champion-mini.stderr.txt",
+      "candidate_stderr": "B13-claude-20260716T073500Z-1598169-candidate-mini.stderr.txt",
+      "note": "Champion report reused byte-identical from the B4 experiment (same estimator.py@1598169, same deterministic dataset/seeds); candidate report freshly executed."
+    }
+  },
+  "pre_implementation_validation": {
+    "method": "Loaded 5 real dataset MLPs (indices 0,1,2,5,10) directly via whestbench.load_dataset/iter_mlps, computed the soft-gate power-iteration direction at 1..6 iterations, measured cosine similarity of each to the 6-iteration direction.",
+    "result": "After 2 iterations: cosine similarity 0.99857-0.99999 across all 5 MLPs (worst case MLP index 5: 0.998567). After 1 iteration: 0.90116-0.99957 (worst case MLP index 5: 0.901160, materially less converged). Chose 2 iterations as the safe reduction."
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.52408376098378e-07,
+    "candidate_adjusted_final_layer_score": 1.0163189427924288e-06,
+    "relative_change_percent_vs_champion": 6.710416277087552,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 7.931290535907465e-06,
+    "candidate_vs_B10_note": "B10 (4 iterations) final_layer_mse was 7.995433086876e-06. B13 (2 iterations) is 7.931290535907e-06 -- marginally BETTER, not worse, confirming 2 iterations does not sacrifice direction quality for this dataset.",
+    "champion_mean_effective_compute": 30363295000.185635,
+    "candidate_mean_effective_compute": 34803208375.74583,
+    "champion_mean_score_multiplier": 0.11162976103009425,
+    "candidate_mean_score_multiplier": 0.1279529719696538
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_name/mlp_index",
+    "n": 100,
+    "mean_delta": 6.391056669405064e-08,
+    "t95_confidence_interval": [-2.4442670979915303e-07, 3.722478431872543e-07],
+    "worst_per_mlp_regression": 3.6155547363443764e-06,
+    "worst_per_mlp_regression_mlp": "savannah-hayes",
+    "best_per_mlp_improvement": -9.4601337272945e-06,
+    "best_per_mlp_improvement_mlp": "jessica-benson",
+    "n_regressions": 59,
+    "lineage_comparison": "paired_mean_delta across the B1/B10/B11/B13 lineage: B1=1.966e-07, B10=8.176e-08, B11=9.179e-08, B13=6.391e-08 (this run) -- the smallest yet, and CI is narrower than B10's on the upper end (3.722e-07 vs 3.903e-07) though the lower bound moved slightly more negative (-2.444e-07 vs -2.268e-07, still comfortably straddling zero either way)."
+  },
+  "overhead_diagnostic": {
+    "matmul_calls": 225,
+    "flops_used": 27485916276,
+    "effective_compute": 34803208375.74583,
+    "ratio": 1.266219689613735,
+    "comparison": "B10 (4 power iterations, 353 calls): ratio 1.278 (aggregate mean). B13 (2 power iterations, 225 calls): ratio 1.266. Halving the power-iteration call count (256->128, a 36% cut in total calls: 353->225) only reduced the overhead ratio by about 1 percentage point -- power iteration is not the only remaining source of overhead; the 32 still-unbatched diagonal soft-gate matmuls are untouched and now make up a larger fraction of the remaining gap. Champion's reference ratio is ~1.186-1.19."
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "The paired 95% CI [-2.444e-07, 3.722e-07] is not entirely below zero, so this does not clear the promotion gate. But this is real, incremental progress in the B1/B10/B11 lineage: the smallest paired_mean_delta yet (6.391e-08), confirmed accuracy did not degrade (final_layer_mse marginally improved vs. B10, validating the 2-iteration direction-convergence check), and a modest overhead reduction (ratio 1.278->1.266) achieved without B11's costly full-materialization tradeoff. The overhead reduction was smaller than the 36% call-count cut might suggest, indicating the remaining ~32 unbatched diagonal soft-gate calls are now a larger relative share of the gap to the champion's ~1.19 ratio.",
+  "full_submission_gate": "NOT_RUN"
+}

@@ -436,3 +436,67 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   didn't close it; a cheaper power-iteration reduction, e.g. fewer than 4
   iterations given the strong rank-1 dominance this very experiment's
   failure mode reconfirms, remains untried).
+
+## 2026-07-16T07:45:00Z - B13-claude-20260716T073500Z: Fewer power iterations
+- Hypothesis: B1/B10/B11 all used 4 power iterations for the dominant
+  active-subspace direction, unchanged from the original B1 experiment.
+  B12's failure mode (a deflated second direction carried ~no exploitable
+  signal beyond noise) reconfirmed the covariance is strongly rank-1
+  dominated -- power iteration should converge in far fewer than 4 steps.
+  Reducing the count should cut power-iteration call count at zero extra
+  raw-FLOP cost per call (same O(width^2) matvecs, just fewer of them),
+  unlike B11's full-Jacobian materialization which traded call count for
+  bigger, costlier calls and barely moved effective_compute.
+- Pre-implementation validation: loaded 5 real dataset MLPs directly (no
+  local synthetic stand-in this time -- direction convergence is exactly
+  the kind of thing that could differ between a toy network and the real
+  problem), computed the power-iteration direction at 1-6 iterations, and
+  measured cosine similarity to the 6-iteration reference. Result: after 2
+  iterations, similarity was >=0.998567 for all 5 MLPs (worst case MLP
+  index 5). After 1 iteration it dropped to 0.901160 in the worst case --
+  materially less converged, so chose 2 iterations as the safe reduction
+  rather than pushing to 1.
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); candidate_claude.py @ 410ce40, claimed from 55d60ec.
+  Otherwise identical to B10's estimator (same batched single-matmul-per
+  -layer structure) -- the only change is `_POWER_ITERATIONS = 2` instead
+  of the hardcoded 4 loop count.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433),
+  split=mini (100 MLPs), budget=272000000000, runner=subprocess. Champion
+  report reused byte-identical from the B4 experiment; candidate report
+  freshly executed. Exact commands/reports:
+  results/claude/B13-claude-20260716T073500Z-1598169-summary.json.
+- Result: candidate adjusted score=1.016318942792e-06; champion=
+  9.524083760984e-07; relative_change=+6.710416% (vs. B10's +8.584973%).
+  candidate final_layer_mse=7.931290535907e-06 -- marginally BETTER than
+  B10's 7.995433086876e-06, confirming the 2-iteration direction loses no
+  accuracy for this dataset (matches the convergence check). matmul calls
+  353->225 (halving the power-iteration phase cut total calls by 36%,
+  256->128 of that phase). effective_compute/flops_used ratio 1.278->1.266
+  (aggregate mean) -- a real but modest reduction, smaller than the
+  call-count cut alone would suggest, since the 32 still-unbatched
+  diagonal soft-gate matmuls are untouched and now a larger share of the
+  remaining gap to the champion's ~1.19 ratio. paired_mean_delta=
+  6.391056669405e-08 -- the smallest in the whole B1/B10/B11 lineage
+  (B1=1.966e-07, B10=8.176e-08, B11=9.179e-08). paired_95pct_CI=
+  [-2.444267097992e-07, 3.722478431873e-07], still straddling zero.
+  worst_per_MLP_regression=3.615554736344e-06 (59/100 regressed, fewer
+  than B10's 60/100). All failure/budget/time/error flags=0.
+- Verdict: REJECTED -- CI not entirely below zero. Real incremental
+  progress, though: closest paired_mean_delta to zero yet in this
+  lineage, with accuracy confirmed intact (not traded away for the
+  overhead cut) and no costly materialization tradeoff like B11's.
+- Full/submission gate: NOT_RUN; the Mini paired gate failed.
+- New ideas queued: B14 - batch the remaining 32 diagonal soft-gate
+  matmuls (`pre_variance = (w*w).T @ variance`, one per layer, currently
+  unbatched like the old power-iteration calls were). These are now a
+  proportionally larger share of the B1/B10/B11/B13 lineage's remaining
+  overhead than before. Unlike the power iteration, this phase doesn't
+  need multiple sequential rounds -- it is already just one pass per
+  layer -- so "batching" here would mean finding a way to fold it into
+  the same single matmul as the main quadrature sampling pass, or
+  otherwise reducing its per-layer call footprint, without changing the
+  diagonal-Gaussian-moment math at all.
