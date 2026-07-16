@@ -77,7 +77,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   automatically where the analytic is bad, but verify. Validate the w
   estimator offline on 5-10 real MLPs first (B31/B32 discipline).
 
-- [ ] **B35** (exploit, lead-priority 2) - Optimal sample count under an
+- [ ] **B35** (exploit, lead-priority 2) - CLAIMED gpt 2026-07-16T17:39:00Z - Optimal sample count under an
   AFFINE effective-compute model. B16's N-invariance argument assumed
   multiplier proportional to N; but if effective_compute(N) = a*N + b with
   a genuinely fixed component b (the champion issues 32 matmul calls
