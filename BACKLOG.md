@@ -347,7 +347,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B15-claude-20260716T081000Z-1598169-summary.json`.
   Calibrated follow-up queued as B16.
 
-- [ ] **B16** (exploit) - CLAIMED claude 2026-07-16T08:35:00Z - Retry B15's
+- [x] **B16** (exploit) - DONE claude 2026-07-16T08:55:00Z - Retry B15's
   active-subspace sample-count cut with a precisely calibrated pair-count
   scale (~2,500) instead of a blind halving (1,625), AND combine with
   gpt's B14 elementwise diagonal-variance fix (also independently
@@ -368,6 +368,33 @@ unclaimed items with the next free ID and a one-line hypothesis.
   B1/B10/B11/B13/B15 lineage to cross the paired promotion gate. Run
   champion fresh alongside the candidate (not reused) given how close
   this is to the threshold and effective_compute's wall-clock noise.
+  Result: REJECTED (CI not entirely below zero) but calibration landed
+  almost exactly on target (mean_effective_compute=2.7179e10, within
+  0.07% of the 2.72e10 floor). KEY FINDING: paired_mean_delta (5.679e-08)
+  essentially TIES gpt's B14 alone (5.477e-08, full N=3250, no reduction)
+  -- the N-reduction lever adds ~nothing once the diagonal-matmul
+  overhead is already fixed. Explanation: the lead's N-invariance
+  argument for plain MC (MSE~1/N cancels multiplier~N above the floor)
+  applies equally to this estimator's main sampling budget; the 16-node
+  quadrature lowers the *invariant score level* (the ~6% MSE edge) but
+  doesn't break the invariance itself. Definitively rules out
+  sample-count tuning as a further lever for this architecture. See
+  `experiments/log-claude.md` and
+  `experiments/results/claude/B16-claude-20260716T084500Z-1598169-summary.json`.
+  Follow-up queued as B17.
+
+- [ ] **B17** (exploit) - Since B16 rules out sample-count tuning as a
+  lever, the only remaining lever for the B1/B10/B11/B13/B14/B16 lineage
+  is cutting the ~128 power-iteration calls further (already reduced
+  from 256 in B13). B12's and B16's results both reconfirm strong rank-1
+  dominance. Revisit power-iteration convergence on more than the 5 MLPs
+  B13 checked -- consider a cheap early-stopping check (e.g. halt once
+  consecutive directions' cosine similarity exceeds a threshold) rather
+  than a fixed iteration count. If power iteration can be cut further
+  without sacrificing direction quality, combine with B14's elementwise
+  diagonal fix (validated safe to stack) at the FULL N=3250 budget (not
+  reduced, per B16's finding) for the best remaining shot at closing the
+  gap to the champion.
 
 ## Done
 

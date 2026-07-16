@@ -1,0 +1,76 @@
+{
+  "experiment_id": "B16-claude-20260716T084500Z",
+  "agent": "claude",
+  "hypothesis": "Combine two independently-verified fixes to the B1/B10/B11/B13 active-subspace lineage: (1) a precisely calibrated main-sample pair-count scale (~2,500, derived from a linear fit of B13 and B15's effective_compute vs. pair_scale, targeting the 2.72e10 score-floor boundary exactly rather than B15's overshoot below it), and (2) gpt's B14 fix (independently reimplemented): computing the diagonal soft-gate variance via elementwise multiply+sum instead of a matmul call. These target different, independent overhead sources (raw main-sample FLOPs vs. call fragmentation from the diagonal phase), so stacking them should combine their reductions and could be the first candidate in this lineage to cross the paired promotion gate.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "cfbd4bd",
+    "candidate_commit": "3eda8eb"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B16-claude-20260716T084500Z-1598169-champion-mini.json",
+      "candidate": "B16-claude-20260716T084500Z-1598169-candidate-mini.json",
+      "champion_stderr": "B16-claude-20260716T084500Z-1598169-champion-mini.stderr.txt",
+      "candidate_stderr": "B16-claude-20260716T084500Z-1598169-candidate-mini.stderr.txt",
+      "note": "Champion run fresh again (not reused), back-to-back with the candidate, given how close this lineage is to the promotion threshold."
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.400532341053943e-07,
+    "candidate_adjusted_final_layer_score": 9.96841411302238e-07,
+    "relative_change_percent_vs_champion": 6.0409533350402675,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 9.936290850873775e-06,
+    "champion_mean_effective_compute": 30037177000.202965,
+    "candidate_mean_effective_compute": 27178811362.646503,
+    "champion_mean_score_multiplier": 0.11043079779486377,
+    "candidate_mean_score_multiplier": 0.10048415569285765,
+    "candidate_flops_used": 21131371664.0,
+    "candidate_effective_over_flops_ratio": 1.2861741690459755,
+    "note": "Calibration worked well on the compute axis: mean_effective_compute landed at 2.7179e10, within 0.07% of the 2.72e10 floor target, and the multiplier (0.10048) is just barely above the floor -- essentially spot on."
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_name/mlp_index",
+    "n": 100,
+    "mean_delta": 5.678817719684362e-08,
+    "t95_confidence_interval": [-2.3944946415803004e-07, 3.5302581855171724e-07],
+    "worst_per_mlp_regression": 4.73940770055576e-06,
+    "worst_per_mlp_regression_mlp": "david-tyler",
+    "best_per_mlp_improvement": -8.737870225387372e-06,
+    "best_per_mlp_improvement_mlp": "jessica-benson",
+    "n_regressions": 55,
+    "lineage_comparison": "paired_mean_delta across the lineage: B1=1.966e-07, B10=8.176e-08, B11=9.179e-08, B13=6.391e-08, B14(gpt, N=3250+elementwise diagonal, no N reduction)=5.477e-08, B15(N=1625, overshot floor)=3.948e-07, B16(this run, N=2500+elementwise diagonal)=5.679e-08. B16 is essentially TIED with B14, not meaningfully better, despite adding the N-calibration lever on top of the same elementwise-diagonal fix."
+  },
+  "overhead_diagnostic": {
+    "matmul_calls": 193,
+    "flops_used": 21131371664.0,
+    "effective_compute": 33313541660.231094,
+    "ratio": 1.5764968876575571,
+    "comparison": "matmul calls dropped from B13's 225 to 193 -- exactly the 32 diagonal calls removed by the elementwise fix, confirming it worked as expected and stacked cleanly with B13's 2-power-iteration base."
+  },
+  "key_finding": {
+    "summary": "B16 (N=2500 + elementwise diagonal) essentially ties B14 (N=3250, full budget + elementwise diagonal, no N reduction) on paired_mean_delta (5.679e-08 vs 5.477e-08) -- B14 is marginally *better* despite using MORE main samples and MORE raw compute. This means the N-reduction lever (B15/B16's premise) contributes ~nothing once the diagonal-matmul overhead is already fixed.",
+    "explanation": "The lead's original insight for plain MC -- that adjusted score is approximately N-invariant above the compute floor, since final_layer_mse~1/N cancels the multiplier~N -- applies to ANY MC-based estimator whose dominant cost is the sample-dependent forward pass, not specifically plain MC. The active-subspace estimator's 16-node quadrature makes ONE dimension's variance exactly zero, which lowers the *invariant score level* itself (that's the ~6% MSE edge over plain MC B10/B13/B14 all show), but it does not break the invariance property for the OTHER 255 dimensions' sampling variance -- varying N in the region at-or-above the floor stays roughly score-neutral for this estimator too, same as for plain MC. B15's failure (going below the floor) and B16's near-tie with B14 (staying at/above it) are two sides of the same fact: this lineage's remaining exploitable overhead is entirely the FIXED, N-independent call overhead (power iteration + previously diagonal), not the main sample count."
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "Paired 95% CI [-2.394e-07, 3.530e-07] is not entirely below zero. Essentially tied with gpt's independently-run B14 (which used the full N=3250 budget), confirming the N-reduction lever adds no real value once the diagonal-matmul call overhead is already fixed -- both estimators are near score-invariant to main sample count once at/above the compute floor, for the same fundamental reason plain MC is. The remaining ~193 calls (128 power iteration + ~65 main/misc) are now the only lever left in this specific estimator architecture; power-iteration call count (already cut once in B13) is the most promising remaining target.",
+  "full_submission_gate": "NOT_RUN"
+}

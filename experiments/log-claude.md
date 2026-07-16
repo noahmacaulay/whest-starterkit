@@ -558,3 +558,72 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   MSE this run gave up for nothing -- strictly better than both B13
   (overhead above the floor, unused margin) and B15 (accuracy sacrificed
   below the floor, unused margin) if the linear model holds.
+
+## 2026-07-16T08:55:00Z - B16-claude-20260716T084500Z: Calibrated pair scale + elementwise diagonal
+- Hypothesis: combine two independently-verified, complementary fixes:
+  (1) pair-count scale ~2,500 (linear-fit calibration from B13/B15 to hit
+  the 2.72e10 floor boundary exactly, avoiding B15's overshoot), and (2)
+  gpt's B14 fix, independently reimplemented: diagonal soft-gate variance
+  via elementwise multiply+sum instead of a matmul call. These target
+  different overhead sources (raw main-sample FLOPs vs. diagonal-phase
+  call fragmentation), so stacking them should combine their reductions.
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); candidate_claude.py @ 3eda8eb, claimed from cfbd4bd.
+  gpt's B14 (finished in parallel this session) also got REJECTED on its
+  own (paired_mean_delta=5.477e-08, the smallest single-lever result at
+  the time) but confirmed the elementwise fix preserves B13's MSE exactly
+  and reduces effective_compute (3.4803e10->3.3729e10) without changing
+  the estimator's statistics -- safe to combine with the N calibration.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433),
+  split=mini (100 MLPs), budget=272000000000, runner=subprocess. Champion
+  run fresh again (not reused), back-to-back with the candidate. Exact
+  commands/reports:
+  results/claude/B16-claude-20260716T084500Z-1598169-summary.json.
+- Result: candidate adjusted score=9.968414113022e-07; champion=
+  9.400532341054e-07; relative_change=+6.040953%. Calibration landed
+  almost exactly on target: candidate mean_effective_compute=
+  2.717881136265e10, within 0.07% of the 2.72e10 floor, multiplier=
+  0.100484 (just above the floor). candidate final_layer_mse=
+  9.936290850874e-06 (worse than champion's 8.505e-06 and B13's
+  7.931e-06 -- the N cut does cost real accuracy). matmul calls 225->193
+  (exactly the 32 diagonal calls removed, confirming the elementwise fix
+  stacked cleanly). paired_mean_delta=5.678817719684e-08;
+  paired_95pct_CI=[-2.394494641580e-07, 3.530258185517e-07], still
+  straddling zero.
+- KEY FINDING: B16 (N=2500 + elementwise diagonal) essentially TIES B14
+  (N=3250, full budget + elementwise diagonal, no N reduction at all) on
+  paired_mean_delta (5.679e-08 vs 5.477e-08) -- B14 is marginally
+  *better* despite using MORE samples and MORE raw compute. The
+  N-reduction lever contributes ~nothing once the diagonal-matmul
+  overhead is already fixed. Explanation: the lead's original insight for
+  plain MC -- adjusted score is approximately N-invariant above the
+  compute floor, since MSE~1/N cancels multiplier~N -- applies to ANY
+  MC-based estimator whose dominant cost is the sample-dependent forward
+  pass, not specifically plain MC. The 16-node quadrature makes ONE
+  dimension's variance exactly zero, which lowers the *invariant score
+  level itself* (that's the ~6% MSE edge over plain MC B10/B13/B14 all
+  show), but it does not break the invariance property for the other 255
+  dimensions' sampling variance. B15's failure (below the floor) and
+  B16's near-tie with B14 (at/above it) are two sides of the same fact:
+  this lineage's only real remaining lever is the FIXED, N-independent
+  call overhead (currently ~128 power-iteration calls + ~65 main/misc),
+  not the main sample count.
+- Verdict: REJECTED -- CI not entirely below zero, and no better than
+  B14 alone. Still useful: confirms the calibration model was accurate
+  (compute landed almost exactly on the floor target) and definitively
+  rules out sample-count tuning as a further lever for this architecture.
+- Full/submission gate: NOT_RUN; the Mini paired gate failed.
+- New ideas queued: B17 - since N-tuning is now a confirmed dead end for
+  this estimator, the only remaining lever is cutting the ~128
+  power-iteration calls further (already reduced from 256 in B13). Given
+  B12's and this experiment's reconfirmation of strong rank-1 dominance,
+  revisit whether even fewer iterations (or a cheaper convergence check,
+  e.g. stopping early once consecutive directions' cosine similarity
+  exceeds a threshold) holds up on more MLPs than the 5 checked for B13.
+  If power iteration can be cut further without sacrificing direction
+  quality, combine with B14's elementwise diagonal fix (already validated
+  safe to stack) at the FULL N=3250 budget (not reduced, per this
+  experiment's finding) for the best remaining shot at closing the gap.
