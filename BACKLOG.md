@@ -383,7 +383,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B16-claude-20260716T084500Z-1598169-summary.json`.
   Follow-up queued as B17.
 
-- [ ] **B17** (exploit) - Since B16 rules out sample-count tuning as a
+- [ ] **B17** (exploit) - CLAIMED claude 2026-07-16T09:10:00Z - Since B16 rules out sample-count tuning as a
   lever, the only remaining lever for the B1/B10/B11/B13/B14/B16 lineage
   is cutting the ~128 power-iteration calls further (already reduced
   from 256 in B13). B12's and B16's results both reconfirm strong rank-1
