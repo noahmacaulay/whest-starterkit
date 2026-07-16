@@ -15,6 +15,17 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Full/submission gate: NOT_RUN.
 - New ideas queued: none.
 
+## 2026-07-16T04:12:58Z - B9-gpt-20260716T035249Z: Scrambled Sobol QMC
+- Hypothesis: a per-MLP digital-shifted Sobol input net, transformed by the normal inverse CDF, reduces final-layer MC error enough to overcome the higher compute multiplier at a 32,768-point power-of-two batch.
+- Base champion: estimator.py @ 0cd32b3 (B0-gpt-20260716T002459Z source result 58900f1); candidate_gpt.py @ da3cb39.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock@9b677e2b91b0b4791c73c9449b6d5e5491093ddb.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1 (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433), split=mini (100 MLPs), budget=272000000000, runner=subprocess. Exact commands and raw reports are in results/gpt/B9-gpt-20260716T035249Z-0cd32b3-summary.json.
+- Change: generated a 32-bit Sobol digital net with a per-dimension random digital shift from `fnp.random.default_rng(mlp.seed)`, transformed the points through `flops.stats.norm.ppf`, and ran the existing tracked ReLU forward pass for 32,768 samples.
+- Result: candidate adjusted score=0.321098933595; champion=9.290663024139e-07; relative_change=+34561365.932018%; paired_mean_delta=0.321098004528; paired_95pct_CI=[0.156571998698,0.485624010358]; worst_per_MLP_regression=6.620156135154 (100/100). Candidate final-layer MSE=0.321147337293 vs champion=8.504929468245e-06; candidate mean effective compute=1.222814740469e+11 vs champion=2.969721159935e+10. The candidate had 27 `error` flags (all budget/time flags=0).
+- Verdict: REJECTED: conversion to float32 before the inverse CDF rounded some endpoint-adjacent Sobol uniforms to exactly 0 or 1, returning infinite inputs and non-finite predictions for 27 MLPs. This alone fails the gate; the 73 finite runs also regress sharply, so a rerun with endpoint clipping would not be a meaningful promotion attempt.
+- Full/submission gate: NOT_RUN; the Mini gate failed and S1 still blocks any submission reservation.
+- New ideas queued: none.
+
 - Promotion resolution: PROMOTED atomically to origin/main at 1598169 after a fresh-state check against result commit 58900f1.
 - Submission resolution: NOT_RUN. `last_submitted_score` is null and the ledger contains only legacy `pending` records without exact IDs, so the required 5% improvement comparison and safe reconciliation cannot be made; no reservation was created.
 

@@ -1,0 +1,52 @@
+{
+  "experiment_id": "B9-gpt-20260716T035249Z",
+  "agent": "gpt",
+  "base_champion_commit": "0cd32b3",
+  "candidate_commit": "da3cb39",
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "commands": [
+      "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+      "uv run --frozen whest run --estimator candidate_gpt.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json"
+    ],
+    "raw_reports": [
+      "B9-gpt-20260716T035249Z-0cd32b3-champion-mini.json",
+      "B9-gpt-20260716T035249Z-0cd32b3-candidate-mini.json"
+    ]
+  },
+  "champion": {
+    "adjusted_final_layer_score": 9.290663024139249e-07,
+    "final_layer_mse": 8.504929468244882e-06,
+    "mean_effective_compute": 29697211599.3494
+  },
+  "candidate": {
+    "adjusted_final_layer_score": 0.3210989335946517,
+    "final_layer_mse": 0.32114733729285033,
+    "mean_effective_compute": 122281474046.86069,
+    "failure_breakdown": {
+      "budget_exhausted": 0,
+      "time_exhausted": 0,
+      "residual_wall_time_exhausted": 0,
+      "combined_budget_exhausted": 0,
+      "error": 27
+    }
+  },
+  "paired": {
+    "mean_delta": 0.32109800452834936,
+    "ci95": [0.15657199869846333, 0.4856240103582354],
+    "relative_change": 345613.65932018403,
+    "worst_regression": 6.620156135153541,
+    "regressed_mlps": 100
+  },
+  "verdict": "REJECTED",
+  "reason": "27/100 predictions were non-finite because float32 conversion rounded Sobol uniforms to 0 or 1 before normal inverse CDF; failed runs are ineligible. The 73 valid runs were also much worse than the champion at the higher compute multiplier."
+}

@@ -164,7 +164,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   input-local/early-layer structure well before the scored layer. See
   `experiments/log-claude.md`. No candidate file was needed or committed.
 
-- [ ] **B9** (explore) - CLAIMED gpt 2026-07-16T03:52:49Z - Input Sobol/QMC Monte Carlo at the full useful
+- [x] **B9** (explore) - DONE gpt 2026-07-16T04:12:58Z - Input Sobol/QMC Monte Carlo at the full useful
   budget. Complete the untested QMC half of B4 with a deterministic
   scrambled Sobol sequence mapped through the normal inverse CDF and seeded
   only from `mlp.seed`. Hypothesis: low-discrepancy coverage of the entire
