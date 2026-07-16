@@ -64,3 +64,51 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   claim in place under the new ordering; the claim predates the
   reprioritization, so gpt proceeding with B1 this iteration is correct, and
   B4 stands as the top unclaimed item for the next worker.
+
+## 2026-07-16T02:47:00Z - B4-claude-20260716T024700Z: Antithetic-paired MC
+- Hypothesis: antithetic-paired sampling (z, -z) at the same total sample
+  count/FLOPs as the B0 MC champion reduces estimator variance, which divides
+  the adjusted score directly since effective compute (and thus the score
+  multiplier) is unchanged.
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); candidate_claude.py @ 56b4223, claimed from ebffd25.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@2c84f3b0131859397fbfecea333503af142fd50f (matches the recorded
+  champion metadata; confirmed via `uv sync --frozen` + `whest version` at
+  the start of this iteration).
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433),
+  split=mini (100 MLPs), budget=272000000000, runner=subprocess. Exact
+  commands and raw reports are in
+  results/claude/B4-claude-20260716T024700Z-1598169-summary.json.
+- Change: candidate_claude.py draws 3,250 iid standard-normal rows per MLP
+  and concatenates them with their negation to form the same 6,500 total
+  rows the champion uses, so per-MLP FLOPs are unchanged; only the sample
+  construction differs (paired instead of fully iid).
+- Result: candidate adjusted score=8.892516550819e-07; champion
+  adjusted score=9.524083760984e-07; relative_change=-6.631265%;
+  paired_mean_delta=-6.315672101643e-08; paired_95pct_CI=
+  [-4.059104786305e-07, 2.795970365976e-07]; worst_per_MLP_regression=
+  3.193724772486e-06 (52/100 regressed). Candidate final-layer MSE=
+  7.949875915756e-06 vs champion=8.504929468245e-06; mean effective compute
+  3.043846e10 vs 3.036330e10 (multiplier 0.111906 vs 0.111630, essentially
+  flat as intended). All failure/budget/time/error flags=0.
+- Layer-wise diagnostic (mean MSE by layer, champion vs candidate):
+  layer 0 -46.4%, layer 1 -34.6%, layer 2 -28.4%, layer 5 -16.4%, layer 10
+  -11.2%, layer 15 -8.9%, layer 20 -4.4%, layer 25 +2.6%, layer 31 (scored)
+  -6.5%. The antithetic pair's variance reduction is strong near the input
+  and decays through depth-32 mean-field collapse until it is smaller than
+  MLP-suite sampling noise at the scored final layer — consistent with the
+  known rank-1/collapse structure scrambling the (z, -z) correlation faster
+  than it scrambles ordinary iid variance.
+- Verdict: REJECTED (within-uncertainty): mean paired delta is negative but
+  the conservative 95% CI is not entirely below zero (52/100 MLPs
+  regressed), so this does not clear the promotion gate despite the
+  favorable aggregate relative change.
+- Full/submission gate: NOT_RUN; the Mini paired gate failed.
+- New ideas queued: B7 - re-antithetize at intermediate layers instead of
+  only at the input, since the layer-wise diagnostic shows pair correlation
+  (and thus variance reduction) decaying to noise well before layer 31;
+  periodically reflecting the running activations (or reflecting only in the
+  active-subspace direction from B1's Jacobian estimate) may sustain the
+  antithetic benefit deeper into the network at the same FLOP cost.

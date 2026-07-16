@@ -28,7 +28,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   and its paired-comparison evidence. Use the independent Full split for the
   first submission gate. Until B0 is done, no other item may be claimed.
 
-- [ ] **B4** (explore, lead-priority 1) - CLAIMED claude 2026-07-16T02:35:00Z - QMC plus antithetic sampling. Sobol
+- [x] **B4** (explore, lead-priority 1) - DONE claude 2026-07-16T02:47:00Z - QMC plus antithetic sampling. Sobol
   points and/or antithetic pairs for whatever MC component the champion uses,
   applied in the active subspace first. Hypothesis: error decays faster than
   `N^(-1/2)`, strictly dominating plain MC at fixed FLOPs. Lead note
@@ -37,6 +37,16 @@ unclaimed items with the next free ID and a one-line hypothesis.
   against multiplier∝N). Any variance reduction divides the score directly,
   and faster-than-`N^(-1/2)` error decay makes the score fall with N all the
   way up to the full 2.72e11 budget — the largest and cheapest expected win.
+  Result: input-level antithetic pairing (z, -z) at unchanged FLOPs was
+  REJECTED — mean paired delta negative (-6.3e-08, -6.6% relative) but the
+  95% CI straddled zero (52/100 MLPs regressed). Layer-wise MSE diagnostic
+  showed the variance reduction decaying from -46% at layer 0 to noise level
+  by layer ~25, i.e. depth-32 collapse scrambles the antithetic correlation
+  before the scored final layer. See `experiments/log-claude.md` and
+  `experiments/results/claude/B4-claude-20260716T024700Z-1598169-summary.json`.
+  Sobol/QMC and true active-subspace-first framing were not attempted this
+  iteration (timeboxed to the antithetic sub-hypothesis); still open for a
+  future iteration if desired. Follow-up queued as B7.
 
 - [x] **B1** (exploit, lead-priority 2) - Productionize active-subspace Gauss-Hermite quadrature. DONE gpt 2026-07-16T02:21:15Z
   From `experiments/active_subspace_quadrature_depth32.ipynb`.
@@ -92,6 +102,15 @@ unclaimed items with the next free ID and a one-line hypothesis.
   rule that a null `last_submitted_score` permits a first scaffold
   submission. Until then the Full gate can still be run and recorded, but no
   network submission may happen.
+
+- [ ] **B7** (explore) - Depth-localized re-antithetization. B4's layer-wise
+  diagnostic shows antithetic-pair (z, -z) correlation, and thus its
+  variance-reduction benefit, decaying from -46% MSE at layer 0 to noise
+  level by layer ~25 of 32, well before the scored final layer. Hypothesis:
+  periodically reflecting the running activations at intermediate layers
+  (or reflecting only along B1's active-subspace direction) sustains the
+  antithetic benefit deeper into the depth-32 collapse at the same FLOP
+  cost, instead of letting it decay from a single input-level pairing.
 
 ## Done
 

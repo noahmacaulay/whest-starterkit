@@ -1,0 +1,58 @@
+{
+  "experiment_id": "B4-claude-20260716T024700Z",
+  "agent": "claude",
+  "hypothesis": "Antithetic-paired sampling (z, -z) at the same total sample count/FLOPs as the B0 MC champion reduces estimator variance, which divides the adjusted score directly since effective compute is unchanged.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "ebffd25",
+    "candidate_commit": "56b4223"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B4-claude-20260716T024700Z-1598169-champion-mini.json",
+      "candidate": "B4-claude-20260716T024700Z-1598169-candidate-mini.json",
+      "champion_stderr": "B4-claude-20260716T024700Z-1598169-champion-mini.stderr.txt",
+      "candidate_stderr": "B4-claude-20260716T024700Z-1598169-candidate-mini.stderr.txt"
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.52408376098378e-07,
+    "candidate_adjusted_final_layer_score": 8.892516550819469e-07,
+    "relative_change_percent": -6.631264760097759,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 7.94987591575591e-06,
+    "champion_mean_effective_compute": 30363295000.185635,
+    "candidate_mean_effective_compute": 30438461099.68011,
+    "champion_mean_score_multiplier": 0.11162976103009425,
+    "candidate_mean_score_multiplier": 0.11190610698411797
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_name/mlp_index",
+    "n": 100,
+    "mean_delta": -6.315672101643122e-08,
+    "t95_confidence_interval": [-4.059104786304518e-07, 2.7959703659758935e-07],
+    "worst_per_mlp_regression": 3.193724772485958e-06,
+    "worst_per_mlp_regression_mlp": "david-tyler",
+    "n_regressions": 52
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "Mean paired delta is negative but the conservative 95% CI straddles zero (52/100 MLPs regressed): a within-uncertainty result, not a significant win. Effective compute/multiplier stayed essentially flat as intended (antithetic pairing is FLOP-neutral vs. the champion), so the null result is attributable to depth-32 decorrelation of the antithetic pairs rather than a compute-budget confound.",
+  "full_submission_gate": "NOT_RUN"
+}
