@@ -442,6 +442,28 @@ unclaimed items with the next free ID and a one-line hypothesis.
   starting vector for some of them), not a fixable initialization
   artifact. See `experiments/log-claude.md`. No candidate file needed.
 
+- [ ] **B19** (exploit) - CLAIMED claude 2026-07-16T10:00:00Z - Block
+  (multi-vector) power iteration for the active-subspace direction.
+  B18 found no single starting vector (deterministic ones, seeded-random,
+  alternating-sign) reliably converges well for all MLPs -- each fails on
+  a different subset, consistent with some MLPs having a genuinely small
+  top-1/top-2 eigenvalue gap. Key insight not yet exploited: batching K
+  starting vectors into one (K, width) block and applying the soft-gate
+  Jacobian to the whole block costs the *same* number of matmul calls per
+  round as a single vector (still one matmul per layer per traversal,
+  just with K rows instead of 1) -- unlike gpt's B11 full-Jacobian
+  materialization, this stays O(width^2*K) not O(width^3), so a modest K
+  (e.g. 4) adds negligible raw FLOPs. Hypothesis: running several
+  independent starting vectors simultaneously through the same 2 rounds,
+  then picking whichever grew the most (proxy for best alignment with the
+  dominant eigenvalue), should recover most of B18's per-MLP wins
+  (seeded-random fixed most of ones-start's worst cases) without
+  introducing new failures the way any single alternative start did,
+  since the block always includes multiple attempts including the
+  existing safe default. Validate the selection heuristic's convergence
+  across all 100 MLPs before touching any candidate file -- same
+  discipline as B13/B17/B18.
+
 ## Done
 
 (nothing yet)
