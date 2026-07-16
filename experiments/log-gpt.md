@@ -14,6 +14,7 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: PROMOTION_PENDING: the MC Mini paired gate passes; persist this result, then perform the required fresh-state compare-and-swap promotion.
 - Full/submission gate: NOT_RUN.
 - New ideas queued: none.
+
 - Promotion resolution: PROMOTED atomically to origin/main at 1598169 after a fresh-state check against result commit 58900f1.
 - Submission resolution: NOT_RUN. `last_submitted_score` is null and the ledger contains only legacy `pending` records without exact IDs, so the required 5% improvement comparison and safe reconciliation cannot be made; no reservation was created.
 
@@ -49,3 +50,6 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: REJECTED: low-rank truncation loses correlation structure throughout the network; the adjusted score is about 95x worse and the conservative paired interval is wholly positive.
 - Full/submission gate: NOT_RUN; the Mini promotion gate failed.
 - New ideas queued: none.
+
+### B5 metadata correction
+- The normal rebase before result persistence rewrote the evaluated candidate commit from local `b417d79` to reachable commit `990f73d`; the candidate contents and raw reports are unchanged.

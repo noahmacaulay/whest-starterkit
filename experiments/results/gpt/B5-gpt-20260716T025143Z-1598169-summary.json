@@ -6,7 +6,8 @@
     "champion_estimator_commit": "1598169",
     "source_result_commit": "58900f1",
     "claim_base_commit": "762497a",
-    "candidate_commit": "b417d79"
+    "candidate_commit": "990f73d",
+    "candidate_pre_rebase_commit": "b417d79"
   },
   "environment": {
     "whestbench": "0.12.0rc3",
