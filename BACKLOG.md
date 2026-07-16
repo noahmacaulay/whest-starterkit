@@ -449,7 +449,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   Done exactly as specified: renamed to `mean_effective_compute`, added
   correct `flops_used: 27346176000.0`, no other champion fields touched.
 
-- [ ] **B37** (exploit) - Radial-exact antithetic directions. Combine B25's
+- [ ] **B37** (exploit) - CLAIMED gpt 2026-07-16T18:25:16Z - Radial-exact antithetic directions. Combine B25's
   exact integration over the Gaussian radius with B4's direction pairing:
   draw 3,250 iid sphere directions, forward both `u` and `-u`, and multiply
   their 6,500-sample angular mean by the exact chi-radius mean. B4 measured a
