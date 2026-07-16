@@ -1469,3 +1469,62 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   a harness run, so no raw JSON report to attach beyond this log entry
   and the champion.json record itself.
 - Full/submission gate: NOT_RUN (not applicable -- no candidate).
+
+## 2026-07-16T18:30:00Z - B29-claude: Paired Full-split gate, B25 vs B0 (submission BLOCKED, not S1)
+- Not a new estimator experiment (no candidate, no new promotion) --
+  triggered by the user's S1 resolution (commit 38d3054: null submitted
+  scores are disregarded, unblocking the submission pipeline) which
+  explicitly flagged an open question: AGENTS.md step 7 requires the
+  champion to "pass the same paired gate on the independent full split"
+  before submission, but B26's Full-split gate evaluated the B25
+  champion alone (single-estimator), not paired against the prior (B0)
+  champion -- B25's own promotion paired comparison was Mini-split only.
+- Method: computed the missing paired comparison from ALREADY-COMPLETE,
+  immutable data -- no new harness runs. B24 already has a complete
+  1000-MLP Full-split report for B0
+  (champion-full-gate-COMPLETE-20260716T140000Z-1598169.json); B26
+  already has one for B25
+  (B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json). Verified
+  both cover the identical 1000 MLPs (exact `mlp_name` set match, zero
+  symmetric difference) under the same dataset/flop_budget/environment.
+  Paired by `mlp_name`, not `mlp_index` (learned in B26: mlp_index is
+  independently assigned per-report, not a stable global identifier).
+  Spot-checked 5 individual paired records against both source reports
+  before trusting the aggregate.
+- Result: n=1000, paired on `adjusted_final_layer_score` (B25-B0).
+  EXACTLY 500/1000 MLPs improved, 500/1000 regressed, 0 tied.
+  paired_mean_delta=-8.668e-09, paired_95pct_CI=[-2.851e-08, +1.118e-08]
+  -- does NOT lie entirely below zero (upper bound is positive).
+  Confirmed this isn't a t_crit-choice artifact: CI upper bound stays
+  positive across t_crit in {1.96, 1.9623, 1.9639, 2.0}. Aggregate
+  final_layer_mse still improves (7.7814e-06 -> 7.6925e-06, -1.14%
+  relative -- much smaller than the -15.2% seen on the 100-MLP Mini
+  split at promotion time).
+- Interpretation: B25's paired advantage over B0 is real and
+  statistically significant on the 100-MLP Mini split but shrinks to a
+  small, statistically indistinguishable-from-zero effect on the
+  independent, 10x-larger Full split. No evidence B25 is actually WORSE
+  than B0 (point estimate stays negative, negative CI bound is ~2.5x the
+  positive one in magnitude) -- but not enough evidence at the Full-split
+  scale to call this a confirmed improvement at the same confidence
+  level the Mini-split promotion gate required. Likely explanation: the
+  Mini-split paired result partly reflects favorable suite-sampling
+  variation on that specific 100-MLP subset, layered on a real but
+  smaller true effect than the Mini numbers suggested. This is exactly
+  the failure mode AGENTS.md's two-tier (Mini for promotion, Full for
+  submission) design exists to catch.
+- Verdict: SUBMISSION_BLOCKED. Does NOT retroactively invalidate B25's
+  promotion (which correctly followed the Mini-split-only promotion gate
+  per AGENTS.md section 4) -- B25 remains the current champion. But
+  despite S1's resolution unblocking submission from the null-scores
+  angle, AGENTS.md step 7's Full-split paired-gate requirement is not
+  satisfied, so submission should NOT proceed on current evidence. A
+  worker should not unilaterally waive this explicit protocol
+  requirement even though the S1 ruling's spirit is permissive --
+  flagged as needing either a stronger future candidate or an explicit
+  user/lead ruling. `champion.json` updated with this status so future
+  workers don't attempt submission on the current champion without
+  addressing it. Full detail and all numbers:
+  `experiments/results/claude/B29-claude-20260716T183000Z-summary.json`.
+- Full/submission gate: FAIL (paired Full-split gate). No submission
+  action taken.

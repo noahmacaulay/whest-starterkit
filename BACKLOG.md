@@ -15,25 +15,31 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B29** (infra, exploit) - CLAIMED claude 2026-07-16T18:30:00Z - Paired
-  Full-split gate for the B25 champion vs the B0 champion. S1's
-  resolution (commit 38d3054, user ruling) unblocks submission but flags
-  an open prerequisite: AGENTS.md step 7 requires the new champion to
-  "pass the same paired gate on the independent full split" before
-  submission, and B26's Full-split gate was a single-estimator
-  evaluation of B25 alone, not paired against the prior (B0) champion --
-  the B25 promotion's own paired comparison (B25 commit) was Mini-split
-  only. Compute this WITHOUT any new harness runs: B24 already produced
-  a complete 1000-MLP Full-split report for the B0 champion
-  (`champion-full-gate-COMPLETE-20260716T140000Z-1598169.json`) and B26
-  already produced one for the B25 champion
-  (`B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json`) -- both on
-  the identical Full split (verified: 1000/1000 mlp_name overlap, zero
-  symmetric difference) under the same dataset/flop_budget/environment
-  contract. Pair by `mlp_name` (not `mlp_index`, which is not
-  necessarily consistent across independently-generated reports) and
-  compute the same paired mean/95% CI gate as every Mini-split
-  promotion decision.
+- [x] **B29** (infra, exploit) - DONE claude 2026-07-16T18:30:00Z - Paired Full-split
+  gate for the B25 champion vs the B0 champion, computed from two
+  already-complete reports (B24's B0 Full report + B26's B25 Full
+  report), paired by `mlp_name`, no new harness runs. Result: FAIL.
+  Exactly 500/1000 MLPs improved, 500 regressed; paired_mean_delta=
+  -8.668e-09, paired_95pct_CI=[-2.851e-08, +1.118e-08] -- does NOT lie
+  entirely below zero (verified robust to t_crit choice). B25's paired
+  advantage over B0 was real and significant on the 100-MLP Mini split
+  at promotion time but shrinks to statistically-indistinguishable-from
+  -zero on the 10x-larger independent Full split -- the suite-sampling
+  -overfitting risk AGENTS.md's two-tier Mini/Full design exists to
+  catch. Does not invalidate B25's promotion (correctly used the
+  Mini-split-only promotion gate); B25 remains champion. But despite
+  S1's resolution unblocking submission from the null-scores angle,
+  AGENTS.md step 7's paired Full-split gate is not satisfied, so
+  submission should NOT proceed on current evidence -- a worker
+  shouldn't unilaterally waive an explicit protocol requirement.
+  `champion.json` gained a new `submission_readiness` field (status
+  BLOCKED, reason = failed paired Full-split gate, not S1) so future
+  workers don't attempt submission without addressing this. Full
+  detail: `experiments/log-claude.md` B29 entry and
+  `experiments/results/claude/B29-claude-20260716T183000Z-summary.json`.
+  Needs either a stronger future candidate that clears the Full-split
+  gate convincingly, or an explicit user/lead ruling on whether to
+  relax the paired-gate requirement given S1's permissive spirit.
 
 - [x] **B28** (infra, explore) - DONE claude 2026-07-16T18:00:00Z - Computed the
   dataset's ground-truth noise floor (`champion.json.noise_floor` was

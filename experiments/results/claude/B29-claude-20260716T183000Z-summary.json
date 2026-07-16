@@ -1,0 +1,44 @@
+{
+  "experiment_id": "B29-claude-20260716T183000Z",
+  "agent": "claude",
+  "purpose": "Following the user's S1 resolution (commit 38d3054), which unblocks the submission pipeline (last_submitted_score is null, so any score qualifies under the AGENTS.md addendum), this checks the remaining AGENTS.md step 7 submission prerequisite: 'passes the same paired gate on the independent full split.' B25's own promotion (commit 1cf928a) was a Mini-split-only paired comparison against the B0 champion; B26's Full-split gate evaluated the B25 champion alone (single-estimator, not paired). No paired Full-split comparison of B25 vs B0 had been computed.",
+  "method": "No new harness runs. Reused two already-complete, immutable 1000-MLP Full-split reports: (1) B24's complete report for the B0 champion (estimator.py @ 1598169), `experiments/results/claude/champion-full-gate-COMPLETE-20260716T140000Z-1598169.json`; (2) B26's complete report for the B25 champion (estimator.py @ 2227ef3), `experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json`. Verified both cover the identical 1000 MLPs (exact `mlp_name` set match, zero symmetric difference) under the same dataset (hf://aicrowd/arc-whestbench-public-2026@v1-phase1, sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433), flop_budget=272000000000, and environment (whestbench 0.12.0rc3). Paired by `mlp_name` (not `mlp_index`, which is independently assigned per-report and not guaranteed consistent across separately-generated reports -- learned in B26). Spot-checked 5 individual paired records against both source reports before trusting the aggregate.",
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "full",
+    "flop_budget": 272000000000
+  },
+  "source_reports": {
+    "champion_b0": "experiments/results/claude/champion-full-gate-COMPLETE-20260716T140000Z-1598169.json",
+    "candidate_b25": "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json"
+  },
+  "result": {
+    "n_mlps": 1000,
+    "n_improved": 500,
+    "n_regressed": 500,
+    "n_tied": 0,
+    "champion_b0_final_layer_mse": 7.781365020775866e-06,
+    "candidate_b25_final_layer_mse": 7.69252006307397e-06,
+    "final_layer_mse_relative_change": -0.011417657116030829,
+    "champion_b0_mean_effective_compute": 30045397409.863068,
+    "candidate_b25_mean_effective_compute": 30079472132.079395,
+    "champion_b0_adjusted_final_layer_score": 8.593710913140127e-07,
+    "candidate_b25_adjusted_final_layer_score": 8.507033588741281e-07,
+    "paired_metric": "adjusted_final_layer_score (B25 - B0), paired on mlp_name, n=1000",
+    "paired_mean_delta": -8.667732439883427e-09,
+    "paired_95pct_ci": [-2.8513493899975915e-08, 1.1178029020209062e-08],
+    "t_crit_used": 1.9623,
+    "df": 999,
+    "ci_robustness_check": "CI upper bound stays positive (does not clear zero) across t_crit in {1.96, 1.9623, 1.9639, 2.0} -- not an artifact of t_crit choice.",
+    "gate_result": "FAIL: 95% CI does not lie entirely below zero (upper bound +1.118e-08 > 0)",
+    "worst_regression_delta": 3.5263367547454937e-06,
+    "best_improvement_delta": -1.9693826870737187e-06
+  },
+  "interpretation": "B25's paired advantage over B0 is real and statistically significant on the 100-MLP Mini split (paired_95pct_ci=[-2.581e-07, -2.868e-08] at promotion time), but shrinks to a small, statistically indistinguishable-from-zero effect on the independent 1000-MLP Full split (exactly 500/1000 MLPs improved, CI straddling zero by a small margin). The aggregate final_layer_mse still improves on the Full split (-1.14% relative, vs -15.2% on Mini) and the point estimate remains negative with a much larger negative CI bound magnitude than positive, so there is no evidence B25 is actually WORSE than B0 -- but there also is not enough evidence, on the larger and more representative Full split, to call this improvement genuine at the same confidence level the Mini-split promotion gate required. Most likely explanation: the Mini split's 100-MLP paired result partly reflects favorable suite-sampling variation specific to that subset, on top of a real but smaller true effect size than the Mini-split numbers suggested. This is exactly the failure mode AGENTS.md's two-tier (Mini for promotion, Full for submission) design is meant to catch.",
+  "verdict": "SUBMISSION_BLOCKED",
+  "reason": "AGENTS.md step 7 requires the champion to 'pass the same paired gate on the independent full split' before submission. This paired Full-split comparison does not pass (CI does not lie entirely below zero). This does NOT retroactively invalidate B25's promotion (which correctly followed the Mini-split-only promotion gate per AGENTS.md section 4) -- B25 remains the current champion. It DOES mean that, despite S1's resolution unblocking the submission pipeline from the null-scores angle, submission should not proceed on the current evidence. champion.json updated accordingly to make this explicit for future workers.",
+  "recommendation": "Do not submit B25 on this evidence. Options for a future iteration: (a) find and promote a candidate with a larger, more robust true effect size that clears the Full-split paired gate more convincingly; (b) escalate to the user/lead for an explicit ruling on whether a borderline/inconclusive Full-split result is acceptable for a first submission given all prior submitted scores are null (the S1 addendum's spirit may tolerate this, but AGENTS.md step 7's paired-gate wording is unambiguous and a worker should not unilaterally waive it); (c) collect a larger or repeated Full-split paired sample to narrow the CI further and see if it resolves clearly in either direction."
+}

@@ -22,7 +22,7 @@
       "paired_95pct_ci": [-2.5806878728564897e-07, -2.8680804175064248e-08]
     },
     "agent": "claude",
-    "note": "Promoted after B25 Mini paired gate (69/100 MLPs improved, CI entirely negative). Supersedes the B0 champion (1598169). B26 (2026-07-16T17:00:00Z) completed this champion's own Full-split gate (see full_gate below); the previous_champion.full_gate entry is the superseded B0 champion's stale record, kept for history only. Submission remains blocked by S1 (undecided last_submitted_score gate), not by a missing Full gate.",
+    "note": "Promoted after B25 Mini paired gate (69/100 MLPs improved, CI entirely negative). Supersedes the B0 champion (1598169). B26 (2026-07-16T17:00:00Z) completed this champion's own (single-estimator) Full-split gate (see full_gate below); the previous_champion.full_gate entry is the superseded B0 champion's stale record, kept for history only. S1 is now RESOLVED (see submission_readiness below) -- submission is blocked by a failed PAIRED Full-split gate (B29), not by S1.",
     "previous_champion": {
       "estimator_commit": "1598169",
       "promoted_by": "B0-gpt-20260716T002459Z",
@@ -87,8 +87,28 @@
         "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk900-1000.json",
         "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json"
       ],
-      "note": "Full-split score (final_layer_mse=7.6925e-06) is consistent with, and marginally better than, the Mini-split champion numbers (7.2108e-06 mini vs 7.6925e-06 full -- within the expected suite-sampling range, not a large divergence) -- no evidence of Mini-split overfitting. Sanity check: the combined 1000-MLP aggregate's final_layer_mse matches the unweighted mean of the ten chunks' own independently-reported final_layer_mse values to 10 significant figures, confirming correct combination. This satisfies AGENTS.md step 7's Full-split evaluation prerequisite for the current champion. It is a single-estimator Full-split score, not a paired comparison -- any future candidate still needs its own paired Full-split comparison against this champion before a submission attempt. Submission itself remains blocked by S1 regardless (last_submitted_score is null)."
+      "note": "Full-split score (final_layer_mse=7.6925e-06) is consistent with, and marginally better than, the Mini-split champion numbers (7.2108e-06 mini vs 7.6925e-06 full -- within the expected suite-sampling range, not a large divergence) -- no evidence of Mini-split overfitting. Sanity check: the combined 1000-MLP aggregate's final_layer_mse matches the unweighted mean of the ten chunks' own independently-reported final_layer_mse values to 10 significant figures, confirming correct combination. This was a single-estimator Full-split score, not a paired comparison -- B29 (2026-07-16T18:30:00Z) has since computed the paired Full-split comparison against the B0 champion using this report plus B0's own complete Full-split report from B24; see submission_readiness below for the result."
     }
+  },
+  "submission_readiness": {
+    "status": "BLOCKED",
+    "measured_at": "2026-07-16T18:30:00Z",
+    "experiment_id": "B29-claude-20260716T183000Z",
+    "blocked_by": "AGENTS.md step 7 paired Full-split gate (not S1 -- S1 is resolved, see below)",
+    "s1_status": "RESOLVED 2026-07-16T15:19Z by user ruling (commit 136f247, 38d3054): null submitted scores are disregarded in the 5% improvement rule; since all previously submitted scores are null, any scoring solution may be submitted. This unblocks the last_submitted_score prerequisite specifically.",
+    "paired_full_split_gate": {
+      "status": "FAIL",
+      "method": "Paired B25 (current champion) vs B0 (prior champion) on the complete, independent 1000-MLP Full split, computed from two already-complete immutable reports (no new harness runs): champion-full-gate-COMPLETE-20260716T140000Z-1598169.json (B0) and B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json (B25), paired by mlp_name. Full detail: experiments/results/claude/B29-claude-20260716T183000Z-summary.json.",
+      "n_mlps": 1000,
+      "n_improved": 500,
+      "n_regressed": 500,
+      "paired_mean_delta": -8.667732439883427e-09,
+      "paired_95pct_ci": [-2.8513493899975915e-08, 1.1178029020209062e-08],
+      "gate_criterion": "mean paired difference negative AND 95% CI entirely below zero",
+      "result": "FAIL -- CI upper bound (+1.118e-08) is positive, does not clear zero. Verified robust to t_crit choice (1.96 to 2.0, all same conclusion).",
+      "note": "B25's paired advantage over B0 was real and significant on the 100-MLP Mini split at promotion time (CI=[-2.581e-07,-2.868e-08]) but shrinks to statistically-indistinguishable-from-zero on the 10x-larger, independent Full split -- exactly the suite-sampling-overfitting risk AGENTS.md's two-tier Mini/Full gate design exists to catch. Does not invalidate B25's promotion (which correctly used the Mini-split-only promotion gate); B25 remains champion. Aggregate final_layer_mse still improves on Full (-1.14%), just not enough to clear the paired significance bar."
+    },
+    "next_steps": "Do not submit on current evidence. Either (a) find/promote a candidate with a larger, more robust true effect size that clears the Full-split paired gate convincingly, or (b) get an explicit user/lead ruling on whether to waive/relax the paired-gate requirement given S1's permissive spirit (a worker should not unilaterally waive an explicit AGENTS.md protocol requirement), or (c) gather more Full-split paired evidence to narrow the CI."
   },
   "noise_floor": {
     "measured_at": "2026-07-16T18:00:00Z",
