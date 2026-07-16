@@ -1,0 +1,82 @@
+{
+  "experiment_id": "B37-gpt-20260716T202435Z",
+  "hypothesis": "Combining exact chi-radius integration with antithetic sphere directions reduces final-layer directional Monte Carlo variance at bit-comparable FLOPs.",
+  "claim_commit": "b3158fc77d2d91e24d99d3ff18a982780f02c93f",
+  "shared_base_commit": "7ca1f7a",
+  "base_champion": {
+    "experiment_id": "B25-claude-20260716T160000Z",
+    "estimator_commit": "2227ef3",
+    "source_result_commit": "1cf928a"
+  },
+  "candidate_commit": "e292607",
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_last_change_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "commands": {
+      "validate": "uv run --frozen whest validate --estimator candidate_gpt.py",
+      "champion": "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+      "candidate": "uv run --frozen whest run --estimator candidate_gpt.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json"
+    },
+    "raw_reports": {
+      "champion": "champion-mini.json",
+      "champion_stderr": "champion-mini.stderr.txt",
+      "candidate": "candidate-mini.json",
+      "candidate_stderr": "candidate-mini.stderr.txt"
+    }
+  },
+  "change": "Draw 3,250 seeded iid Gaussian vectors, normalize them to sphere directions, concatenate each direction with its negative, forward all 6,500 rows through the current radial-exact estimator, and multiply layer means by the exact chi(256) radius mean.",
+  "result": {
+    "champion_adjusted_final_layer_score": 7.969076644568644e-7,
+    "candidate_adjusted_final_layer_score": 7.847406364376584e-7,
+    "relative_change": -0.015267801480487009,
+    "champion_final_layer_mse": 7.210787749158953e-6,
+    "candidate_final_layer_mse": 7.126949083726685e-6,
+    "final_layer_mse_relative_change": -0.011626838613027601,
+    "paired_mean_delta": -1.2167028019205664e-8,
+    "paired_sample_sd": 1.3661371890570716e-6,
+    "paired_standard_error": 1.3661371890570718e-7,
+    "paired_95pct_ci": [-2.8539446583062003e-7, 2.6106040979220867e-7],
+    "paired_ci_tcrit": 2.0,
+    "improved_mlps": 48,
+    "regressed_mlps": 52,
+    "tied_mlps": 0,
+    "champion_mean_flops_used": 27349512192.0,
+    "candidate_mean_flops_used": 27333704192.0,
+    "champion_mean_effective_compute": 30046423292.00713,
+    "candidate_mean_effective_compute": 29969010991.769753,
+    "champion_failure_breakdown": {
+      "budget_exhausted": 0,
+      "time_exhausted": 0,
+      "residual_wall_time_exhausted": 0,
+      "combined_budget_exhausted": 0,
+      "error": 0
+    },
+    "candidate_failure_breakdown": {
+      "budget_exhausted": 0,
+      "time_exhausted": 0,
+      "residual_wall_time_exhausted": 0,
+      "combined_budget_exhausted": 0,
+      "error": 0
+    },
+    "worst_regressions": [
+      {"mlp_name": "william-brown", "delta": 3.6430108236654e-6},
+      {"mlp_name": "david-tyler", "delta": 2.56048319516034e-6},
+      {"mlp_name": "robert-barrera", "delta": 2.51202047829163e-6},
+      {"mlp_name": "edward-adams", "delta": 2.46706243146842e-6},
+      {"mlp_name": "mary-nichols", "delta": 2.40295085777988e-6}
+    ]
+  },
+  "verdict": "REJECTED",
+  "verdict_reason": "The aggregate adjusted score improved by 1.53%, but the conservative paired 95% confidence interval crosses zero and 52 of 100 MLPs regressed.",
+  "promotion": "NOT_RUN",
+  "full_submission_gate": "NOT_RUN"
+}
