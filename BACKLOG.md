@@ -347,17 +347,23 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B15-claude-20260716T081000Z-1598169-summary.json`.
   Calibrated follow-up queued as B16.
 
-- [ ] **B16** (exploit) - Retry B15's active-subspace sample-count cut with
-  a precisely calibrated pair-count scale (~2,500) instead of a blind
-  halving (1,625). Linear fit from B13 (pair_scale=3250,
+- [ ] **B16** (exploit) - CLAIMED claude 2026-07-16T08:35:00Z - Retry B15's
+  active-subspace sample-count cut with a precisely calibrated pair-count
+  scale (~2,500) instead of a blind halving (1,625), AND combine with
+  gpt's B14 elementwise diagonal-variance fix (also independently
+  implemented, own file). Linear fit from B13 (pair_scale=3250,
   mean_effective_compute=3.4803e10) and B15 (pair_scale=1625,
   mean_effective_compute=1.8311e10) -- slope ~1.015e7 per unit pair_scale
   -- solving for effective_compute=2.72e10 (the score floor boundary)
   gives pair_scale ~2500. That should land the multiplier at its
   floor-clamped minimum (same as B15, ~0.1) but with ~54% more
   orthogonal-complement samples than B15, recovering most of the MSE B15
-  gave up for nothing past the floor. If the linear model holds, this
-  should beat both B13 (unused overhead above the floor) and B15 (unused
+  gave up for nothing past the floor. B14 (rejected on its own,
+  paired_mean_delta=5.477e-08, the smallest single-lever result yet)
+  targets a different, independent overhead source (call fragmentation vs
+  raw main-sample FLOPs) -- stacking both in one candidate should combine
+  their reductions. If the linear model holds, this should beat B13
+  (unused overhead above the floor), B15 (unused
   headroom below the floor) and could be the first candidate in the
   B1/B10/B11/B13/B15 lineage to cross the paired promotion gate. Run
   champion fresh alongside the candidate (not reused) given how close
