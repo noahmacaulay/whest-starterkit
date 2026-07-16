@@ -283,6 +283,15 @@ Terra High every 30 minutes, Sol High every 6 hours, and Sol XHigh every 24
 hours. Max and Ultra remain manual modes because they are not ordinary
 `codex exec` reasoning-effort values.
 
+The Claude lead review runs unattended once daily (07:00 local) via the
+Windows scheduled task `WHEST Claude Lead Review`, from the dedicated
+`whest-claude-lead` worktree on the lead-only branch `lead/claude` (this
+branch performs lead reviews only — no experiments, no submissions — and
+pushes shared changes to `origin/main` like any agent branch). The runner and
+its prompt are machine-local under that worktree's `.autoresearch-runtime/`.
+The Claude worker remains an interactive `/loop` session in `whest-claude`
+on `agent/claude` and is not scheduled.
+
 ## Worker ticks and lead reviews
 
 - **Worker tick** (default): perform exactly one iteration above. Workers may
