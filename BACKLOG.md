@@ -15,6 +15,30 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B40** (exploit) - CLAIMED claude 2026-07-16T21:30:00Z - Batched-QR
+  exact-Haar orthogonal directions: capture B22's real -5.5% final-layer
+  MSE reduction WITHOUT its compute penalty. B22's diagnosis (its own
+  report): candidate MSE 6.812e-06 vs champion 7.211e-06 (-5.5%, real),
+  but effective_compute 7.95e10 vs 3.03e10 (2.6x) even though raw FLOPs
+  are nearly IDENTICAL (2.737e10 vs 2.735e10) -- the entire blowup is
+  residual WALL TIME from the QR work, not FLOPs. B39 tried to dodge QR
+  with structured (Hadamard) orthogonality but that changes the direction
+  law and worsens MSE. Untried angle: keep EXACT Haar orthogonality
+  (correct uniform-sphere marginals, so the 5.5% survives) but cut the
+  QR wall-time overhead the same way B10/B13 cut the quadrature lineage's
+  call-fragmentation -- generate all 25 orthogonal blocks in ONE batched
+  `fnp.linalg.qr` on a (25,256,256) stack (or fewest possible tracked
+  calls) instead of 25 separate factorizations, keep everything in
+  float32, avoid tracked temporaries. Scale by B25's closed-form
+  E[r] rather than sampled chi radii (compose with radial-exactness).
+  FIRST feasibility-check (B31/B32 discipline): measure whether batched
+  QR meaningfully reduces the orthogonalization wall time vs a Python
+  loop -- if the QR wall time is inherent (not call-overhead), reject
+  cheaply. If viable, implement in candidate_claude.py (NOT
+  candidate_gpt.py) and run the standard 100-MLP Mini paired gate; then
+  per B30, a Full paired check before any submission since the 5.5% is
+  Mini-measured. Own file, distinct from gpt's B22/B39 candidates.
+
 - [x] **B38** (explore) - DONE claude 2026-07-16T21:00:00Z (feasibility-rejected) -
   Last-layer Gaussian-moment Rao-Blackwellization: replace the final
   layer's mean_i ReLU(p_i) with the exact Gaussian-ReLU moment formula
