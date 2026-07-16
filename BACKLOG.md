@@ -44,7 +44,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   again requires the full step-7 gate (paired Full vs the last submitted
   champion + 5% rule against the now-non-null score).
 
-- [ ] **B34** (explore, lead-priority 1) - Inverse-error fusion
+- [ ] **B34** (explore, lead-priority 1) - CLAIMED claude 2026-07-16T20:30:00Z - Inverse-error fusion
   (precision-weighted / James-Stein shrinkage) of the MC champion with the
   analytic covariance-propagation estimate. B32's post-mortem closes
   input-structure VARIANCE reduction â€” but bias-variance FUSION is a
