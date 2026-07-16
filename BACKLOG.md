@@ -316,6 +316,28 @@ unclaimed items with the next free ID and a one-line hypothesis.
   and B13), the paired mean delta should finally cross entirely below
   zero.
 
+- [ ] **B15** (exploit) - CLAIMED claude 2026-07-16T08:00:00Z - Reduce main
+  sample count for the B1/B10/B11/B13 active-subspace estimator. Distinct
+  from gpt's claimed B14 (batching the fixed-cost diagonal soft-gate
+  calls): this targets the dominant raw-FLOP term instead. B13's
+  aggregate flops_used (27.49e9) is already close to the champion's
+  (27.35e9), and B13's aggregate effective_compute (34.80e9) minus
+  flops_used leaves a roughly 7.3e9 "excess" gap that looks driven by
+  fixed per-call overhead (independent of how many rows are in the single
+  batched main-sampling matmul per layer) rather than by the row count
+  itself. The 16-node Gauss-Hermite quadrature already gives *zero*
+  sampling variance along the dominant direction -- only the orthogonal
+  -complement antithetic draws contribute MC noise -- so this estimator
+  should be more sample-efficient per FLOP than plain MC, which has
+  sampling variance in all 256 dimensions. Hypothesis: cutting the main
+  pair count (currently scaled from 3,250, matching the champion's
+  ~6,500-sample budget) by roughly half still gives competitive or better
+  MSE than the champion, while roughly halving the dominant raw-FLOP term
+  -- net effective_compute should drop meaningfully even though the fixed
+  per-call overhead doesn't shrink, unlike B14's approach which shrinks
+  the fixed overhead directly. If both B14 and B15 land, they attack the
+  two different halves of the same gap.
+
 ## Done
 
 (nothing yet)
