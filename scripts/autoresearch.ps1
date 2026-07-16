@@ -255,6 +255,12 @@ $cachePath = Join-Path $runtimePath "cache"
 $env:UV_CACHE_DIR = Join-Path $cachePath "uv"
 $env:HF_HOME = Join-Path $cachePath "huggingface"
 $env:XDG_CACHE_HOME = $cachePath
+# Windows sandbox setup may leave the worktree's .git pointer owned by its
+# helper account. Supply the narrow trust exception to every Git child without
+# changing the user's global Git configuration.
+$env:GIT_CONFIG_COUNT = "1"
+$env:GIT_CONFIG_KEY_0 = "safe.directory"
+$env:GIT_CONFIG_VALUE_0 = $RepoPath
 New-Item -ItemType Directory -Path $logPath, $env:UV_CACHE_DIR, $env:HF_HOME -Force | Out-Null
 $runnerLogPath = Join-Path $runtimePath "runner.log"
 
