@@ -368,7 +368,6 @@ try {
         "exec",
         "--profile", [string]$roleConfig.profile,
         "--sandbox", [string]$config.sandbox_mode,
-        "--ephemeral",
         "--json",
         "-"
     )
@@ -390,7 +389,6 @@ try {
         "exec",
         "--profile", [string]$roleConfig.profile,
         "--sandbox", [string]$config.sandbox_mode,
-        "--ephemeral",
         "--json",
         "--output-last-message", $lastMessagePath,
         "-"

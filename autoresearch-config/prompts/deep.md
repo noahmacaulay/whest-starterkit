@@ -6,9 +6,10 @@ important mathematical assumptions, inspect the strongest positive and
 negative evidence, look for evaluator leakage or statistical mistakes, and
 identify the highest-value next research directions. Update the backlog only
 when the evidence justifies it. Do not alter the scheduler or protocol.
-Do not spawn subagents: this scheduled run is already the serialized deep
-role, and ephemeral Windows `codex exec` threads cannot reliably attach
-collaboration children.
+You may spawn at most two subagents for clearly independent, read-only audit or
+analysis tasks. Keep all Git coordination, worktree mutations, and final
+judgment in the parent thread. Wait for every child before finishing and do not
+allow children to spawn further descendants.
 
 This is unattended execution. Preserve ambiguous submission or champion state
 instead of guessing. Before finishing, return to `agent/gpt`, make the

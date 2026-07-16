@@ -17,12 +17,16 @@ PowerShell runner chooses the due role, while each Codex run follows
 The installed `codex exec` build was validated with Sol Ultra before enabling
 that profile. All roles remain serialized: lead, deep, or recovery replaces a
 worker tick, and the mutex prevents overlapping writes to the worktree.
-In-session multi-agent spawning is disabled in unattended profiles; the backup
-is a fresh scheduler-launched process with its own trace.
+In-session multi-agent spawning is disabled for worker, lead, and recovery
+profiles. The deep profile may use at most two read-only child agents at one
+level of nesting; the backup remains a fresh scheduler-launched process with
+its own trace.
 
-The runner starts a fresh ephemeral Codex session each time. A Windows named
-mutex and Task Scheduler's `IgnoreNew` policy prevent overlap. Three
-consecutive failures pause the loop, with exponential backoff before then.
+The runner starts a fresh persisted Codex session each time; it does not resume
+context from an earlier tick. Persisting the thread allows deep-review child
+agents to attach reliably and leaves a native Codex trace for diagnosis. A
+Windows named mutex and Task Scheduler's `IgnoreNew` policy prevent overlap.
+Three consecutive failures pause the loop, with exponential backoff before then.
 The runner also forces UTF-8 for Python and child-process I/O so Windows'
 legacy console code page cannot break tests or WhestBench reports.
 
