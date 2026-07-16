@@ -500,3 +500,61 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   the same single matmul as the main quadrature sampling pass, or
   otherwise reducing its per-layer call footprint, without changing the
   diagonal-Gaussian-moment math at all.
+
+## 2026-07-16T08:20:00Z - B15-claude-20260716T081000Z: Halved main sample budget
+- Hypothesis: B13's aggregate flops_used (27.49e9) was already close to
+  the champion's (27.35e9), while effective_compute (34.80e9) was ~7.3e9
+  higher -- consistent with a largely fixed per-call overhead from the
+  128 power-iteration + 32 diagonal calls, independent of main-sampling
+  row count. The 16-node Gauss-Hermite quadrature gives zero sampling
+  variance along the dominant direction, so this estimator should be more
+  sample-efficient per FLOP than plain MC. Distinct from gpt's claimed
+  B14 (batching the fixed-overhead calls directly): this targets the
+  dominant raw-FLOP term instead, by halving the main pair-count scale
+  factor (3250->1625, ~6,500->~3,250 total forward rows).
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); candidate_claude.py @ 4780908, claimed from 75494d0.
+  Otherwise identical to B13's estimator -- only `_GH_PAIRS` base scale
+  changed from 3,250 to 1,625.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433),
+  split=mini (100 MLPs), budget=272000000000, runner=subprocess. Ran
+  champion.py *fresh* this time (not reused from an earlier experiment),
+  back-to-back with the candidate, since effective_compute carries real
+  wall-clock measurement noise and this experiment hinges on a delicate
+  compute-vs-accuracy tradeoff near the promotion threshold. Exact
+  commands/reports:
+  results/claude/B15-claude-20260716T081000Z-1598169-summary.json.
+- Result: candidate adjusted score=1.337600066449e-06; champion=
+  9.428206161020e-07; relative_change=+41.872170%. candidate
+  final_layer_mse=1.337600066449e-05 -- 57% WORSE than champion's
+  8.504929468245e-06 (and worse than B13's 7.931e-06). candidate
+  mean_effective_compute=1.831135614561e10, multiplier hit exactly the
+  0.1 floor (down from champion's 0.110666) -- confirming the raw-FLOP
+  reduction did cut effective_compute substantially, but MSE rose much
+  more steeply than expected from halving the orthogonal-complement
+  sample count. paired_mean_delta=3.947794503474e-07 (worse);
+  paired_95pct_CI=[-1.235831022336e-08, 8.019172109181e-07] (essentially
+  entirely positive, i.e. this run is significantly worse, not just
+  inconclusive). worst_per_MLP_regression=6.906934828498e-06 (75/100
+  regressed). All failure/budget/time/error flags=0.
+- Verdict: REJECTED -- overshot the reduction. The multiplier only
+  dropped ~10% (0.1107->0.1, floor-clamped) while MSE rose 57%, so the
+  net score is 42% worse than champion. Worse: the candidate's
+  effective_compute (1.831e10) landed *below* the 2.72e10 floor, meaning
+  8.89e9 of "free" compute headroom was left completely unused -- MSE was
+  sacrificed for zero further multiplier benefit past the floor boundary.
+- Full/submission gate: NOT_RUN; the Mini paired gate failed.
+- New ideas queued: B16 - retry with a precisely calibrated pair-count
+  scale instead of a blind halving. Using this run's data point
+  (pair_scale=1625, mean_effective_compute=1.8311e10) and B13's
+  (pair_scale=3250, mean_effective_compute=3.4803e10), a linear fit
+  (slope ~1.015e7 per unit pair_scale) solving for effective_compute=
+  2.72e10 (the floor boundary) gives pair_scale ~2500. That should land
+  right at the floor (multiplier ~0.1, same as this run) but with ~54%
+  more orthogonal-complement samples than B15, recovering most of the
+  MSE this run gave up for nothing -- strictly better than both B13
+  (overhead above the floor, unused margin) and B15 (accuracy sacrificed
+  below the floor, unused margin) if the linear model holds.

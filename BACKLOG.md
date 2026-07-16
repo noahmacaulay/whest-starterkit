@@ -316,7 +316,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   and B13), the paired mean delta should finally cross entirely below
   zero.
 
-- [ ] **B15** (exploit) - CLAIMED claude 2026-07-16T08:00:00Z - Reduce main
+- [x] **B15** (exploit) - DONE claude 2026-07-16T08:20:00Z - Reduce main
   sample count for the B1/B10/B11/B13 active-subspace estimator. Distinct
   from gpt's claimed B14 (batching the fixed-cost diagonal soft-gate
   calls): this targets the dominant raw-FLOP term instead. B13's
@@ -337,6 +337,31 @@ unclaimed items with the next free ID and a one-line hypothesis.
   per-call overhead doesn't shrink, unlike B14's approach which shrinks
   the fixed overhead directly. If both B14 and B15 land, they attack the
   two different halves of the same gap.
+  Result: REJECTED -- overshot. MSE rose 57% (8.505e-06->1.3376e-05) while
+  the multiplier only dropped ~10% (floor-clamped at 0.1), net score 42%
+  worse than champion. Confirmed the raw-FLOP lever is real
+  (effective_compute dropped from B13's 3.48e10 to 1.83e10) but halving
+  pushed effective_compute *below* the 2.72e10 floor, wasting 8.89e9 of
+  compute headroom for zero further multiplier benefit while still
+  paying the MSE cost. See `experiments/log-claude.md` and
+  `experiments/results/claude/B15-claude-20260716T081000Z-1598169-summary.json`.
+  Calibrated follow-up queued as B16.
+
+- [ ] **B16** (exploit) - Retry B15's active-subspace sample-count cut with
+  a precisely calibrated pair-count scale (~2,500) instead of a blind
+  halving (1,625). Linear fit from B13 (pair_scale=3250,
+  mean_effective_compute=3.4803e10) and B15 (pair_scale=1625,
+  mean_effective_compute=1.8311e10) -- slope ~1.015e7 per unit pair_scale
+  -- solving for effective_compute=2.72e10 (the score floor boundary)
+  gives pair_scale ~2500. That should land the multiplier at its
+  floor-clamped minimum (same as B15, ~0.1) but with ~54% more
+  orthogonal-complement samples than B15, recovering most of the MSE B15
+  gave up for nothing past the floor. If the linear model holds, this
+  should beat both B13 (unused overhead above the floor) and B15 (unused
+  headroom below the floor) and could be the first candidate in the
+  B1/B10/B11/B13/B15 lineage to cross the paired promotion gate. Run
+  champion fresh alongside the candidate (not reused) given how close
+  this is to the threshold and effective_compute's wall-clock noise.
 
 ## Done
 

@@ -1,0 +1,71 @@
+{
+  "experiment_id": "B15-claude-20260716T081000Z",
+  "agent": "claude",
+  "hypothesis": "B13's aggregate flops_used (27.49e9) was already close to the champion's (27.35e9), while effective_compute (34.80e9) was ~7.3e9 higher -- consistent with a largely fixed per-call overhead from the 128 power-iteration + 32 diagonal calls, independent of main-sampling row count. The 16-node Gauss-Hermite quadrature gives zero sampling variance along the dominant direction, so this estimator should be more sample-efficient per FLOP than plain MC. Halving the main pair-count scale factor (3250->1625) should roughly halve the dominant raw-FLOP term while the fixed overhead stays constant, netting a real effective_compute reduction despite some MSE increase from fewer orthogonal-complement draws.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "75494d0",
+    "candidate_commit": "4780908"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B15-claude-20260716T081000Z-1598169-champion-mini.json",
+      "candidate": "B15-claude-20260716T081000Z-1598169-candidate-mini.json",
+      "champion_stderr": "B15-claude-20260716T081000Z-1598169-champion-mini.stderr.txt",
+      "candidate_stderr": "B15-claude-20260716T081000Z-1598169-candidate-mini.stderr.txt",
+      "note": "Champion run fresh (not reused from an earlier experiment) this time, back-to-back with the candidate, since effective_compute has real wall-clock-derived measurement noise and this experiment's outcome hinges on a delicate compute-vs-accuracy tradeoff near the promotion threshold."
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.428206161019777e-07,
+    "candidate_adjusted_final_layer_score": 1.3376000664493403e-06,
+    "relative_change_percent_vs_champion": 41.872169912824894,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 1.3376000664493404e-05,
+    "champion_mean_effective_compute": 30101204500.025215,
+    "candidate_mean_effective_compute": 18311356145.610085,
+    "champion_mean_score_multiplier": 0.11066619301479853,
+    "candidate_mean_score_multiplier": 0.09999999999999981,
+    "candidate_flops_used": 13782349248.0,
+    "candidate_effective_over_flops_ratio": 1.3684596840897005,
+    "note": "Candidate's multiplier hit exactly 0.1 -- it overshot below the 2.72e10 floor (effective_compute=18.31e9), meaning it paid MSE cost for sample reduction beyond the point of any further multiplier benefit. The floor boundary leaves 2.72e10-1.83e10=8.89e9 of 'free' compute headroom unused."
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_name/mlp_index",
+    "n": 100,
+    "mean_delta": 3.9477945034736287e-07,
+    "t95_confidence_interval": [-1.2358310223364544e-08, 8.019172109180903e-07],
+    "worst_per_mlp_regression": 6.906934828497609e-06,
+    "worst_per_mlp_regression_mlp": "cole-martin",
+    "best_per_mlp_improvement": -1.5317104149242713e-05,
+    "best_per_mlp_improvement_mlp": "jessica-benson",
+    "n_regressions": 75
+  },
+  "calibration_for_followup": {
+    "purpose": "Two data points (this run's candidate, and B13's aggregate numbers) let a linear effective_compute-vs-pair-scale model be fit to find the pair-scale that lands effective_compute right at the 2.72e10 floor boundary -- the point of zero additional multiplier benefit from cutting further, avoiding B15's overshoot.",
+    "B13_reference": {"pair_scale": 3250, "mean_effective_compute": 34803208375.74583},
+    "B15_this_run": {"pair_scale": 1625, "mean_effective_compute": 18311356145.610085},
+    "linear_fit": "slope ~= (34.80e9-18.31e9)/(3250-1625) ~= 1.015e7 per unit pair_scale; solving 18.31e9 + slope*(X-1625) = 27.2e9 gives X ~= 2500",
+    "recommendation": "Retry with pair_scale ~2500 (instead of 3250 or 1625). This should land effective_compute close to the 2.72e10 floor (multiplier ~0.1, same as this run) but with ~54% more orthogonal-complement samples than this run, meaningfully reducing MSE back toward B13's level while keeping the multiplier at its floor-clamped minimum -- strictly better than both B13 (wasted overhead above the floor) and B15 (wasted floor headroom)."
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "Overshot the sample-count reduction: MSE increased 57% (8.505e-06 -> 1.3376e-05) while the multiplier only dropped ~10% (0.1107 -> 0.1, floor-clamped), so the net score is 42% worse than champion, not better. The core premise (fixed overhead is a real, exploitable inefficiency) is still supported by the flops_used/effective_compute gap, but halving was too large a cut -- it pushed effective_compute 8.89e9 below the floor with no further multiplier benefit, purely losing accuracy for nothing past that boundary. A precisely-calibrated smaller cut (pair_scale ~2500, derived from this run's and B13's data) should avoid both failure modes.",
+  "full_submission_gate": "NOT_RUN"
+}
