@@ -34,7 +34,7 @@ _GH_WEIGHTS = (1.4978147231618412e-10, 1.309473216286817e-07,
                0.007266937601184749, 0.0005259849265739087,
                1.530003216248732e-05, 1.309473216286817e-07,
                1.4978147231618412e-10)
-_GH_PAIRS = tuple(max(1, round(w * 3_250)) for w in _GH_WEIGHTS)
+_GH_PAIRS = tuple(max(1, round(w * 1_625)) for w in _GH_WEIGHTS)
 
 
 _POWER_ITERATIONS = 2
@@ -42,26 +42,30 @@ _POWER_ITERATIONS = 2
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """B13: B10's active-subspace quadrature with fewer power iterations.
+        """B15: B13's active-subspace quadrature with a smaller main sample budget.
 
-        Identical statistical estimator to B10 (soft-gate active direction,
-        16-node Gauss-Hermite quadrature along it, antithetic draws in the
-        orthogonal complement, single batched matmul per layer) except the
-        dominant-direction power iteration runs 2 times instead of 4.
+        Identical statistical estimator to B13/B10 (soft-gate active
+        direction via 2 power iterations, 16-node Gauss-Hermite quadrature
+        along it, antithetic draws in the orthogonal complement, single
+        batched matmul per layer) except the main pair-count scale factor
+        is 1,625 instead of 3,250, roughly halving the main sample budget
+        (~6,500 -> ~3,250 total forward rows).
 
-        B1/B10/B11 all used 4 iterations without ever tuning it down. B12's
-        failure mode (a deflated second direction carried ~no exploitable
-        signal) reconfirmed the covariance is strongly rank-1 dominated,
-        which means power iteration should converge fast. Verified this
-        directly before changing anything: on 5 real dataset MLPs, the
-        direction after 2 iterations has cosine similarity >=0.9986 to the
-        6-iteration "converged" direction in every case (1 iteration was
-        less safe, dropping to 0.90 in the worst case). Halving the
-        iteration count halves that phase's call count (256->128) at zero
-        raw-FLOP cost per call (same O(width^2) matvecs, just fewer of
-        them) -- unlike B11's full-Jacobian materialization, which traded
-        call count for bigger, more expensive calls and barely moved
-        effective_compute.
+        Distinct from B14 (gpt's claimed item, batching the fixed-cost
+        diagonal soft-gate calls): B13's aggregate flops_used (27.49e9)
+        was already close to the champion's (27.35e9), while
+        effective_compute (34.80e9) was ~7.3e9 higher -- consistent with a
+        largely fixed per-call overhead from the 128 power-iteration + 32
+        diagonal calls, independent of how many rows are in the single
+        batched main-sampling matmul per layer. The 16-node quadrature
+        gives *zero* sampling variance along the dominant direction --
+        only the orthogonal-complement antithetic draws contribute MC
+        noise -- so this estimator should be more sample-efficient per
+        FLOP than plain MC (which has sampling variance in all 256
+        dimensions), and halving the main budget should roughly halve the
+        dominant raw-FLOP term while leaving the fixed overhead
+        unchanged, netting a real effective_compute reduction even though
+        MSE will increase somewhat from fewer orthogonal-complement draws.
         """
         _ = budget
         width = mlp.width
