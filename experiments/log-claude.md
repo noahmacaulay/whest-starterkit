@@ -1165,3 +1165,90 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Full/submission gate: COMPLETE (1000/1000) for the current champion.
   No promotion, no submission action taken or implied -- S1 still blocks
   actual submission.
+
+## 2026-07-16T15:20:00Z - B23-claude: Reduce champion's own flopscope overhead
+- Hypothesis: the lead's B23 -- champion's score multiplier
+  (~0.1105-0.1107) sits ~10% above raw flops_used/B (~0.1005), and since
+  effective_compute = flops_used + lambda*residual_wall_time_s (untracked
+  dispatch overhead, not flopscope's own bookkeeping), reducing the
+  champion's tracked call count should reduce effective_compute directly,
+  keeping predictions bit-identical -- the uniquely promotable shape,
+  since identical MSE means every paired delta is
+  mse_m*(mult_cand-mult_champ) <= 0 for any consistent overhead cut.
+- Pre-implementation validation (learned from B19's "verify, don't just
+  reason" discipline): numerically compared predict() outputs, not just
+  reasoned about them. CRITICAL catch: generating input via
+  `rng.standard_normal(shape, dtype=fnp.float32)` directly produces
+  GENUINELY DIFFERENT random values than
+  `rng.standard_normal(shape).astype(fnp.float32)` -- not just different
+  precision. numpy's float32 Ziggurat path consumes the RNG's bit stream
+  differently than float64-then-cast (max abs diff ~0.05-0.07 in final
+  outputs, huge relative to typical post-ReLU means). Caught and avoided
+  before writing any candidate -- kept float64 generation throughout.
+  Two OTHER changes validated exact (0.0 diff on 10 MLPs): (1) dropping
+  the redundant `fnp.array(...)` wrapper around `rng.standard_normal`
+  (already returns a tracked array), (2) deferring all 32 per-layer
+  `fnp.mean` calls into one batched `fnp.stack`+`fnp.mean(axis=1)`.
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); claimed from 007fdbd. Two candidate attempts, both in
+  candidate_claude.py (own file, independent of gpt's active B22).
+- Attempt 1 (defer-mean, commit 5da0ede): combined both validated
+  changes, ~101 tracked calls down to ~69. Champion run fresh
+  (2026-07-16T15:00:00Z), back-to-back with candidate. Result: predictions
+  confirmed bit-identical on the real harness too (max per-MLP MSE diff
+  across all 100 Mini-split MLPs: 0.0) -- validation held. But
+  mean_effective_compute got WORSE (3.0149e10 -> 3.0830e10, +2.37%
+  relative_change), decisively REJECTED (paired_95pct_CI=[1.308e-08,
+  3.156e-08], wholly positive, 99/100 MLPs regressed). Diagnosed via the
+  per-op breakdown: the deferred `stack` now combines all 32 raw
+  (6500,256) layer outputs into one (32,6500,256) array (~213MB) before
+  reducing, costing ~0.038s of real backend compute time (the memory
+  copy) -- far more than the ~0.012s saved by cutting 30 `mean` calls to
+  1. Fewer tracked calls is not free if it moves much more data per call.
+- Attempt 2 (narrow, commit 02b5b4a): reverted defer-mean (back to
+  per-layer immediate `fnp.mean`, small (256,)-sized running results,
+  matching the champion's original memory footprint), kept ONLY the
+  redundant-array-wrapper removal (-1 call). Reused the same fresh
+  champion run. Result: predictions again bit-identical (0.0 max MSE
+  diff). mean_effective_compute DID decrease this time (3.0149e10 ->
+  3.0057e10, ~0.3% real reduction) and more MLPs improved than regressed
+  (69 vs 31) -- the effect has the right sign. But it's tiny relative to
+  per-MLP wall-clock noise: paired_mean_delta=1.585e-10 (essentially
+  zero), paired_95pct_CI=[-3.719e-09, 4.036e-09], comfortably straddling
+  zero. Not promotable, but not a regression either -- a statistically
+  null result with the correct sign.
+- Further avenue checked and ruled out: whether pre-allocating a result
+  array and writing per-layer means into it in place could avoid the
+  list-append-then-stack pattern entirely. Tested flopscope's array API
+  directly: item assignment (`arr[i] = ...`) raises `TypeError` by
+  design -- flopscope arrays are immutable, list+stack (or concatenate)
+  is the only supported way to build results incrementally. No further
+  lever available there.
+- Op-breakdown finding: `matmul` (32 calls) and `maximum`/ReLU (32 calls)
+  together dominate both backend compute and overhead time in every
+  variant tested -- inherent to the algorithm's 32 sequential layers
+  (each layer's input depends on the previous layer's output, so they
+  cannot be batched across layers without changing what's computed,
+  which would break bit-identical predictions). A single
+  `standard_normal` call alone showed ~0.015-0.019s of overhead -- a
+  large fixed RNG-setup cost that doesn't scale down with call-count
+  reduction elsewhere.
+- Verdict: REJECTED (both attempts). The lead's "up to ~9.5%" figure
+  assumed the full flops_used/effective_compute gap was removable
+  overhead; this investigation shows most of that gap is NOT mechanically
+  trimmable while preserving exact bit-identical predictions -- it's
+  dominated by the inherent cost of 32 unavoidable sequential matmul+ReLU
+  calls plus a fixed RNG-setup cost, not "wasteful" extra calls. The one
+  genuinely safe trim (narrow variant) has the right sign but is
+  statistically indistinguishable from zero at Mini-split sample size.
+- Full/submission gate: NOT_RUN; no promotion (both attempts failed the
+  paired gate, one decisively, one as a null result).
+- New ideas queued: none. This closes B23 as scoped -- champion-side
+  mechanical overhead reduction is not a viable lever beyond a
+  negligible, unpromotable trim, given the algorithm's inherent
+  sequential structure and flopscope's immutable-array design. Any
+  further work here would need either a genuinely different (not
+  bit-identical) champion algorithm -- which reopens the full paired
+  -comparison burden this item was specifically trying to avoid -- or
+  accepting that the champion's overhead is already close to
+  algorithmically minimal for this simple architecture.

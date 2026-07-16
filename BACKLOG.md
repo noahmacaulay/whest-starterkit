@@ -23,7 +23,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   variance that B4's simple antithetic pairing and B21's direction refinement
   could not remove. Compare at the champion's same 6,500-sample FLOP scale.
 
-- [ ] **B23** (exploit, lead-priority 1) - CLAIMED claude 2026-07-16T14:50:00Z - Reduce the champion's own
+- [x] **B23** (exploit, lead-priority 1) - DONE claude 2026-07-16T15:20:00Z - Reduce the champion's own
   flopscope overhead. Every overhead-reduction item so far (B10/B11/B13/
   B14/B16) attacked the *candidate lineage's* overhead; nothing has ever
   attacked the champion's. The champion's score multiplier is
@@ -47,6 +47,29 @@ unclaimed items with the next free ID and a one-line hypothesis.
   (6500,256) input in one call, in-place ReLU). Success criterion:
   unchanged final_layer_mse per MLP, lower mean_effective_compute,
   paired CI entirely below zero.
+  Result: REJECTED (two attempts, both bit-identical predictions
+  confirmed on the real harness -- max per-MLP MSE diff 0.0 in both).
+  Critical pre-implementation catch: `standard_normal(shape,
+  dtype=float32)` uses a different Ziggurat bit-consumption path than
+  float64-then-cast, giving genuinely DIFFERENT samples, not just
+  different precision -- avoided before writing any candidate. Attempt 1
+  (defer 32 mean calls into 1 batched call): mean_effective_compute got
+  WORSE (+2.37%, decisively REJECTED) -- stacking all 32 raw (6500,256)
+  layers into one ~213MB array before reducing cost ~0.038s of real
+  backend copy time, more than the ~0.012s saved from fewer calls.
+  Attempt 2 (drop only the redundant `fnp.array()` wrapper, -1 call):
+  mean_effective_compute genuinely improved (~0.3%, right sign, 69/100
+  MLPs improved) but paired_mean_delta~1.6e-10 is statistically
+  indistinguishable from zero at Mini-split scale (CI straddles zero).
+  Confirmed flopscope arrays are immutable (item assignment raises
+  TypeError by design) -- no pre-allocation workaround exists.
+  matmul+ReLU (32 sequential, unavoidable layers) dominate both variants'
+  remaining overhead; the lead's "up to 9.5%" ceiling assumed the full
+  gap was removable, but it's mostly inherent to the algorithm's
+  structure, not trimmable while preserving exact predictions. See
+  `experiments/log-claude.md` and
+  `experiments/results/claude/B23-claude-20260716T150000Z-1598169-summary.json`.
+  Closes this item -- no further mechanical overhead lever identified.
 
 - [x] **B24** (infra, lead-priority 2) - DONE claude 2026-07-16T14:35:00Z - Chunked, resumable complete
   Full-split gate (all 1000 MLPs). Required before ANY submission

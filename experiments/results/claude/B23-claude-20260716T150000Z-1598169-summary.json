@@ -1,0 +1,66 @@
+{
+  "experiment_id": "B23-claude-20260716T150000Z",
+  "agent": "claude",
+  "hypothesis": "The champion's score multiplier (~0.1105-0.1107) sits above raw flops_used/B (~0.1005), an overhead gap of ~10%. Since effective_compute = flops_used + lambda*residual_wall_time_s, and residual_wall_time_s is untracked/dispatch overhead (not flopscope's own per-op bookkeeping), reducing the champion's tracked call count should reduce effective_compute directly. Because this keeps predictions bit-identical (same RNG stream, same math), the paired promotion argument is trivial: same per-MLP MSE, so any consistent multiplier reduction makes every paired delta <= 0.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "007fdbd",
+    "candidate_commits": {
+      "attempt_1_defer_mean": "5da0ede",
+      "attempt_2_narrow": "02b5b4a"
+    }
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "pre_implementation_validation": {
+    "method": "Compared predict() outputs numerically (numpy array equality, not just close) between the original champion code and each candidate variant on 10 real Mini-split MLPs, before running anything on the harness.",
+    "critical_finding": "Generating input via `rng.standard_normal(shape, dtype=fnp.float32)` directly (instead of `rng.standard_normal(shape).astype(fnp.float32)`) produces GENUINELY DIFFERENT random values, not just different precision -- numpy's float32 Ziggurat generation consumes the RNG's bit stream differently than float64-then-cast. Max abs diff between the two approaches' final outputs was ~0.05-0.07 (huge relative to typical post-ReLU means). This was caught and avoided before writing any candidate; float64 generation was kept throughout to preserve the exact random stream.",
+    "safe_changes_validated_exact": "(1) Dropping the redundant `fnp.array(...)` wrapper around `rng.standard_normal(...)` (which already returns a tracked FlopscopeArray) -- exact match, 0.0 diff on 10 MLPs. (2) Deferring all 32 per-layer `fnp.mean(x, axis=0)` calls to one `fnp.stack` + one `fnp.mean(axis=1)` at the end -- also exact match, 0.0 diff on 10 MLPs, confirming associativity holds exactly for this reduction regardless of batching."
+  },
+  "attempt_1_defer_mean": {
+    "description": "Combined both validated changes: dropped redundant array wrap AND deferred all 32 mean calls into one batched stack+mean. Reduced tracked call count from ~101 to ~69.",
+    "harness_result": {
+      "champion_final_layer_mse": 8.504929468244882e-06,
+      "candidate_final_layer_mse": 8.504929468244882e-06,
+      "max_per_mlp_mse_diff": 0.0,
+      "champion_mean_effective_compute": 30148599699.278736,
+      "candidate_mean_effective_compute": 30829967498.623207,
+      "champion_mean_score_multiplier": 0.11084044007087765,
+      "candidate_mean_score_multiplier": 0.11334546874493824,
+      "paired_mean_delta": 2.231858241615028e-08,
+      "paired_95pct_ci": [1.3077537325632743e-08, 3.1559627506667815e-08],
+      "n_regressed": 99,
+      "n_improved": 1
+    },
+    "diagnosis": "Predictions confirmed bit-identical (0.0 max MSE diff across all 100 MLPs) -- the numerical validation held. But mean_effective_compute got WORSE, not better (relative_change +2.37%), decisively REJECTED (CI wholly positive). Root cause from the per-op breakdown: the deferred `stack` operation, now combining all 32 raw (6500,256) layer outputs into one (32,6500,256) array (~213MB) before reducing, costs a real ~0.038s of backend compute time (the memory copy) -- far more than the ~0.012s saved by cutting 30 `mean` calls down to 1. Fewer tracked calls is not free if it means moving substantially more data per call."
+  },
+  "attempt_2_narrow": {
+    "description": "Reverted the defer-mean change (back to per-layer immediate `fnp.mean`, keeping results small (256,)-sized throughout, matching the champion's original memory footprint) and kept ONLY the redundant-array-wrapper removal -- a single fewer tracked call, touching none of the data-volume-heavy operations.",
+    "harness_result": {
+      "champion_final_layer_mse": 8.504929468244882e-06,
+      "candidate_final_layer_mse": 8.504929468244882e-06,
+      "max_per_mlp_mse_diff": 0.0,
+      "champion_mean_effective_compute": 30148599699.278736,
+      "candidate_mean_effective_compute": 30056579899.235985,
+      "champion_mean_score_multiplier": 0.11084044007087765,
+      "candidate_mean_score_multiplier": 0.11050213198248518,
+      "paired_mean_delta": 1.5850670997129707e-10,
+      "paired_95pct_ci": [-3.7189544125268257e-09, 4.03596783246942e-09],
+      "n_regressed": 31,
+      "n_improved": 69
+    },
+    "diagnosis": "Predictions again confirmed bit-identical. mean_effective_compute DID decrease this time (30.149e9 -> 30.057e9, ~0.3% real reduction, consistent with removing 1 tracked call having a small genuine positive effect), and more MLPs improved than regressed (69 vs 31). But the effect is tiny relative to per-MLP wall-clock measurement noise: paired_mean_delta is ~1.6e-10 (essentially zero) and the 95% CI straddles zero comfortably. Not a promotable result, but not a regression either -- a statistically null result with the correct sign."
+  },
+  "op_breakdown_final_layer": {
+    "champion_reference": {"matmul_overhead_s": 0.01145, "maximum_overhead_s": 0.00502, "mean_overhead_s_32_calls": 0.01348, "standard_normal_overhead_s": 0.01522},
+    "narrow_variant": {"matmul_overhead_s": 0.00916, "maximum_overhead_s": 0.00494, "mean_overhead_s_32_calls": 0.01513, "standard_normal_overhead_s": 0.01913},
+    "note": "matmul (0.0146x27.2e9 flops in 32 calls) and maximum (32 calls, ReLU) together account for the bulk of both backend compute and overhead time -- these are inherent to the algorithm's 32 sequential layers (each layer's input depends on the previous layer's output, so they cannot be batched across layers without changing the computation). The single standard_normal call alone shows ~0.015-0.019s of overhead, a large fixed cost for RNG setup that doesn't scale with call count reduction elsewhere. flopscope arrays are immutable (confirmed via a direct API test: item assignment raises TypeError by design), so pre-allocating a result array and writing into it in place -- which might have avoided the list+stack pattern -- is not possible; list-append-then-stack is the only supported way to build results incrementally."
+  },
+  "verdict": "REJECTED",
+  "reason": "The aggressive version (defer all mean calls) regressed due to a large data-volume cost from batching 213MB of raw layer outputs into one array before reducing. The narrow, safe version (drop 1 redundant call only) gives a real but statistically insignificant effect -- paired CI straddles zero. flopscope arrays' immutability rules out an in-place-assignment alternative. The champion's remaining overhead is dominated by the inherent cost of 32 sequential matmul+ReLU calls (unavoidable without changing the algorithm, which would break the bit-identical-predictions premise) plus a fixed ~0.015-0.019s RNG setup cost. The lead's 'up to ~9.5%' figure assumed the full flops_used/effective_compute gap was removable overhead; this investigation shows most of that gap is not mechanically trimmable while preserving exact predictions.",
+  "full_submission_gate": "NOT_RUN"
+}
