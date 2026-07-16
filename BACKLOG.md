@@ -15,6 +15,33 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B38** (explore) - CLAIMED claude 2026-07-16T21:00:00Z - Last-layer
+  Gaussian-moment Rao-Blackwellization of the B25 radial-exact champion.
+  The scored final layer computes mean_i ReLU(p_i) where p_i =
+  (h_31_i @ W_32) are the per-sample final pre-activations. Each p_j is a
+  256-term weighted sum (He weights), so by CLT it is approximately
+  Gaussian -- and for Gaussian p, E[ReLU(p)] = mu*Phi(mu/sigma) +
+  sigma*phi(mu/sigma) EXACTLY. Idea: replace the noisy sample mean of
+  ReLU outputs at the final layer only with this smooth moment formula
+  evaluated at the sample mean/variance of p (per neuron). Unlike the
+  full analytic propagation (B1/B3/B34, ~10x worse because Gaussian
+  approx compounds over 32 layers) or B36's template projection, the
+  Gaussian approx is used ONCE at the last layer, so bias is small and
+  does not compound; and it is essentially FREE (sample mean+var of
+  already-computed pre-activations, O(N*width), negligible vs the
+  O(N*width^2) matmuls) so no multiplier penalty. This is
+  Rao-Blackwellization: (mu_hat, sigma_hat) are near-sufficient for
+  E[ReLU(p)] under the CLT-Gaussian, so the moment estimator should have
+  <= the sample-mean variance. Theory bounds the gain at ~3% (ReLU is
+  near-linear for mu>>sigma and near-zero for mu<<-sigma; the moment
+  formula only helps near alpha=mu/sigma ~ 0), but at zero compute cost a
+  clean 2-3% bias-free MSE cut could still clear the Mini gate and might
+  even survive Full (per B30's SE analysis a ~2.3e-7 MSE effect is ~2.5
+  sigma at n=1000). Pre-validate cheaply first (B31/B32 discipline):
+  measure the ACTUAL final-layer MSE-vs-truth of the moment estimator vs
+  the plain MC champion on real MLPs, checking BOTH variance reduction
+  AND CLT bias. Reject if bias eats the gain or the net cut is <~1%.
+
 - [x] **B36** (explore) - DONE gpt 2026-07-16T18:15:52Z
   (feasibility-rejected) - Output-space
   collapse denoising for the B25 radial-exact champion. Depth-32 activations
