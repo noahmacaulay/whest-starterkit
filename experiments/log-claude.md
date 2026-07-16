@@ -1373,3 +1373,49 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   Submission itself remains blocked by S1 regardless.
 - Full/submission gate: COMPLETE (1000/1000) for the current champion.
   No promotion, no submission action taken or implied.
+
+## 2026-07-16T17:30:00Z - B27-claude: Radial-exact trick does not extend to the active-subspace lineage (feasibility-rejected)
+- Hypothesis: B25's exact-homogeneity radial substitution (replace a
+  sampled radius with its closed-form chi-distribution expectation,
+  valid because these bias-free ReLU nets satisfy f(c*x)=c*f(x) exactly
+  for c>0) already surpasses the entire B1/B10/B11/B13/B14/B16/B19/B21
+  active-subspace Gauss-Hermite quadrature lineage's own best result
+  (B21: final_layer_mse=7.897e-06, vs B25's 7.211e-06 mini / 7.693e-06
+  full) even though that lineage was previously believed to have a real
+  ~6% accuracy edge over plain MC (measured against the OLD, pre-B25
+  champion). Before writing any candidate: check whether the same exact
+  trick could ALSO reduce that lineage's own remaining MC variance,
+  potentially combining both effects.
+- Structure of the active-subspace estimator: per quadrature node, the
+  full input forwarded through the network is `x = t_k*v1 + s`, where
+  `t_k` is one of ~16 fixed deterministic Gauss-Hermite node values along
+  the dominant direction `v1` (found via power iteration), and `s` is a
+  random sample from the orthogonal complement (the part B4/B7/B8/B12
+  already showed has no exploitable directional structure, but whose
+  RADIAL component was never separately targeted). B25's trick requires
+  the ENTIRE input vector to scale by a positive constant
+  (f(c*x)=c*f(x)); `s` is only an ADDITIVE piece of a compound vector
+  with a separate FIXED term (`t_k*v1`), not the whole input, so scaling
+  `s` alone does not correspond to scaling `x`.
+- Verified this numerically before concluding anything (same discipline
+  as B7/B17/B20, since a "obviously true" derivation misled B13's 5-MLP
+  spot-check before B17's full-dataset recheck): for a real Mini-split
+  MLP, constructed `x1 = t*v1 + s` and `x2 = t*v1 + 2*s` (v1 random unit
+  vector, s orthogonal to v1, t=2.0 fixed) and compared `f(x2)` against
+  the naive `2*f(x1)` a true multiplicative relationship would predict.
+  Result: max relative deviation 0.104 (10.4%) -- a real, substantial
+  mismatch, in sharp contrast to B25's true whole-vector homogeneity
+  check, which matched to ~2.3e-11 relative error (machine precision).
+  Confirms scaling only the orthogonal-complement piece of a compound
+  input does not transfer through the network multiplicatively -- no
+  exact radial substitution is available for `s` in this construction.
+- Result: REJECTED at the design stage, before any candidate file was
+  written or touched. Consistent with B7's finding (post-nonlinearity
+  quantities don't inherit pre-nonlinearity symmetries once mixed with
+  other terms) applied to a new specific case. Does not affect B25's
+  validity (B25's trick applies to the FULL, unmixed input vector, which
+  is exactly the condition this check confirms is required). No further
+  action needed on this specific combination; the active-subspace
+  lineage remains closed per B21's ceiling finding, now additionally
+  surpassed outright by B25 on raw accuracy alone.
+- Full/submission gate: NOT_RUN (no candidate, no evaluation needed).

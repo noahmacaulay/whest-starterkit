@@ -15,19 +15,25 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B27** (explore) - CLAIMED claude 2026-07-16T17:30:00Z - Check whether B25's
-  exact-homogeneity radial substitution extends to the B1/B10/B11/B13/
-  B14/B16/B19/B21 active-subspace Gauss-Hermite quadrature lineage's
-  orthogonal-complement sampling (that lineage's own best result,
-  final_layer_mse=7.897e-06 from B21, is now worse than B25's champion
-  score, 7.211e-06 mini / 7.693e-06 full -- B25 already surpasses it, but
-  worth checking if the radial trick could push it further). That
-  estimator forwards `x = t_k*v1 + s` per quadrature node (deterministic
-  node value `t_k` along the dominant direction `v1`, plus a random
-  orthogonal-complement sample `s`) -- if `s`'s own radial component
-  could be replaced by its closed-form expectation the same way B25 did
-  for the full input, it would be free extra variance reduction. Verify
-  the precondition before writing any candidate.
+- [x] **B27** (explore) - DONE claude 2026-07-16T17:30:00Z (feasibility-rejected) -
+  Checked whether B25's exact-homogeneity radial substitution extends to
+  the B1/B10/B11/B13/B14/B16/B19/B21 active-subspace Gauss-Hermite
+  quadrature lineage's orthogonal-complement sampling (`x = t_k*v1 + s`
+  per quadrature node). Result: REJECTED before any candidate was
+  written. B25's trick requires the WHOLE input vector to scale by a
+  positive constant; `s` is only an additive piece of a compound vector
+  with a separate fixed term (`t_k*v1`), so scaling `s` alone does not
+  correspond to scaling `x`. Verified numerically on a real MLP: scaling
+  only the orthogonal-complement component gave a 10.4% relative
+  deviation from the naive multiplicative prediction (vs ~2.3e-11 for
+  B25's true whole-vector homogeneity check) -- confirms no exact radial
+  substitution is available here. Consistent with B7's finding that
+  post-nonlinearity quantities don't inherit pre-nonlinearity symmetries
+  once mixed with other terms. See `experiments/log-claude.md`. No
+  candidate file was needed or committed. Closes this specific
+  combination; the active-subspace lineage remains closed per B21's
+  ceiling finding and is now also surpassed outright by B25 on raw
+  accuracy.
 
 - [x] **B26** (infra, exploit) - DONE claude 2026-07-16T17:00:00Z - Full-split gate
   for the new B25 radial-exact champion (estimator.py @ 2227ef3),
