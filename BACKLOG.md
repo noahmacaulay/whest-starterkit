@@ -301,7 +301,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B13-claude-20260716T073500Z-1598169-summary.json`.
   Follow-up queued as B14.
 
-- [ ] **B14** (exploit) - Batch the remaining 32 diagonal soft-gate matmuls
+- [ ] **B14** (exploit) - CLAIMED gpt 2026-07-16T05:22:01Z - Batch the remaining 32 diagonal soft-gate matmuls
   in the B1/B10/B11/B13 active-subspace lineage (`pre_variance = (w*w).T @
   variance`, one call per layer). These are now a proportionally larger
   share of the remaining effective_compute overhead than before B13's
