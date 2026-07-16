@@ -89,3 +89,14 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: REJECTED. The numerical estimator retained B10's MSE exactly, and candidate effective compute fell modestly versus B10's 3.515560582827e+10, but the matrix-product arithmetic raised raw FLOPs and the paired confidence interval still crosses zero. It is therefore not promotable.
 - Full/submission gate: NOT_RUN; the Mini promotion gate failed and the shared ledger also has unresolved manual submission entries.
 - New ideas queued: none.
+
+## 2026-07-16T05:35:21Z - B14-gpt-20260716T052400Z: Elementwise diagonal soft-gate variance propagation
+- Hypothesis: B13's 2-iteration active-subspace Gauss-Hermite estimator retained its ~6% final-layer-MSE advantage but still paid for 32 small `pre_variance = (w*w).T @ variance` calls. Computing the same diagonal products as exact elementwise reductions could eliminate that matmul tracing overhead without altering the estimator.
+- Base champion: estimator.py @ a43d388 (B0-gpt-20260716T002459Z source result 58900f1); candidate_gpt.py @ a12116c.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock@9b677e2b91b0b4791c73c9449b6d5e5491093ddb.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1 (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433), split=mini (100 MLPs), budget=272000000000, runner=subprocess. Exact commands and immutable raw reports are in results/gpt/B14-gpt-20260716T052400Z-a43d388/summary.json.
+- Change: reused B13's 2-pass layer-wise power iteration, 16-node Gauss-Hermite quadrature, antithetic orthogonal-complement samples, and one main batched forward pass per layer. Replaced only the diagonal variance matmul with `sum((w*w)*variance[:,None], axis=0)`.
+- Result: candidate_score=9.823833763060e-07; champion_score=9.276159262378e-07; relative_change=+5.904108%; paired_mean_delta=5.476745006812e-08; paired_95pct_CI=[-2.424236863733e-07,3.519585865095e-07]; worst_per_MLP_regression=3.506124165489e-06 (59/100 regressed). Candidate final-layer MSE=7.931290535907e-06 vs champion=8.504929468245e-06, but candidate mean effective compute=3.372870757778e+10 vs champion=2.965928580012e+10; mean FLOPs=2.748591627600e+10 vs 2.734617600000e+10. All failure, budget, time, residual-wall-time, and combined-budget flags=0.
+- Verdict: REJECTED. The calculation preserved B13's accuracy exactly and reduced its effective compute relative to B13, but not enough to overcome the remaining overhead; the adjusted score regressed and the conservative paired confidence interval is not entirely below zero.
+- Full/submission gate: NOT_RUN; the Mini promotion gate failed and no submission reservation was created.
+- New ideas queued: none.

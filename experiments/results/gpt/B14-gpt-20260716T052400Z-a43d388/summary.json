@@ -1,0 +1,45 @@
+{
+  "experiment_id": "B14-gpt-20260716T052400Z",
+  "title": "Elementwise diagonal soft-gate variance propagation",
+  "agent": "gpt",
+  "verdict": "REJECTED",
+  "base_champion_commit": "a43d388",
+  "candidate_commit": "a12116c",
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "commands": [
+      "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+      "uv run --frozen whest run --estimator candidate_gpt.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json"
+    ]
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.276159262378351e-07,
+    "candidate_adjusted_final_layer_score": 9.823833763059502e-07,
+    "relative_change_percent": 5.904108426667198,
+    "paired_mean_delta": 5.476745006811513e-08,
+    "paired_95pct_ci": [-2.424236863732861e-07, 3.5195858650951635e-07],
+    "worst_per_mlp_regression": {"mlp_index": 71, "mlp_name": "savannah-hayes", "delta": 3.5061241654890993e-06},
+    "regression_count": 59,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 7.931290535907465e-06,
+    "champion_mean_effective_compute": 29659285800.124947,
+    "candidate_mean_effective_compute": 33728707577.781837,
+    "champion_mean_flops": 27346176000,
+    "candidate_mean_flops": 27485916276
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "raw_reports": {"champion": "champion-mini.json", "candidate": "candidate-mini.json"}
+}
