@@ -1087,3 +1087,81 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Escalations for the user: S1 (unchanged, still the submission blocker).
   No inconsistencies or ambiguous reservations found; repository state is
   clean and self-consistent.
+
+## 2026-07-16T14:35:00Z - B24-claude: Chunked resumable complete Full-split gate
+- Not a new estimator experiment (no candidate, no promotion decision) --
+  the infra item the lead queued as B24, matching almost exactly the
+  chunk-and-resume approach the previous partial-Full-gate log entry
+  (2026-07-16T13:45:00Z) had already sketched but not attempted, citing
+  correctness risk under time pressure. Claimed B24 and completed it with
+  the mandatory validation the lead specified.
+- Method: used `whestbench.scoring.evaluate_estimator` +
+  `whestbench.runner.SubprocessRunner` directly (via
+  `whestbench.cli._run_estimator_with_runner`, the CLI's own internal
+  wiring function, not reimplemented) over two explicit index ranges of
+  the immutable Full split -- `ds.select(range(0,500))` and
+  `ds.select(range(500,1000))` on the cached HF `datasets.Dataset` --
+  building each half's `ContestData` the same way
+  `make_contest_from_dataset` does (ground truth is read from the
+  dataset's precomputed `all_layer_means`/`final_means`/`avg_variance`
+  fields, never recomputed, so slicing cannot introduce a ground-truth
+  mismatch). Each half ran as an independent ~500-MLP subprocess pass
+  (~25-30 min, safely under the background-task limit that killed two
+  prior single-shot 1000-MLP attempts).
+- MANDATORY correctness check (before trusting the chunked path, per
+  B24's own requirement): ran the identical chunked code path against the
+  official `whest run` CLI on two independent samples -- 20 MLPs from the
+  Full split (compared against the already-official
+  champion-full-gate-partial500 CLI report) and, to satisfy the lead's
+  literal "Mini split" instruction too, 30 MLPs from the Mini split
+  (fresh CLI run vs. the same chunked script pointed at split="mini").
+  Both checks: `final_layer_mse` matched the CLI to the exact last
+  printed digit for every MLP (bit-identical predictions, as expected --
+  same deterministic estimator/seeds), with only the timing-derived score
+  multiplier differing by an amount (max per-MLP score diff ~4.5e-08 on
+  Mini/30, similarly small on Full/20) consistent with ordinary
+  run-to-run wall-clock jitter in `effective_compute` -- the same
+  magnitude of jitter already observed between two separate official CLI
+  runs of the identical estimator (e.g. B15/B16/B19/B21's paired champion
+  re-runs). No logic discrepancy found in either check.
+- Result: combined all 1000 per-MLP records (500+500, verified zero name
+  overlap and exactly 1000 unique MLPs) and recomputed the aggregate
+  directly from that combined per-MLP list (mean of adjusted scores, mean
+  MSE, mean effective_compute, etc. -- not a re-derivation of the scoring
+  formula itself, just arithmetic averaging of already-correctly-scored
+  per-MLP records). adjusted_final_layer_score=8.593710913140e-07,
+  final_layer_mse=7.781365020776e-06, mean_effective_compute=
+  3.004539740986e10, mean_score_multiplier=0.110461019889. Zero
+  budget/time/residual-wall-time/combined-budget/error flags across all
+  1000 MLPs. Sanity check: the combined aggregate (8.5937e-07) matches
+  the simple average of the two halves' own independently-reported
+  aggregates (8.5937e-07) to 10 significant figures, confirming correct
+  combination.
+- This Full-split score is consistently *better* than the Mini-split
+  numbers that selected this champion (9.39e-07 / 8.505e-06 adjusted
+  score / MSE) -- strong evidence against Mini-split overfitting.
+- Persisted: `champion.json`'s `full_gate_partial_check` field replaced
+  with a complete `full_gate` field (status COMPLETE, all fields above,
+  pointing at all three raw reports: the two 500-MLP slices plus an
+  assembled combined report
+  `champion-full-gate-COMPLETE-20260716T140000Z-1598169.json` with
+  properly recomputed aggregate fields, all 1000 per-MLP records, and
+  correctly-aggregated per_layer_mse/best-worst-MLP/failure_breakdown).
+  Also bundled S2's fix in the same update (small, clearly-specified,
+  explicitly bundleable per S2's own text): `champion.flops_used` was
+  mislabeled -- it held the mean per-MLP `effective_compute`
+  (30109415000.58), not raw FLOPs. Renamed that value to
+  `mean_effective_compute` and added the correct `flops_used`
+  (27346176000.0, from
+  `experiments/results/gpt/B0-gpt-20260716T002459Z-a6fca1e-monte-carlo-mini.json`,
+  matching the lead's audit exactly). No other champion fields touched.
+- IMPORTANT scope note (also recorded in champion.json's `full_gate.note`):
+  this is a single-estimator Full-split score, not a paired comparison.
+  It satisfies AGENTS.md step 7's Full-split evaluation prerequisite for
+  the *current* champion, but any future candidate still needs its own
+  paired Full-split comparison against the champion before a submission
+  attempt. Submission itself remains blocked by S1 regardless (last
+  submitted_score is null).
+- Full/submission gate: COMPLETE (1000/1000) for the current champion.
+  No promotion, no submission action taken or implied -- S1 still blocks
+  actual submission.

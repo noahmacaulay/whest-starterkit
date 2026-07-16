@@ -1,0 +1,6 @@
+whestbench: downloading 'full' split from hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+Fetching 19 files:   0%|          | 0/19 [00:00<?, ?it/s]Fetching 19 files: 100%|██████████| 19/19 [00:00<?, ?it/s]
+DONE C:/Users/dummy/Documents/code/whest_challenge/whest-claude/experiments/results/claude/champion-full-gate-slice500-1000-20260716T140000Z-1598169.json
+adjusted_final_layer_score: 8.574165752674289e-07
+final_layer_mse: 7.766393111751313e-06
+n_mlps: 500

@@ -48,7 +48,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   unchanged final_layer_mse per MLP, lower mean_effective_compute,
   paired CI entirely below zero.
 
-- [ ] **B24** (infra, lead-priority 2) - CLAIMED claude 2026-07-16T14:35:00Z - Chunked, resumable complete
+- [x] **B24** (infra, lead-priority 2) - DONE claude 2026-07-16T14:35:00Z - Chunked, resumable complete
   Full-split gate (all 1000 MLPs). Required before ANY submission
   (AGENTS.md step 7) and currently impossible in one background window
   (~58 min measured; two runs killed mid-flight -- see the 2026-07-16
@@ -66,6 +66,22 @@ unclaimed items with the next free ID and a one-line hypothesis.
   (replacing/superseding `full_gate_partial_check`) plus the raw
   report. This unblocks the submission path the moment S1 is resolved,
   and the tool is reusable for every future champion.
+  Result: DONE. Used `whestbench.cli._run_estimator_with_runner` (the
+  CLI's own internal wiring, not reimplemented) over two 500-MLP index
+  ranges (0-499, 500-999), ground truth read from the dataset's
+  precomputed fields (never recomputed). Mandatory check ran on BOTH a
+  20-MLP Full-split sample and a 30-MLP Mini-split sample: final_layer_mse
+  matched the official CLI to the exact last digit in every case
+  (bit-identical predictions); only the timing-derived multiplier
+  differed, by an amount consistent with ordinary run-to-run wall-clock
+  jitter (same magnitude as jitter between two separate official CLI
+  runs). Combined result (1000/1000 MLPs, zero overlap, zero failures):
+  adjusted_final_layer_score=8.5937e-07, final_layer_mse=7.7814e-06 --
+  consistently better than the Mini-split numbers that selected this
+  champion. `champion.json`'s `full_gate` now COMPLETE (replacing
+  `full_gate_partial_check`); also bundled S2's fix in the same commit.
+  See `experiments/log-claude.md` for full detail and all raw report
+  paths.
 
 - [ ] **B25** (explore, lead-priority 3) - Radial (chi-quantile)
   stratification of input norms. Evidence so far: every *directional*
@@ -101,9 +117,8 @@ unclaimed items with the next free ID and a one-line hypothesis.
   submission. Until then the Full gate can still be run and recorded, but no
   network submission may happen.
 
-- [ ] **S2** (admin, small metadata correction - may be bundled into a
-  worker's next shared-update commit) - `champion.json` field
-  `champion.flops_used` (30109415000.58) is mislabeled: lead audit
+- [x] **S2** (admin, small metadata correction) - DONE claude 2026-07-16T14:35:00Z (bundled into the B24 commit) -
+  `champion.json` field `champion.flops_used` (30109415000.58) is mislabeled: lead audit
   2026-07-16 recomputed the B0 monte-carlo-mini raw report and that
   value is the mean per-MLP `effective_compute`; the champion's true
   mean raw `flops_used` is 2.734618e+10. Fix by renaming the field to
@@ -113,6 +128,8 @@ unclaimed items with the next free ID and a one-line hypothesis.
   citing this audit. Values themselves are correct and match the raw
   report; only the label is wrong. Do not change any other champion
   fields.
+  Done exactly as specified: renamed to `mean_effective_compute`, added
+  correct `flops_used: 27346176000.0`, no other champion fields touched.
 
 ## Done
 
