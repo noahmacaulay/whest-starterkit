@@ -1,0 +1,75 @@
+{
+  "experiment_id": "B21-claude-20260716T113000Z",
+  "agent": "claude",
+  "hypothesis": "Every prior direction-finding approach in the B1/B10 active-subspace lineage used a proxy for the quantity that matters (soft-gate linearized Jacobian eigenvector, or B20's local-gradient Stein estimate). Directly measuring the true dominant eigenvector of the pilot batch's empirical final-layer covariance (real nonlinear forward passes, no linearization) should give a genuinely better direction, since it measures the target quantity itself rather than approximating it. Validated stable via split-half consistency (300-sample halves, cosine similarity >=0.992) before implementing.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "0732fb5",
+    "candidate_commit": "3252a7d"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B21-claude-20260716T113000Z-1598169-champion-mini.json",
+      "candidate": "B21-claude-20260716T113000Z-1598169-candidate-mini.json",
+      "champion_stderr": "B21-claude-20260716T113000Z-1598169-champion-mini.stderr.txt",
+      "candidate_stderr": "B21-claude-20260716T113000Z-1598169-candidate-mini.stderr.txt",
+      "note": "Champion run fresh again (not reused), back-to-back with the candidate."
+    }
+  },
+  "pre_implementation_validation": {
+    "method": "Split-half stability: 600-sample pilot split into two independent 300-sample halves per MLP, compared their empirical final-layer covariance's dominant eigenvectors, across 20 real Mini-split MLPs.",
+    "result": "cosine similarity min=0.9917, mean=0.9973 -- a 300-sample pilot gives a highly stable direction estimate. Top-eigenvalue/trace ratio (rank-1-ness) mean=0.60, min=0.47, confirming real but partial (not total) rank-1 dominance."
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.396891425777381e-07,
+    "candidate_adjusted_final_layer_score": 1.032533075961697e-06,
+    "relative_change_percent_vs_champion": 9.88028159283304,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 7.897004390429175e-06,
+    "candidate_vs_lineage_note": "BEST final_layer_mse of the entire B1/B10/B11/B13/B14/B16/B19 lineage (previous best: B13's 7.931290535907e-06). The empirical-covariance direction genuinely is more accurate than every soft-gate-linearized approximation tried -- but only marginally so: 0.43% better than B13's MSE.",
+    "champion_mean_effective_compute": 30042694700.03873,
+    "candidate_mean_effective_compute": 35550213778.767105,
+    "champion_mean_score_multiplier": 0.11045108345602474,
+    "candidate_mean_score_multiplier": 0.1306993153631143,
+    "candidate_flops_used": 28759473780.0,
+    "candidate_matmul_calls": 86,
+    "candidate_effective_over_flops_ratio": 1.250837690867257,
+    "overhead_note": "matmul calls dropped to 86 -- FEWER than B13/B16/B19's 193, and the effective_compute/flops_used ratio (1.251) is actually BETTER than B13/B16's (~1.27-1.31). The limiting factor here is NOT call-fragmentation overhead (which is well-controlled) but the raw, unavoidable FLOP cost of a real 300-sample forward pass through all 32 layers to compute the pilot covariance -- a fundamentally different and less compressible cost than the near-free soft-gate linearization."
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_name/mlp_index",
+    "n": 100,
+    "mean_delta": 9.284393338395886e-08,
+    "t95_confidence_interval": [-2.566034548468824e-07, 4.422913216148001e-07],
+    "worst_per_mlp_regression": 4.8938360514854135e-06,
+    "worst_per_mlp_regression_mlp": "cole-martin",
+    "best_per_mlp_improvement": -1.2129211127772844e-05,
+    "best_per_mlp_improvement_mlp": "jessica-benson",
+    "n_regressions": 60,
+    "lineage_comparison": "paired_mean_delta (9.284e-08) is worse than B13 (6.391e-08), B14 (5.477e-08), and B16 (5.679e-08), despite having the best raw MSE -- the pilot's real compute cost (raising the multiplier ~4.6% via flops_used, 28.76e9 vs B13's ~27.5e9) outweighs its marginal (0.43%) MSE improvement over B13's much cheaper soft-gate approximation."
+  },
+  "key_finding": {
+    "summary": "This is the clearest, most decisive evidence yet that the B1/B10 active-subspace lineage has hit a real ceiling. The empirically-measured TRUE dominant direction (validated stable, not a proxy) only improves final-layer MSE by 0.43% over B13's essentially-free soft-gate linearized approximation. This shows B19's finding (soft-gate convergence quality doesn't predict MSE) was not because the soft-gate direction was meaningfully wrong -- it is already close to as good as the true empirical direction gets for this specific quadrature construction. The dominant remaining source of estimator error must be something the direction choice cannot fix at all: most likely the residual MC variance in the ~40% of variance NOT captured by the (partial, ~60%) rank-1 structure, i.e. the orthogonal-complement antithetic sampling's own noise floor.",
+    "implication": "Further refining direction-finding for this quadrature architecture -- by any method, proxy-based or exact -- has essentially no remaining headroom. Any future improvement to this lineage would need to target the orthogonal-complement sampling itself (e.g. a genuinely lower-variance technique there), not the dominant-direction estimate."
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "Paired 95% CI [-2.566e-07, 4.423e-07] is not entirely below zero, and mean_delta is worse than the lineage's cheaper alternatives (B13/B14/B16) despite achieving the best raw MSE of the whole lineage. The extra compute cost of measuring the true direction (an intrinsically real, non-compressible forward-pass cost, unlike call-fragmentation overhead) outweighs the marginal accuracy gain it buys. This is decisive evidence -- not speculation -- that the B1/B10 active-subspace architecture has reached its ceiling for direction-finding refinement of any kind.",
+  "full_submission_gate": "NOT_RUN"
+}

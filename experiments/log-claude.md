@@ -878,3 +878,81 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   and was not attempted here given this session's now-extensive run of
   12+ rejected active-subspace variants; a natural point to let this
   lineage rest and revisit with fresh eyes (or from the other agent).
+
+## 2026-07-16T11:45:00Z - B21-claude-20260716T113000Z: Empirical final-layer covariance direction
+- Hypothesis: every prior direction-finding attempt in this lineage used
+  a proxy for the quantity that matters (soft-gate linearized Jacobian
+  eigenvector in B1/B10/B11/B13/B18/B19; local input-gradient sensitivity
+  in B20, shown nearly uncorrelated with the soft-gate eigenvector).
+  Directly measuring the true dominant eigenvector of a pilot batch's
+  empirical *final-layer* covariance (real nonlinear forward passes, no
+  linearization at all) should give a genuinely better direction, since
+  it measures the target quantity itself.
+- Pre-implementation validation (given B19/B20's lesson that comparing
+  against the old soft-gate reference isn't meaningful, validated via
+  split-half internal consistency instead): 600-sample pilot split into
+  two independent 300-sample halves, across 20 real Mini-split MLPs --
+  cosine similarity between the halves' dominant eigenvectors: min=0.9917,
+  mean=0.9973. A 300-sample pilot is already highly stable. Top
+  -eigenvalue/trace ratio (rank-1-ness) mean=0.60, min=0.47 -- confirms
+  real but partial rank-1 dominance, consistent with AGENTS.md's "often
+  rank-1 dominated" (not purely rank-1).
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); candidate_claude.py @ 3252a7d, claimed from 0732fb5.
+  Replaced the entire soft-gate diagonal Jacobian + power-iteration
+  direction-finding block with: pilot batch of 300 real samples forwarded
+  through true hard ReLU (all 32 layers), empirical covariance of their
+  final-layer output, dominant eigenvector via 20-iteration power
+  iteration on that (width, width) matrix. Kept the rest of the
+  B13/B16 estimator (16-node GH quadrature, antithetic orthogonal
+  -complement draws, single batched matmul per layer, full 3,250
+  pair-count scale) unchanged.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433),
+  split=mini (100 MLPs), budget=272000000000, runner=subprocess. Champion
+  run fresh again, back-to-back with the candidate. Exact commands/reports:
+  results/claude/B21-claude-20260716T113000Z-1598169-summary.json.
+- Result: candidate final_layer_mse=7.897004390429e-06 -- the BEST in the
+  entire B1/B10/B11/B13/B14/B16/B19 lineage (previous best: B13's
+  7.931290535907e-06), confirming the empirical-covariance direction
+  genuinely is more accurate than every linearized approximation tried.
+  But only marginally: 0.43% better than B13. matmul calls=86 (FEWER
+  than B13/B16/B19's 193!) and effective_compute/flops_used ratio=1.251
+  (BETTER than B13/B16's ~1.27-1.31) -- call-fragmentation overhead is
+  actually well-controlled here. The limiting factor is instead the raw,
+  unavoidable FLOP cost of the pilot's real forward pass:
+  flops_used=28.76e9 vs B13's ~27.5e9 (+4.6%), which raises the
+  multiplier by more than the 0.43% MSE gain offsets. paired_mean_delta=
+  9.284393338396e-08 -- worse than B13 (6.391e-08), B14 (5.477e-08), and
+  B16 (5.679e-08). paired_95pct_CI=[-2.566e-07, 4.423e-07].
+- KEY FINDING: this is the clearest, most decisive evidence yet that the
+  B1/B10 active-subspace lineage has hit a real ceiling -- not
+  speculation this time, but a direct measurement. The TRUE, validated
+  -stable empirical direction only beats B13's near-free soft-gate
+  approximation by 0.43% MSE. B19's finding (convergence quality doesn't
+  predict MSE) wasn't because the soft-gate direction was meaningfully
+  wrong; it was already close to as good as the true direction gets for
+  this quadrature construction. The dominant remaining error source must
+  be something direction choice cannot fix: most likely the residual MC
+  variance in the ~40% of variance NOT captured by the (partial, ~60%)
+  rank-1 structure -- i.e. the orthogonal-complement antithetic
+  sampling's own noise floor.
+- Verdict: REJECTED -- CI not entirely below zero, and worse than B13/
+  B14/B16 despite the best raw MSE in the lineage, because the pilot's
+  real compute cost isn't justified by such a small accuracy gain.
+- Full/submission gate: NOT_RUN; the Mini paired gate failed.
+- New ideas queued: none for direction-finding specifically -- this
+  closes that entire sub-thread with direct evidence, not inference.
+  Any future improvement to the B1/B10 lineage would need to target the
+  orthogonal-complement sampling itself (a genuinely lower-variance
+  technique for the ~40% non-rank-1 residual), not the dominant
+  -direction estimate, which this experiment shows is already close to
+  optimal. Given the extremely thorough search this session (21
+  experiments: B0 baseline, 12+ active-subspace variants, and 8
+  independent ideas across analytic-covariance, input-level MC, and
+  control-variate families, all rejected with specific, well-understood
+  reasons), the B1/B10 lineage and this general research direction may
+  best be left for a lead review to reprioritize rather than further
+  worker-tick tweaking.

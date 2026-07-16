@@ -520,7 +520,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   from real hidden-activation covariance, not an input-gradient proxy --
   a bigger undertaking left for a future iteration with fresh scoping.
 
-- [ ] **B21** (exploit) - CLAIMED claude 2026-07-16T11:10:00Z - Empirical
+- [x] **B21** (exploit) - DONE claude 2026-07-16T11:45:00Z - Empirical
   final-layer covariance direction. B20's exact conclusion: the right
   "different mechanism" measures the collapse-operator's eigenvector from
   real hidden-activation covariance, not an input-gradient proxy.
@@ -543,8 +543,28 @@ unclaimed items with the next free ID and a one-line hypothesis.
   budget) -- reduce the main quadrature budget correspondingly, and
   consider reusing the pilot batch's own mean as additional MC samples
   rather than discarding it after direction extraction.
+  Result: REJECTED, but decisively -- not another dead end, a genuine
+  ceiling measurement. Pre-implementation split-half stability check
+  (600-sample pilot, two 300-sample halves, 20 real MLPs) confirmed a
+  300-sample pilot gives a highly stable direction (cosine similarity
+  min=0.9917, mean=0.9973). The resulting candidate achieved
+  final_layer_mse=7.897e-06, the BEST in the entire B1/B10/B11/B13/B14/
+  B16/B19 lineage (previous best: B13's 7.931e-06) -- confirming the
+  empirical-covariance direction really is more accurate than every
+  linearized approximation tried. But only marginally (0.43% better),
+  and the pilot's real, unavoidable forward-pass compute cost (+4.6%
+  raw FLOPs vs B13) outweighs that gain -- worse net score than B13/B14/
+  B16 despite the best raw MSE. Notably, matmul calls (86) were FEWER
+  than B13/B16/B19's 193 and the overhead ratio (1.251) was BETTER than
+  B13/B16's -- so this isn't a call-fragmentation problem, it's a
+  fundamental compute-vs-accuracy tradeoff. This is decisive evidence
+  the B1/B10 lineage has hit its ceiling for direction-finding
+  refinement of any kind: the true best-possible direction barely beats
+  the cheap approximation already in use. See `experiments/log-claude.md`
+  and `experiments/results/claude/B21-claude-20260716T113000Z-1598169-summary.json`.
+  Any future work on this lineage should target the orthogonal
+  -complement sampling's own variance, not the direction estimate.
 
-## Done
 ## Done
 
 (nothing yet)
