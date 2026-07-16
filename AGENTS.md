@@ -110,6 +110,10 @@ and old `champion.json`.
 - Confirm the worktree is clean.
 - `git fetch origin`, then rebase the agent branch onto `origin/main`.
 - Read `champion.json`, both logs, recent result reports, and `BACKLOG.md`.
+- If an unfinished item is already `CLAIMED <this agent>`, resume that
+  interrupted iteration and its committed candidate/results instead of
+  claiming a second item. Complete it or explicitly release it through the
+  same atomic shared-update protocol.
 - If the submission ledger contains an active `submitting` reservation, do
   not submit anything else. Reconcile it only from an exact submission ID or
   exact attempt ID. Never guess a score from a nearby timestamp or team name.
