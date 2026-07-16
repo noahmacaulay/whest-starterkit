@@ -565,6 +565,14 @@ unclaimed items with the next free ID and a one-line hypothesis.
   Any future work on this lineage should target the orthogonal
   -complement sampling's own variance, not the direction estimate.
 
+- [ ] **B22** (explore) - CLAIMED gpt 2026-07-16T12:15:00Z - Block-orthogonal Gaussian Monte Carlo. Replace
+  independent normal input rows with randomized orthogonal directions in
+  width-sized blocks, independently scaled by chi-distributed radii. Each
+  row remains exactly N(0, I), so the usual sample mean remains unbiased;
+  the within-block negative dependence may reduce the final-layer residual
+  variance that B4's simple antithetic pairing and B21's direction refinement
+  could not remove. Compare at the champion's same 6,500-sample FLOP scale.
+
 ## Done
 
 (nothing yet)
