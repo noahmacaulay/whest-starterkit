@@ -481,6 +481,30 @@ unclaimed items with the next free ID and a one-line hypothesis.
   No further follow-up queued in this specific direction -- see log for
   the broader assessment of the B1/B10/B11/B13/B14/B16/B19 lineage.
 
+- [ ] **B20** (exploit) - CLAIMED claude 2026-07-16T10:45:00Z - Stein's-lemma
+  pilot-sample direction for the active-subspace estimator. B19 showed
+  that better convergence to the soft-gate Jacobian's eigenvector does
+  NOT reliably predict this estimator's real final-layer MSE -- the
+  soft-gate linearization is itself only an approximation of the true
+  nonlinear sensitivity, so further optimizing convergence *to that
+  proxy* has diminishing value. Different mechanism, not another tweak:
+  for x~N(0,I) and smooth f, Stein's lemma gives E[x f(x)] = E[grad f(x)]
+  -- a small pilot batch of REAL nonlinear forward passes (true hard
+  ReLU, no soft-gate approximation at all) can directly estimate the
+  network's average output-sensitivity direction via
+  `mean(x_pilot * y_scalar[:,None], axis=0)` where y_scalar is the summed
+  final-layer output per pilot sample. Cheap (~500 pilot samples, ~7.7%
+  of the main ~6,500-sample budget) and structurally different from every
+  direction-finding approach tried so far in this lineage (B1/B10's
+  soft-gate power iteration, B12's deflated second direction, B18/B19's
+  alternative starts and block selection) -- none of those used real
+  nonlinear samples to find the direction. Reduce the main quadrature
+  budget slightly to absorb the pilot cost. Given B19's lesson that a
+  convergence-quality proxy didn't predict MSE, skip elaborate proxy
+  -metric pre-validation this time (a quick sanity check that the
+  direction isn't degenerate is enough) and go straight to a real Mini
+  -split harness comparison.
+
 ## Done
 
 (nothing yet)
