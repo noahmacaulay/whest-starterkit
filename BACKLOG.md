@@ -227,7 +227,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   as it already has once -- should push the paired mean delta entirely
   negative and produce the first promotable champion since B0.
 
-- [ ] **B12** (exploit) - CLAIMED claude 2026-07-16T06:35:00Z - Two-direction
+- [x] **B12** (exploit) - DONE claude 2026-07-16T07:10:00Z - Two-direction
   active-subspace antithetic quadrature. B1/B10 use only the single top
   power-iteration direction (AGENTS.md: depth-32 covariance is "often
   rank-1 dominated", not purely rank-1). Checked B9's raw per-MLP data
@@ -250,6 +250,21 @@ unclaimed items with the next free ID and a one-line hypothesis.
   argument as plain antithetic pairing, so this stays unbiased. Hypothesis:
   if rank-1 dominance is imperfect, explicitly capturing the 2nd direction
   reduces residual variance beyond B1/B10's single-direction quadrature.
+  Result: REJECTED, decisively (paired 95% CI wholly positive, not just
+  straddling zero). Regressed on BOTH axes vs. B10: final_layer_mse 46%
+  worse (1.171e-05 vs B10's 7.995e-06, also worse than champion's
+  8.505e-06), and overhead also worse (matmul calls 353->610,
+  effective_compute/flops_used ratio 1.307->1.368, since running power
+  iteration twice roughly doubles that phase). Diagnosis: halving
+  independent base draws to afford the 4-way split traded away more
+  variance reduction than the second direction recovered -- the deflated
+  "second direction" is closer to arbitrary residual noise than genuine
+  signal, i.e. rank-1 dominance really is strong here. Fourth distinct
+  technique (after B4/B7/B8) confirming only the single top active-subspace
+  direction carries usable structure at depth 32. See
+  `experiments/log-claude.md` and
+  `experiments/results/claude/B12-claude-20260716T065000Z-1598169-summary.json`.
+  No further multi-direction follow-up recommended.
 
 ## Done
 

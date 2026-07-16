@@ -1,0 +1,74 @@
+{
+  "experiment_id": "B12-claude-20260716T065000Z",
+  "agent": "claude",
+  "hypothesis": "AGENTS.md notes depth-32 covariance is 'often rank-1 dominated', not purely rank-1. B1/B10 use only the single top power-iteration direction. Adding a second, deflated power-iteration direction, exploited via a 4-way antithetic split of the orthogonal-complement noise (sign-flipping the d2 component and the residual independently) instead of a second quadrature, might capture residual signal the first direction misses, at roughly the same total sample budget (halved independent base draws, 4 variants each instead of 2).",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "64b71a8",
+    "candidate_commit": "be2f794"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B12-claude-20260716T065000Z-1598169-champion-mini.json",
+      "candidate": "B12-claude-20260716T065000Z-1598169-candidate-mini.json",
+      "champion_stderr": "B12-claude-20260716T065000Z-1598169-champion-mini.stderr.txt",
+      "candidate_stderr": "B12-claude-20260716T065000Z-1598169-candidate-mini.stderr.txt",
+      "note": "Champion report reused byte-identical from the B4 experiment (same estimator.py@1598169, same deterministic dataset/seeds); candidate report freshly executed."
+    }
+  },
+  "pre_implementation_validation": {
+    "method": "Synthetic width=32/depth=6 network, comparing the 4-way construction (v1..v4, budget-matched at 1.2M total samples via 300k independent base draws) against B10-style 2-way antithetic (600k independent base draws) and a 2,000,000-sample conditional-MC reference, using a RANDOM (not power-iteration) d2 to isolate the construction's correctness.",
+    "result": "Unbiased (mean(m_all - ref) ~1e-4, within MC noise) and MODESTLY better than budget-matched 2-way (MSE 3.30e-07 vs 3.43e-07, ~3.7% better) in that small synthetic setting.",
+    "caveat_in_hindsight": "The synthetic check used a random d2 and a small width=32 network; it validated unbiasedness correctly but was not a reliable predictor of real-problem performance, since the real question -- whether a genuine second direction with exploitable signal exists at width=256/depth=32 -- can't be probed by a random-direction toy check."
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.52408376098378e-07,
+    "candidate_adjusted_final_layer_score": 1.5514114023374138e-06,
+    "relative_change_percent_vs_champion": 62.893506742654104,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 1.1710514239098301e-05,
+    "candidate_vs_B10_final_layer_mse_note": "B10's candidate final_layer_mse was 7.995433086876e-06 (better than champion). B12's is 1.171e-05 -- 46% WORSE than B10, and also worse than the champion. Adding the second direction regressed accuracy, not just overhead.",
+    "champion_mean_effective_compute": 30363295000.185635,
+    "candidate_mean_effective_compute": 35980389978.90595,
+    "champion_mean_score_multiplier": 0.11162976103009425,
+    "candidate_mean_score_multiplier": 0.1322808455106836
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_name/mlp_index",
+    "n": 100,
+    "mean_delta": 5.99003026239036e-07,
+    "t95_confidence_interval": [1.516057416245389e-07, 1.046400310853533e-06],
+    "worst_per_mlp_regression": 9.18892804731655e-06,
+    "worst_per_mlp_regression_mlp": "cole-martin",
+    "best_per_mlp_improvement": -1.539904502719211e-05,
+    "best_per_mlp_improvement_mlp": "jessica-benson",
+    "n_regressions": 77
+  },
+  "overhead_diagnostic": {
+    "matmul_calls": 610,
+    "flops_used": 27545184277,
+    "effective_compute": 37689974267.59065,
+    "ratio": 1.3682963195516347,
+    "comparison": "B10 (one direction, batched): 353 matmul calls, ratio 1.307. Running the deflated power iteration for a second direction roughly doubles that phase's call count (256->~512), pushing total calls to 610 and the overhead ratio to 1.368 -- worse than B10 on the compute axis too, on top of the accuracy regression."
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "Regressed on both axes versus B10: final-layer MSE is 46% worse (1.171e-05 vs 7.995e-06) and effective-compute overhead is also higher (ratio 1.368 vs 1.307). The construction is unbiased (validated) but halving the number of independent base random draws to afford the 4-way antithetic split traded away more direct variance reduction than the second direction recovered. Most likely explanation: the covariance structure is strongly enough rank-1 dominated that the deflated 'second direction' does not correspond to a genuine, persistent axis of signal -- it is closer to arbitrary residual noise, consistent with B4/B7/B8's independent finding that depth-32 collapse destroys exploitable structure outside the single dominant direction. This is the fourth distinct technique (after B4 antithetic, B7 re-antithetization, B8 layer-1 control variate) to confirm that only the top active-subspace direction (B1/B10's validated core) carries usable signal.",
+  "full_submission_gate": "NOT_RUN"
+}

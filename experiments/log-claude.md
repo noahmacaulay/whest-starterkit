@@ -356,3 +356,83 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   overhead gap closes while the ~6% MSE improvement is preserved (as this
   run demonstrates it survives batching), the paired mean delta should
   cross entirely below zero and this becomes a promotable champion.
+
+## 2026-07-16T07:10:00Z - B12-claude-20260716T065000Z: Two-direction active-subspace quadrature
+- Hypothesis: AGENTS.md notes depth-32 covariance is "often rank-1
+  dominated", not purely rank-1. B1/B10 use only the single top
+  power-iteration direction; a second, deflated power-iteration direction,
+  exploited via a 4-way antithetic split of the orthogonal-complement noise
+  (independently sign-flipping the d2 component and the residual, instead
+  of a second quadrature that would need new unverified GH constants under
+  time pressure) might capture residual signal the first direction misses.
+- Context: gpt claimed and finished B11 in parallel this iteration
+  (materializing the full soft-gate Jacobian to cut power-iteration call
+  count 256->40) -- result: effective_compute only dropped from B10's
+  3.5156e10 to 3.4706e10 (matrix-matrix products raised raw FLOPs enough
+  to offset most of the call-count win), CI still not entirely below zero,
+  REJECTED. That result made B12 a genuinely complementary (not
+  duplicate) lever: a statistical change rather than another overhead
+  squeeze on the same 1-D estimator.
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); candidate_claude.py @ be2f794, claimed from 64b71a8.
+  Also checked B9's raw per-MLP data before claiming (no claim needed, B9
+  already DONE): even its 73/100 non-crashed MLPs scored ~27x worse MSE
+  than champion on average (0/73 better) -- confirms full-ambient-space
+  Sobol/QMC is a genuine dead end here, not just B9's float32-before-ppf
+  crash bug, so a bug-fixed Sobol retry was not queued.
+- Pre-implementation validation: synthetic width=32/depth=6 network,
+  budget-matched 4-way (300k independent base draws -> 1.2M total rows)
+  vs. B10-style 2-way (600k independent base draws -> 1.2M total rows)
+  against a 2,000,000-sample conditional-MC reference, using a RANDOM
+  (not power-iteration) d2 to isolate correctness. Result: unbiased
+  (mean(m_all-ref)~1e-4, within MC noise) and modestly better than the
+  2-way baseline (MSE 3.30e-07 vs 3.43e-07, ~3.7% better) in that toy
+  setting -- correctly validated unbiasedness, but in hindsight was not a
+  reliable predictor of whether a genuine *second* direction exists at the
+  real problem's width=256/depth=32 scale.
+- Change: same soft-gate diagonal Jacobian and 4-iteration power method
+  for d1 as B1/B10; added a second 4-iteration deflated power iteration
+  (projecting out d1 at each step) for d2. Halved the base random-draw
+  count and built 4 antithetic variants per draw -- (+d2,+resid),
+  (-d2,+resid), (+d2,-resid), (-d2,-resid) -- concatenated into one
+  (~6,516, width) batch, single matmul per layer (same batching
+  discipline as B10).
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433),
+  split=mini (100 MLPs), budget=272000000000, runner=subprocess. Champion
+  report reused byte-identical from the B4 experiment; candidate report
+  freshly executed. Exact commands/reports:
+  results/claude/B12-claude-20260716T065000Z-1598169-summary.json.
+- Result: candidate adjusted score=1.551411402337e-06; champion=
+  9.524083760984e-07; relative_change=+62.893507%. candidate
+  final_layer_mse=1.171051423910e-05 -- 46% WORSE than B10's
+  7.995433086876e-06, and worse than the champion's 8.505e-06 too.
+  paired_mean_delta=5.990030262390e-07; paired_95pct_CI=
+  [1.516057416245e-07, 1.046400310854e-06] (wholly positive, i.e.
+  significantly worse, not just inconclusive). worst_per_MLP_regression=
+  9.188928047317e-06 (77/100 regressed). Overhead also regressed vs. B10:
+  matmul calls 353->610 (running power iteration twice roughly doubles
+  that phase), effective_compute/flops_used ratio 1.307->1.368. All
+  failure/budget/time/error flags=0.
+- Verdict: REJECTED, decisively (CI wholly positive, not straddling zero
+  like B10/B11). Regressed on both accuracy and overhead versus B10.
+  Diagnosis: halving the independent base random-draw count to afford the
+  4-way antithetic split traded away more direct variance reduction than
+  the second direction recovered -- most likely because the covariance is
+  rank-1 dominated enough that the deflated "second direction" is closer
+  to arbitrary residual noise than a genuine persistent signal axis. This
+  is the fourth distinct technique (after B4 antithetic, B7
+  re-antithetization, B8 layer-1 control variate) confirming that only the
+  single top active-subspace direction (B1/B10's validated core) carries
+  usable structure at depth 32; extending beyond it does not pay off.
+- Full/submission gate: NOT_RUN; the Mini paired gate failed.
+- New ideas queued: none. Multi-direction extensions of B1/B10 are now a
+  well-evidenced dead end (this result plus the general depth-32 collapse
+  pattern from B4/B7/B8). The remaining promising lever for the
+  B1/B10/B11 lineage is purely overhead reduction on the existing 1-D
+  estimator (B11's specific approach -- materializing the full Jacobian --
+  didn't close it; a cheaper power-iteration reduction, e.g. fewer than 4
+  iterations given the strong rank-1 dominance this very experiment's
+  failure mode reconfirms, remains untried).
