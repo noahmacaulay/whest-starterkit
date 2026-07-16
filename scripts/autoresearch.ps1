@@ -254,6 +254,8 @@ $usagePath = Join-Path $runtimePath "usage.csv"
 $cachePath = Join-Path $runtimePath "cache"
 $env:UV_CACHE_DIR = Join-Path $cachePath "uv"
 $env:HF_HOME = Join-Path $cachePath "huggingface"
+$env:HF_HUB_DISABLE_XET = "1"
+$env:HF_HUB_DISABLE_SYMLINKS_WARNING = "1"
 $env:XDG_CACHE_HOME = $cachePath
 # Windows sandbox setup may leave the worktree's .git pointer owned by its
 # helper account. Supply the narrow trust exception to every Git child without
