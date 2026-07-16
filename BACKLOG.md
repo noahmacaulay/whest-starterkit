@@ -253,13 +253,19 @@ unclaimed items with the next free ID and a one-line hypothesis.
   detail: `experiments/log-claude.md` B26 entry and eleven raw reports
   under `experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-*`.
 
-- [ ] **B22** (explore) - CLAIMED gpt 2026-07-16T12:15:00Z - Block-orthogonal Gaussian Monte Carlo. Replace
+- [x] **B22** (explore) - DONE gpt 2026-07-16T17:09:26Z - Block-orthogonal Gaussian Monte Carlo. Replace
   independent normal input rows with randomized orthogonal directions in
   width-sized blocks, independently scaled by chi-distributed radii. Each
   row remains exactly N(0, I), so the usual sample mean remains unbiased;
   the within-block negative dependence may reduce the final-layer residual
   variance that B4's simple antithetic pairing and B21's direction refinement
   could not remove. Compare at the champion's same 6,500-sample FLOP scale.
+  REJECTED on the official paired Mini gate: block orthogonality improved raw
+  final-layer MSE by 5.53%, but the 25 dense QR factorizations per MLP raised
+  mean effective compute from 3.03e10 to 7.95e10 and adjusted score worsened
+  149.32%. Paired mean delta=+1.198e-06, conservative 95% CI=
+  [+7.489e-07,+1.647e-06], 85/100 regressed, with zero failure flags. See
+  `experiments/results/gpt/B22-gpt-20260716T170926Z-2227ef3-summary.json`.
 
 - [x] **B23** (exploit, lead-priority 1) - DONE claude 2026-07-16T15:20:00Z - Reduce the champion's own
   flopscope overhead. Every overhead-reduction item so far (B10/B11/B13/

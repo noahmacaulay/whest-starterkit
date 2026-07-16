@@ -103,3 +103,14 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 
 ### B14 metadata correction
 - The rebase before result persistence rewrote the evaluated candidate commit from local `a12116c` to reachable commit `6e9f547`; candidate contents and raw reports are unchanged.
+
+## 2026-07-16T17:09:26Z - B22-gpt-20260716T170926Z: Block-orthogonal Gaussian Monte Carlo
+- Hypothesis: randomized orthogonal directions in width-sized blocks, independently scaled by chi-distributed radii, preserve exact standard-normal row marginals while their within-block negative dependence reduces the deep final-layer residual variance at the champion's 6,500-sample scale.
+- Base champion: estimator.py @ 2227ef3 (B25-claude-20260716T160000Z, source result 1cf928a); candidate_gpt.py @ b0f209d; shared base f4c0619.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock@9b677e2b91b0b4791c73c9449b6d5e5491093ddb.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1 (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433), split=mini (100 MLPs), budget=272000000000, runner=subprocess. Exact commands and immutable UTF-16 raw reports are recorded in `experiments/results/gpt/B22-gpt-20260716T170926Z-2227ef3-summary.json`.
+- Change: generate 25 full 256-row blocks by QR-factorizing seeded Gaussian matrices into Haar-orthogonal directions, multiply each row by an independently sampled chi(256) radius, retain 100 iid Gaussian remainder rows, then forward all 6,500 rows through the ordinary 32-layer Monte Carlo estimator.
+- Result: candidate_score=2.000049175750e-06; champion_score=8.021961866362e-07; relative_change=+149.321701%; paired_mean_delta=1.197852989114e-06; paired_95pct_CI=[7.488979275800e-07,1.646808050647e-06] using conservative tcrit=2.0; worst_per_MLP_regression=1.094173631722e-05 (85/100 regressed). Candidate final-layer MSE=6.812314277340e-06 vs champion=7.210787749159e-06 (-5.526074%), but candidate mean effective compute=7.947113460079e10 (multiplier=0.292173288973) vs champion=3.028150759163e10 (multiplier=0.111329072028); mean FLOPs=2.737072640000e10 vs 2.734951219200e10. All failure, budget, time, residual-wall-time, combined-budget, and error flags=0.
+- Verdict: REJECTED. Block orthogonality produced a real aggregate MSE reduction, but dense QR work appears as residual wall time and nearly triples effective compute; the adjusted-score paired interval is wholly positive and fails the promotion gate decisively.
+- Full/submission gate: NOT_RUN; the Mini promotion gate failed, so no promotion, Full run, reservation, or submission was attempted.
+- New ideas queued: none.

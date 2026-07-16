@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "experiment_id": "B22-gpt-20260716T170926Z",
+  "agent": "gpt",
+  "hypothesis": "Block-orthogonal Gaussian rows preserve exact N(0,I) marginals and may reduce final-layer Monte Carlo variance through within-block negative dependence.",
+  "base_shared_commit": "f4c0619b918fca0fb23c7052242f70f4b6aeb3cf",
+  "base_champion": {
+    "estimator_commit": "2227ef32b2cd797e966b312b956ad9b89c5c7666",
+    "experiment_id": "B25-claude-20260716T160000Z",
+    "source_result_commit": "1cf928a"
+  },
+  "candidate_commit": "b0f209ddbfebb30c239886569b5ba160a555448c",
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "commands": [
+      "uv sync --frozen",
+      "uv run --frozen whest version",
+      "uv pip show flopscope",
+      "uv run --frozen whest validate --estimator candidate_gpt.py",
+      "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+      "uv run --frozen whest run --estimator candidate_gpt.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json"
+    ],
+    "raw_reports": {
+      "champion": {
+        "path": "experiments/results/gpt/B22-gpt-20260716T170926Z-2227ef3-champion-mini.json",
+        "encoding": "UTF-16LE",
+        "sha256": "0a7a7a960446bcdcf229378ebb0870d0f77e2ef3a456bd46968a2159bb9f1647"
+      },
+      "candidate": {
+        "path": "experiments/results/gpt/B22-gpt-20260716T170926Z-2227ef3-candidate-mini.json",
+        "encoding": "UTF-16LE",
+        "sha256": "b052956c10ab2a82c037d553e3ba8d410738829d846eacfea499ffd4f33df2df"
+      },
+      "diagnostics": {
+        "champion_stderr": {
+          "path": "experiments/results/gpt/B22-gpt-20260716T170926Z-2227ef3-champion-mini.stderr.txt",
+          "sha256": "bb09d801b10d378dda15c273c5e27483eee759a4520e4ee1e95227b9aafedc99"
+        },
+        "candidate_stderr": {
+          "path": "experiments/results/gpt/B22-gpt-20260716T170926Z-2227ef3-candidate-mini.stderr.txt",
+          "sha256": "ce85aa7a66eaa8742d691b8869bb5d0dce9d5d8706b5be4624fce56286ccef5b"
+        }
+      }
+    }
+  },
+  "results": {
+    "matched_mlp_name_sets": true,
+    "n_pairs": 100,
+    "champion_adjusted_final_layer_score": 8.021961866362028e-7,
+    "candidate_adjusted_final_layer_score": 2.0000491757499004e-6,
+    "relative_adjusted_change_pct": 149.32170073465153,
+    "champion_final_layer_mse": 7.210787749158953e-6,
+    "candidate_final_layer_mse": 6.812314277340192e-6,
+    "relative_mse_change_pct": -5.526074066806885,
+    "paired_mean_delta": 1.1978529891136968e-6,
+    "paired_sample_sd": 2.244775307668525e-6,
+    "paired_standard_error": 2.244775307668525e-7,
+    "paired_95pct_ci": [7.488979275799919e-7, 1.646808050647402e-6],
+    "paired_ci_tcrit": 2.0,
+    "n_improved": 15,
+    "n_regressed": 85,
+    "n_tied": 0,
+    "champion_mean_effective_compute": 30281507591.63098,
+    "candidate_mean_effective_compute": 79471134600.78574,
+    "champion_mean_score_multiplier": 0.111329072028055,
+    "candidate_mean_score_multiplier": 0.29217328897347694,
+    "champion_mean_flops": 27349512192.0,
+    "candidate_mean_flops": 27370726400.0,
+    "champion_failures": {
+      "budget_exhausted": 0,
+      "time_exhausted": 0,
+      "residual_wall_time_exhausted": 0,
+      "combined_budget_exhausted": 0,
+      "error": 0
+    },
+    "candidate_failures": {
+      "budget_exhausted": 0,
+      "time_exhausted": 0,
+      "residual_wall_time_exhausted": 0,
+      "combined_budget_exhausted": 0,
+      "error": 0
+    },
+    "worst_regressions": [
+      {"mlp_name": "robert-barrera", "delta": 1.0941736317215559e-5},
+      {"mlp_name": "alan-campbell", "delta": 9.510336977179883e-6},
+      {"mlp_name": "jessica-henderson", "delta": 8.999515575745376e-6},
+      {"mlp_name": "shane-long", "delta": 7.408148731404041e-6},
+      {"mlp_name": "alexandra-reid", "delta": 7.391093188962232e-6}
+    ]
+  },
+  "verdict": "REJECTED",
+  "verdict_reason": "Raw final-layer MSE improved by 5.53%, but dense QR construction raised effective compute enough that adjusted score worsened 149.32%; the conservative paired 95% CI is entirely above zero.",
+  "promotion": "NOT_RUN",
+  "full_gate": "NOT_RUN",
+  "submission": "NOT_RUN"
+}
