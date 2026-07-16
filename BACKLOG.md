@@ -90,7 +90,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B3-claude-20260716T032500Z-1598169-summary.json`.
   Useful negative result for B2's choice of analytic core.
 
-- [ ] **B5** (explore) - CLAIMED gpt 2026-07-16T02:51:43Z - Rank-adaptive low-rank covariance propagation.
+- [x] **B5** (explore) - DONE gpt 2026-07-16T03:10:25Z - Rank-adaptive low-rank covariance propagation.
   Propagate `Sigma approximately D + UU^T` with rank chosen per MLP from the
   spectrum (see `experiments/covariance_spectrum_depth32.ipynb`). Verify
   rank-1 dominance across many seeds, not just the notebook's. Payoff: similar

@@ -1,0 +1,58 @@
+{
+  "experiment_id": "B5-gpt-20260716T025143Z",
+  "agent": "gpt",
+  "hypothesis": "An adaptively truncated diagonal-plus-low-rank covariance recursion preserves enough deep rank structure to improve analytic propagation at much lower FLOPs.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "762497a",
+    "candidate_commit": "b417d79"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --detail full --format json",
+    "reports": {
+      "champion": "B5-gpt-20260716T025143Z-1598169-champion.json",
+      "candidate": "B5-gpt-20260716T025143Z-1598169-candidate.json",
+      "champion_stderr": "B5-gpt-20260716T025143Z-1598169-champion.stderr.txt",
+      "candidate_stderr": "B5-gpt-20260716T025143Z-1598169-candidate.stderr.txt"
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.359644650593505e-07,
+    "candidate_adjusted_final_layer_score": 8.921633108631785e-05,
+    "relative_change_percent": 9432.021184229525,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 0.0008655785491282586,
+    "champion_mean_effective_compute": 29919254500.11421,
+    "candidate_mean_effective_compute": 23526698176.35376,
+    "champion_mean_flops": 27346176000,
+    "candidate_mean_flops": 330892673,
+    "champion_mean_score_multiplier": 0.10999725919159632,
+    "candidate_mean_score_multiplier": 0.1047045430856094
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m",
+    "mean_delta": 8.82803666212585e-05,
+    "t95_confidence_interval": [7.51114315209329e-05, 0.0001014493017215841],
+    "worst_per_mlp_regression": 0.0004175872130466817,
+    "n_regressions": 100
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "The truncated covariance representation loses too much correlation structure: adjusted score is 95.32x worse and the paired 95% confidence interval is wholly positive.",
+  "full_submission_gate": "NOT_RUN"
+}

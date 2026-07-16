@@ -38,3 +38,14 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: REJECTED: the control both increased final-layer MSE and added enough compute to worsen adjusted score; its paired interval is wholly positive.
 - Full/submission gate: NOT_RUN; the Mini promotion gate failed.
 - New ideas queued: none.
+
+## 2026-07-16T03:10:25Z - B5-gpt-20260716T025143Z: Rank-adaptive low-rank covariance propagation
+- Hypothesis: an adaptively truncated diagonal-plus-low-rank covariance recursion preserves sufficient deep rank structure to improve analytic propagation at lower FLOPs.
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source result 58900f1); candidate_gpt.py @ b417d79.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1 (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433), split=mini (100 MLPs), budget=272000000000, runner=subprocess. Exact commands and immutable raw reports are in results/gpt/B5-gpt-20260716T025143Z-1598169-summary.json.
+- Change: B5 represents covariance as `diag(d) + U U^T`; at each layer, it applies deflated power iterations to the implicit propagated covariance, retains up to 16/8/4 directions by depth, and discards components under 0.5% of total variance before the soft-gate ReLU update.
+- Result: candidate adjusted score=8.921633108632e-05; champion=9.359644650594e-07; relative_change=+9432.021184%; paired_mean_delta=8.828036662126e-05; paired_95pct_CI=[7.511143152093e-05,1.014493017216e-04]; worst_per_MLP_regression=4.175872130467e-04 (100/100). Candidate final-layer MSE=8.655785491283e-04 vs champion=8.504929468245e-06; candidate mean effective compute=2.352669817635e+10 vs 2.991925450011e+10; mean FLOPs=3.308926730000e+08 vs 2.734617600000e+10. All failure/budget/time/error flags=0.
+- Verdict: REJECTED: low-rank truncation loses correlation structure throughout the network; the adjusted score is about 95x worse and the conservative paired interval is wholly positive.
+- Full/submission gate: NOT_RUN; the Mini promotion gate failed.
+- New ideas queued: none.
