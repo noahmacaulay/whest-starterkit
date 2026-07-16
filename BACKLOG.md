@@ -411,6 +411,25 @@ unclaimed items with the next free ID and a one-line hypothesis.
   iteration-count reduction as a lever for this lineage. See
   `experiments/log-claude.md`. No candidate file was needed or committed.
 
+- [ ] **B18** (exploit) - CLAIMED claude 2026-07-16T09:35:00Z - Seeded random
+  power-iteration start for the B1/B10/B11/B13/B14 active-subspace
+  lineage. B17's full-dataset recheck found 2-iteration convergence is
+  poor for ~35/100 Mini-split MLPs (min cosine similarity 0.443) despite
+  strong rank-1 dominance overall. Hypothesis: this may not be a
+  fundamental convergence-rate problem but an artifact of the fixed,
+  deterministic `ones(width)` starting vector -- power-iteration
+  convergence rate depends on the initial vector's overlap with the true
+  dominant direction, and a single deterministic start could
+  systematically have poor overlap for specific weight-matrix structures
+  (unlucky alignment), unlike a per-MLP seeded random start whose overlap
+  is generically non-degenerate on average. Cheap to test: swap the start
+  vector for `fnp.random.default_rng(mlp.seed).standard_normal(width)`
+  (consistent with the seeding contract already used elsewhere in these
+  estimators) and recheck convergence across all 100 MLPs before touching
+  any candidate file. If this closes most of the gap for the
+  currently-poorly-converged MLPs, it's a free (zero extra FLOP or call
+  cost) accuracy improvement for the whole lineage.
+
 ## Done
 
 (nothing yet)
