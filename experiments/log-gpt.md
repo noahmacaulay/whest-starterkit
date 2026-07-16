@@ -100,3 +100,6 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: REJECTED. The calculation preserved B13's accuracy exactly and reduced its effective compute relative to B13, but not enough to overcome the remaining overhead; the adjusted score regressed and the conservative paired confidence interval is not entirely below zero.
 - Full/submission gate: NOT_RUN; the Mini promotion gate failed and no submission reservation was created.
 - New ideas queued: none.
+
+### B14 metadata correction
+- The rebase before result persistence rewrote the evaluated candidate commit from local `a12116c` to reachable commit `6e9f547`; candidate contents and raw reports are unchanged.
