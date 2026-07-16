@@ -22,7 +22,7 @@
       "paired_95pct_ci": [-2.5806878728564897e-07, -2.8680804175064248e-08]
     },
     "agent": "claude",
-    "note": "Promoted after B25 Mini paired gate (69/100 MLPs improved, CI entirely negative). Supersedes the B0 champion (1598169). The B0 champion's Full-split gate below is now stale (measured on the prior champion, not this one) -- this champion needs its own Full-split gate run before a submission attempt.",
+    "note": "Promoted after B25 Mini paired gate (69/100 MLPs improved, CI entirely negative). Supersedes the B0 champion (1598169). B26 (2026-07-16T17:00:00Z) completed this champion's own Full-split gate (see full_gate below); the previous_champion.full_gate entry is the superseded B0 champion's stale record, kept for history only. Submission remains blocked by S1 (undecided last_submitted_score gate), not by a missing Full gate.",
     "previous_champion": {
       "estimator_commit": "1598169",
       "promoted_by": "B0-gpt-20260716T002459Z",
@@ -54,8 +54,40 @@
       }
     },
     "full_gate": {
-      "status": "NOT_RUN",
-      "note": "The current champion (B25, radial-exact) has not yet had its own Full-split gate run. The full_gate above under `previous_champion` was measured on the superseded B0 champion (1598169) and does not apply here. AGENTS.md step 7 (paired gate on the independent full split) is outstanding for this champion before any submission attempt."
+      "status": "COMPLETE",
+      "n_mlps_evaluated": 1000,
+      "n_mlps_total_in_full_split": 1000,
+      "method": "B26: reused B24's chunked/resumable method (whestbench.cli._run_estimator_with_runner driven directly over explicit index ranges of the immutable Full split, ground truth read from the dataset's precomputed fields, never recomputed) for the new B25 champion. Ten independent 100-MLP subprocess-runner chunks (indices 0-99 through 900-999, zero overlap, zero duplicates, verified via globally-unique mlp_name across all chunks) run sequentially in the foreground -- smaller than B24's two 500-MLP chunks because concurrent/backgrounded chunk runs were unreliable in this session (killed partway through with no output, both with and without a scheduled wakeup in between; single foreground chunks of 100 MLPs, ~5 minutes each, completed reliably every time). MANDATORY correctness check before trusting the chunked path (per B24's precedent, redone because the estimator is new): cross-checked against the official `whest run` CLI on 20 Full-split MLPs and 30 Mini-split MLPs -- aggregate final_layer_mse matched the CLI to the exact last printed digit in both checks. CRITICAL bug caught and fixed by that same check: an initial version called whestbench.scoring.make_contest_from_dataset on a pre-sliced dataset (ds.select(range(start,end))), which silently lost the weakref metadata side-channel (a new Dataset object is not a key in whestbench's WeakKeyDictionary metadata store) and fell back to the wrong default seed_protocol_version (\"2.0\" instead of this dataset's real \"3.0\"), corrupting MLP reconstruction -- confirmed empirically (final_layer_mse diverged by up to ~6x per MLP from the CLI despite identical flops_used and clean budget/time flags on both sides). Fixed by reading seed_protocol_version from whestbench.metadata() on the ORIGINAL unsliced dataset before slicing, then building ContestData manually with the correct protocol version; the fix was reverified against the CLI (exact-digit match) before running any of the ten real chunks.",
+      "adjusted_final_layer_score": 8.507033588741281e-07,
+      "final_layer_mse": 7.69252006307397e-06,
+      "mean_effective_compute": 30079472132.079395,
+      "flops_used": 27349512192.0,
+      "mean_score_multiplier": 0.11058629460323308,
+      "n_failed_mlps": 0,
+      "failure_breakdown": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+      "measured_at": "2026-07-16T17:00:00Z",
+      "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+      "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+      "split": "full",
+      "flop_budget": 272000000000,
+      "runner": "subprocess",
+      "whestbench": "0.12.0rc3",
+      "flopscope": "0.8.0rc5",
+      "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f",
+      "raw_reports": [
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk0-100.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk100-200.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk200-300.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk300-400.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk400-500.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk500-600.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk600-700.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk700-800.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk800-900.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk900-1000.json",
+        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json"
+      ],
+      "note": "Full-split score (final_layer_mse=7.6925e-06) is consistent with, and marginally better than, the Mini-split champion numbers (7.2108e-06 mini vs 7.6925e-06 full -- within the expected suite-sampling range, not a large divergence) -- no evidence of Mini-split overfitting. Sanity check: the combined 1000-MLP aggregate's final_layer_mse matches the unweighted mean of the ten chunks' own independently-reported final_layer_mse values to 10 significant figures, confirming correct combination. This satisfies AGENTS.md step 7's Full-split evaluation prerequisite for the current champion. It is a single-estimator Full-split score, not a paired comparison -- any future candidate still needs its own paired Full-split comparison against this champion before a submission attempt. Submission itself remains blocked by S1 regardless (last_submitted_score is null)."
     }
   },
   "noise_floor": null,

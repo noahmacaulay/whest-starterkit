@@ -15,25 +15,30 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B26** (infra, exploit) - CLAIMED claude 2026-07-16T17:00:00Z - Full-split gate
-  for the new B25 radial-exact champion (estimator.py @ 2227ef3). B25's
-  promotion (Mini-split paired gate, n=100) supersedes the B0 champion
-  (1598169), whose complete Full-split gate (B24, 1000/1000 MLPs) is now
-  stale -- champion.json's `full_gate.status` is `NOT_RUN` for the
-  current champion. Reuse B24's validated chunked/resumable method
-  unchanged (it was built explicitly to be "reusable for every future
-  champion"): drive `whestbench.cli._run_estimator_with_runner` over two
-  500-MLP index ranges of the immutable Full split
-  (`hf://aicrowd/arc-whestbench-public-2026@v1-phase1`), ground truth
-  read from the dataset's precomputed fields (never recomputed), combine
-  into one 1000-MLP aggregate. Same mandatory correctness check as B24
-  (chunked path vs official `whest run` CLI, exact-digit match on a
-  Full-split and a Mini-split sample) before trusting it, even though
-  the method itself is already validated, since the *estimator* is new.
-  Deliverable: complete 1000-MLP `full_gate` for the current champion in
-  `champion.json` (replacing the `NOT_RUN` placeholder / stale
-  `previous_champion.full_gate`), unblocking AGENTS.md step 7's
-  Full-split prerequisite the moment S1 is resolved.
+- [x] **B26** (infra, exploit) - DONE claude 2026-07-16T17:00:00Z - Full-split gate
+  for the new B25 radial-exact champion (estimator.py @ 2227ef3),
+  COMPLETE (1000/1000 MLPs, zero failures). Reused B24's chunked method
+  but with ten 100-MLP chunks instead of two 500-MLP chunks -- backgrounded
+  500-MLP runs were killed with no output twice in this session (with and
+  without an intervening ScheduleWakeup), while foreground 100-MLP chunks
+  (~5 min each) completed reliably. The mandatory correctness check (vs
+  official CLI) caught a real bug before any real chunk ran: slicing the
+  dataset with `.select()` before calling `make_contest_from_dataset`
+  silently drops whestbench's weakref metadata side-channel, defaulting
+  `seed_protocol_version` to the wrong value ("2.0" vs this dataset's
+  real "3.0") and corrupting MLP reconstruction (~6x final_layer_mse
+  divergence from the CLI on identical-named MLPs, despite matching
+  flops_used and clean flags). Fixed by reading the protocol version from
+  `whestbench.metadata()` on the dataset BEFORE slicing, then building
+  `ContestData` manually; re-verified exact-digit match against the CLI
+  before trusting it. Combined result:
+  adjusted_final_layer_score=8.507033588741e-07,
+  final_layer_mse=7.692520063074e-06, mean_effective_compute=
+  3.007947213208e10 -- close to and slightly higher than the Mini-split
+  numbers that selected this champion, no overfitting signal.
+  `champion.json`'s `full_gate` updated from NOT_RUN to COMPLETE. Full
+  detail: `experiments/log-claude.md` B26 entry and eleven raw reports
+  under `experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-*`.
 
 - [ ] **B22** (explore) - CLAIMED gpt 2026-07-16T12:15:00Z - Block-orthogonal Gaussian Monte Carlo. Replace
   independent normal input rows with randomized orthogonal directions in

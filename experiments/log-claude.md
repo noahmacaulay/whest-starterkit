@@ -1307,3 +1307,69 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   the compute cost is unchanged to slightly improved. Full details,
   formulas, and raw reports:
   `experiments/results/claude/B25-claude-20260716T160000Z-1cf928a-summary.json`.
+
+## 2026-07-16T17:00:00Z - B26-claude: Full-split gate for the B25 radial-exact champion
+- Not a new estimator experiment (no candidate, no promotion decision) --
+  infrastructure work queued as B26 after B25's promotion left the new
+  champion's `full_gate` at `NOT_RUN` (the prior COMPLETE full_gate was
+  measured on the superseded B0 champion, 1598169). Claimed B26 (no race).
+- Method: reused B24's validated chunked/resumable approach --
+  `whestbench.cli._run_estimator_with_runner` driven directly over
+  explicit index ranges of the immutable Full split, ground truth read
+  from the dataset's precomputed fields (never recomputed). Used ten
+  100-MLP chunks (0-99 through 900-999) instead of B24's two 500-MLP
+  chunks: two attempts at running the 500-MLP chunks as backgrounded
+  processes (first alongside a `ScheduleWakeup` call, second without one)
+  both got killed partway through with zero output written, even though
+  the earlier B25 Mini-split champion/candidate runs had backgrounded
+  fine at n=100. Smaller 100-MLP chunks run one at a time in the
+  foreground (~5 min each, measured ~2.85s/MLP) completed reliably every
+  time -- reduced chunk size traded fewer, larger background runs for
+  more, smaller, synchronous ones once background execution proved
+  unreliable at this scale in this session.
+- MANDATORY correctness check (per B24's own requirement, redone since
+  the estimator is new even though the chunking method itself was
+  already validated): cross-checked against the official `whest run` CLI
+  on 20 Full-split MLPs and 30 Mini-split MLPs. FIRST ATTEMPT FAILED this
+  check, and caught a real bug before any of the ten real chunks ran:
+  calling `whestbench.scoring.make_contest_from_dataset` on an
+  already-sliced dataset (`ds.select(range(start,end))`) silently loses
+  the weakref metadata side-channel (`ds.select()` returns a new Dataset
+  object, which is not a key in whestbench's `WeakKeyDictionary`
+  metadata store), so the function fell back to the wrong default
+  `seed_protocol_version` ("2.0" instead of this dataset's real "3.0",
+  confirmed via `whestbench.metadata(ds)` on the unsliced dataset).
+  Symptom: `final_layer_mse` diverged from the CLI by up to ~6x on
+  identical-named MLPs (e.g. "dominic-nelson": mine=4.29e-06 vs
+  CLI=2.68e-05), while `flops_used` matched exactly and budget/time/error
+  flags stayed clean on both sides -- a strong signal predict() itself
+  was fine but the constructed MLP (and thus the RNG seed it fed
+  predict()) was wrong. Fixed by reading `seed_protocol_version` from
+  `whestbench.metadata()` on the ORIGINAL unsliced dataset before
+  slicing, then building `ContestData` manually (replicating
+  `make_contest_from_dataset`'s materialized-Dataset branch) with the
+  correct protocol version. Reran the check: both the Full[0:20] and
+  Mini[0:30] aggregates then matched the CLI to the exact last digit.
+- Result (all 10 chunks, zero overlap, zero duplicates -- verified via
+  globally-unique `mlp_name` across chunks, since `mlp_index` is
+  chunk-local not a global dataset index): zero budget/time/
+  residual-wall-time/combined-budget/error flags across all 1000 MLPs.
+  Combined adjusted_final_layer_score=8.507033588741e-07,
+  final_layer_mse=7.692520063074e-06, mean_effective_compute=
+  3.007947213208e10, mean_score_multiplier=0.110586294603. Sanity check:
+  combined final_layer_mse matches the unweighted mean of the ten
+  chunks' own independently-reported final_layer_mse to 10 significant
+  figures. Full-split score is close to, and slightly higher than, the
+  Mini-split champion numbers that selected this champion (7.2108e-06
+  mini vs 7.6925e-06 full) -- within ordinary suite-sampling range, no
+  sign of Mini-split overfitting.
+- Persisted: `champion.json`'s `full_gate` field replaced (status
+  NOT_RUN -> COMPLETE) with the result above and all eleven raw report
+  paths (ten chunks plus the combined report); top-level champion `note`
+  updated to reflect the completed gate. No `estimator.py` change, no
+  promotion action -- this is a single-estimator Full-split score, not a
+  paired comparison; a future candidate still needs its own paired
+  Full-split comparison against this champion before submission.
+  Submission itself remains blocked by S1 regardless.
+- Full/submission gate: COMPLETE (1000/1000) for the current champion.
+  No promotion, no submission action taken or implied.
