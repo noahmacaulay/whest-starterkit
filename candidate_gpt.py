@@ -21,7 +21,7 @@ _COV_RESCALE_THRESHOLD = 1e100
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Radial-exact Monte Carlo with output-template projection (B36).
+        """Radial-exact antithetic Monte Carlo (B37).
 
         For z ~ N(0, I_d), z = r*u with r = ||z|| ~ chi(d), u = z/r ~
         Uniform(sphere), r independent of u. `MLP` has no bias field, so
@@ -31,24 +31,25 @@ class Estimator(BaseEstimator):
         forward only directions, eliminating the radial component of MC
         variance entirely at negligible extra FLOP cost.
         """
-        n_samples = 6_500
+        n_directions = 3_250
         _ = budget
         width = mlp.width
 
         rng = fnp.random.default_rng(mlp.seed)
-        z = rng.standard_normal((n_samples, width)).astype(fnp.float32)
+        z = rng.standard_normal((n_directions, width)).astype(fnp.float32)
         norms = fnp.linalg.norm(z, axis=1)
-        u = z / norms[:, None]
+        positive_u = z / norms[:, None]
+        u = fnp.concatenate((positive_u, -positive_u), axis=0)
 
-        mc_rows = []
+        rows = []
         for w in mlp.weights:
             u = fnp.maximum(fnp.matmul(u, w), 0.0)
-            mc_rows.append(fnp.mean(u, axis=0))
+            rows.append(fnp.mean(u, axis=0))
 
         e_r = math.sqrt(2.0) * math.exp(
             math.lgamma((width + 1) / 2.0) - math.lgamma(width / 2.0)
         )
-        mc_means = e_r * fnp.stack(mc_rows, axis=0)
+        return e_r * fnp.stack(rows, axis=0)
 
         # --- Step 1: initialise the input distribution ---
         # Input is modelled as standard multivariate normal: mu=0, cov=I.
@@ -120,19 +121,8 @@ class Estimator(BaseEstimator):
             scale_factor = float(fnp.exp(log_scale))
             rows.append(mu * scale_factor)
 
-        # Project only the scored final-layer MC mean onto the deterministic
-        # covariance-propagation template.  The fitted scalar preserves the
-        # MC-estimated global magnitude while suppressing output-space noise
-        # orthogonal to the depth-collapse shape.
-        template = rows[-1]
-        template_energy = fnp.maximum(fnp.sum(template * template), 1e-12)
-        projection_scale = fnp.maximum(
-            fnp.sum(mc_means[-1] * template) / template_energy,
-            0.0,
-        )
-        output_rows = [mc_means[i] for i in range(mlp.depth - 1)]
-        output_rows.append(projection_scale * template)
-        return fnp.stack(output_rows, axis=0)
+        # Stack all layer means into a single (depth, width) array
+        return fnp.stack(rows, axis=0)
 
 
 def _load_baseline(name: str) -> type[BaseEstimator]:
