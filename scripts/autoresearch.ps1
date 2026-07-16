@@ -23,39 +23,11 @@ $utf8NoBom = New-Object Text.UTF8Encoding($false)
 [Console]::OutputEncoding = $utf8NoBom
 $OutputEncoding = $utf8NoBom
 
-# The standalone Codex desktop launcher does not currently bundle the Windows
-# sandbox setup helper. Interactive VS Code sessions add the extension's bin
-# directory to PATH, but Task Scheduler does not inherit that transient PATH.
+# Resolve the executable before changing any child-process environment.
 $resolvedCodexCommand = Get-Command codex -ErrorAction Stop
 $resolvedCodexPath = $resolvedCodexCommand.Source
 if ([string]::IsNullOrWhiteSpace($resolvedCodexPath)) {
     $resolvedCodexPath = $resolvedCodexCommand.Name
-}
-$vscodeExtensionsPath = Join-Path $HOME ".vscode\extensions"
-if (Test-Path -LiteralPath $vscodeExtensionsPath) {
-    $sandboxHelperDirectory = Get-ChildItem -LiteralPath $vscodeExtensionsPath -Directory -Filter "openai.chatgpt-*" |
-        Sort-Object LastWriteTime -Descending |
-        ForEach-Object { Join-Path $_.FullName "bin\windows-x86_64" } |
-        Where-Object { Test-Path -LiteralPath (Join-Path $_ "codex-windows-sandbox-setup.exe") } |
-        Select-Object -First 1
-    if (-not [string]::IsNullOrWhiteSpace($sandboxHelperDirectory)) {
-        $env:PATH = "$sandboxHelperDirectory;$env:PATH"
-
-        # Keep Codex and both of its sandbox helpers from the same release.
-        # The desktop bin currently has codex.exe only, which makes command
-        # execution fail after sandbox setup even when the setup helper is on PATH.
-        $extensionCodexPath = Join-Path $sandboxHelperDirectory "codex.exe"
-        $extensionCommandRunnerPath = Join-Path $sandboxHelperDirectory "codex-command-runner.exe"
-        $resolvedCodexDirectory = Split-Path -Parent $resolvedCodexPath
-        $resolvedCommandRunnerPath = Join-Path $resolvedCodexDirectory "codex-command-runner.exe"
-        if (
-            -not (Test-Path -LiteralPath $resolvedCommandRunnerPath) -and
-            (Test-Path -LiteralPath $extensionCodexPath) -and
-            (Test-Path -LiteralPath $extensionCommandRunnerPath)
-        ) {
-            $resolvedCodexPath = $extensionCodexPath
-        }
-    }
 }
 
 function Get-UtcTimestamp {
@@ -279,7 +251,11 @@ $runtimePath = Join-Path $RepoPath ".autoresearch-runtime"
 $logPath = Join-Path $runtimePath "logs"
 $statePath = Join-Path $runtimePath "state.json"
 $usagePath = Join-Path $runtimePath "usage.csv"
-New-Item -ItemType Directory -Path $logPath -Force | Out-Null
+$cachePath = Join-Path $runtimePath "cache"
+$env:UV_CACHE_DIR = Join-Path $cachePath "uv"
+$env:HF_HOME = Join-Path $cachePath "huggingface"
+$env:XDG_CACHE_HOME = $cachePath
+New-Item -ItemType Directory -Path $logPath, $env:UV_CACHE_DIR, $env:HF_HOME -Force | Out-Null
 $runnerLogPath = Join-Path $runtimePath "runner.log"
 
 function Write-RunnerLog {
@@ -377,7 +353,7 @@ try {
     $arguments = @(
         "exec",
         "--profile", [string]$roleConfig.profile,
-        "--sandbox", "workspace-write",
+        "--sandbox", [string]$config.sandbox_mode,
         "--ephemeral",
         "--json",
         "-"
@@ -399,7 +375,7 @@ try {
     $arguments = @(
         "exec",
         "--profile", [string]$roleConfig.profile,
-        "--sandbox", "workspace-write",
+        "--sandbox", [string]$config.sandbox_mode,
         "--ephemeral",
         "--json",
         "--output-last-message", $lastMessagePath,

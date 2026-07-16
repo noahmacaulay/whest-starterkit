@@ -47,10 +47,14 @@ limits.
 
 ## Safety model
 
-Automated profiles use `workspace-write`, `approval_policy = "never"`, and
-outbound network access. This allows unattended Git synchronization and fixed
-dataset access while keeping filesystem writes inside the worktree. Do not put
-secrets in the repository, prompts, environment variables, or logs.
+Automated profiles use `danger-full-access` with `approval_policy = "never"`.
+This is required because a complete worker tick writes Git metadata, pushes to
+GitHub, writes package/dataset caches, and may submit to AIcrowd; the Windows
+`workspace-write` sandbox deliberately protects Git metadata. Run this task
+only from a dedicated Windows account on the research laptop. That account has
+the security boundary: do not keep unrelated credentials, documents, mounted
+shares, browser sessions, secrets, or SSH keys accessible to it. Repository,
+Codex, GitHub, and AIcrowd credentials are necessarily in scope.
 
 The runner refuses to start Codex unless:
 
@@ -63,9 +67,8 @@ branch, merge conflict, uncommitted edit, missing profile, or failed command
 backs off and eventually pauses instead of accumulating damage.
 
 External submission remains governed by the reservation protocol in
-`AGENTS.md`. If AIcrowd authentication is inaccessible inside the sandbox, the
-run must leave an exact-ID blocker rather than weakening the sandbox or
-guessing whether submission succeeded.
+`AGENTS.md`. If AIcrowd authentication is unavailable, the run must leave an
+exact-ID blocker rather than guessing whether submission succeeded.
 
 ## One-time setup on the research laptop
 

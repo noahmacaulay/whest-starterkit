@@ -3,6 +3,7 @@
   "task_name": "WHEST-Codex-Autoresearch",
   "mutex_name": "WHEST_Codex_Autoresearch_GPT",
   "expected_branch": "agent/gpt",
+  "sandbox_mode": "danger-full-access",
   "worker_interval_minutes": 30,
   "lead_interval_hours": 6,
   "deep_interval_hours": 24,
