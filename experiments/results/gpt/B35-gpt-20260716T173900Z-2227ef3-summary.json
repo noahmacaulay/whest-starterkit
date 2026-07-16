@@ -1,0 +1,114 @@
+{
+  "experiment_id": "B35-gpt-20260716T173900Z",
+  "agent": "gpt",
+  "hypothesis": "A material fixed intercept in effective_compute(N)=a*N+b could make adjusted score decrease with sample count above the score floor.",
+  "base": {
+    "champion_experiment_id": "B25-claude-20260716T160000Z",
+    "champion_estimator_commit": "2227ef3",
+    "champion_source_result_commit": "1cf928a",
+    "claim_commit": "671693f",
+    "candidate_commit": "c77c875",
+    "measurement_driver_commit": "c01a8f5"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "mlp_selection": "first 10 MLPs, identical across all four runs",
+    "n_mlps": 10,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "validation_command": "uv run --frozen whest validate --estimator candidate_gpt.py",
+    "measurement_command_template": "uv run --frozen whest run --estimator candidate_gpt.py --class <EstimatorN> --runner subprocess --n-mlps 10 --detail raw --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "driver_command_template": "uv run --frozen python experiments/b35_measure_gpt.py --class-name <EstimatorN> --report <report.json> --stderr <stderr.txt>",
+    "reports": {
+      "3250": "B35-gpt-20260716T173900Z-2227ef3-calibration-n3250.json",
+      "6500": "B35-gpt-20260716T173900Z-2227ef3-calibration-n6500.json",
+      "13000": "B35-gpt-20260716T173900Z-2227ef3-calibration-n13000.json",
+      "26000": "B35-gpt-20260716T173900Z-2227ef3-calibration-n26000.json"
+    }
+  },
+  "measurements": [
+    {
+      "n_samples": 3250,
+      "adjusted_final_layer_score": 1.5139541187636496e-06,
+      "final_layer_mse": 1.5139541187636495e-05,
+      "mean_effective_compute": 15121278193.030195,
+      "mean_flops_used": 13674760192.0,
+      "mean_score_multiplier": 0.1
+    },
+    {
+      "n_samples": 6500,
+      "adjusted_final_layer_score": 4.569662723722146e-07,
+      "final_layer_mse": 4.161525521340082e-06,
+      "mean_effective_compute": 29823489193.06376,
+      "mean_flops_used": 27349512192.0,
+      "mean_score_multiplier": 0.10964518085685207
+    },
+    {
+      "n_samples": 13000,
+      "adjusted_final_layer_score": 4.797655705420116e-07,
+      "final_layer_mse": 2.2087608556375925e-06,
+      "mean_effective_compute": 59101037189.07676,
+      "mean_flops_used": 54699016192.0,
+      "mean_score_multiplier": 0.21728322495984104
+    },
+    {
+      "n_samples": 26000,
+      "adjusted_final_layer_score": 6.606815654955793e-07,
+      "final_layer_mse": 1.528949482576536e-06,
+      "mean_effective_compute": 117564770191.76978,
+      "mean_flops_used": 109398024192.0,
+      "mean_score_multiplier": 0.432223419822683
+    }
+  ],
+  "affine_fit": {
+    "all_four_points": {
+      "slope_flops_per_sample": 4501949.554446513,
+      "intercept_flops": 535133496.91825104,
+      "r_squared": 0.9999992217069335,
+      "intercept_over_n6500_effective_compute": 0.017943356441429074
+    },
+    "above_floor_points_n6500_n13000_n26000": {
+      "slope_flops_per_sample": 4499218.2087639235,
+      "intercept_flops": 591622691.7172623,
+      "r_squared": 0.9999998506157215,
+      "intercept_over_n6500_effective_compute": 0.019837474008737373
+    },
+    "per_mlp_all_four_points": {
+      "mean_intercept_flops": 535133496.9182442,
+      "sample_sd_intercept_flops": 249154146.19442606,
+      "min_intercept_flops": 342446887.25634766,
+      "max_intercept_flops": 1224075569.093567,
+      "mean_intercept_over_n6500_effective_compute": 0.017881804382377724,
+      "min_intercept_over_n6500_effective_compute": 0.011523232992529001,
+      "max_intercept_over_n6500_effective_compute": 0.04008800089102098
+    },
+    "model_relative_score_change_percent_vs_n6500": {
+      "n13000": -0.8979411170188745,
+      "n26000": -1.3469116755283284,
+      "asymptotic": -1.7943356441429075
+    }
+  },
+  "observed_relative_score_change_percent_vs_n6500": {
+    "n13000": 4.9892737272360765,
+    "n26000": 44.57994067392168
+  },
+  "failure_breakdown": {
+    "3250": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "6500": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "13000": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "26000": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "paired_promotion_gate": {
+    "status": "NOT_RUN",
+    "reason": "The backlog-prescribed feasibility condition failed: fitted b/C6500 was 1.79% (1.98% using only above-floor points), below the approximately 2-3% trigger for a 100-MLP paired comparison."
+  },
+  "verdict": "REJECTED",
+  "full_submission_gate": "NOT_RUN"
+}
