@@ -1040,7 +1040,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   -complement sampling's own variance, not the direction estimate.
 
 
-- [ ] **B39** (exploit) - CLAIMED gpt 2026-07-16T20:57:43Z - Fast randomized-Hadamard orthogonal directions
+- [x] **B39** (exploit) - DONE gpt 2026-07-16T21:04:54Z (feasibility-rejected) - Fast randomized-Hadamard orthogonal directions
   for the B25 radial-exact champion. B22 showed that exact Haar-orthogonal
   blocks lower aggregate final-layer MSE by 5.5%, but dense QR generation
   nearly triples effective compute. Replace each QR block by a product of
@@ -1053,4 +1053,12 @@ unclaimed items with the next free ID and a one-line hypothesis.
   before the full paired harness if squared bias erases the orthogonality
   variance reduction; otherwise validate and run the standard 100-MLP Mini
   pair.
+  Result: REJECTED at the predeclared 10-MLP, six-seed feasibility gate.
+  The H-D-H-D-H-D design increased mean replicate MSE by 2.40% and seed
+  variance by 2.58% versus radial-iid directions; worst MLP regression was
+  +81.35%. Thus the approximate-Haar blocks do not reproduce B22's variance
+  reduction, even before considering structured-direction bias. Candidate
+  validated, but the 100-MLP paired harness was correctly NOT_RUN. See
+  `experiments/log-gpt.md` and
+  `experiments/results/gpt/B39-gpt-20260716T205516Z-2227ef3-summary.json`.
 

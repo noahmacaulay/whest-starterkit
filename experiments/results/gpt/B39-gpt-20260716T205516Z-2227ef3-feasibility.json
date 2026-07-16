@@ -1,0 +1,313 @@
+{
+  "experiment_id": "B39-gpt-20260716T205516Z",
+  "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+  "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+  "split": "mini",
+  "indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "n_samples": 6500,
+  "repetitions": 6,
+  "design": "25 H-D-H-D-H-D orthogonal blocks plus 100 iid directions",
+  "aggregate": {
+    "iid": {
+      "mean_rep_mse": 4.3627348305495415e-06,
+      "seed_variance": 4.4097883007067025e-06,
+      "raw_ensemble_bias2": 6.87911246627294e-07,
+      "corrected_bias2": -4.705347015715634e-08,
+      "estimated_expected_mse": 4.476222406139866e-06
+    },
+    "structured": {
+      "mean_rep_mse": 4.467392432482519e-06,
+      "seed_variance": 4.523391610209239e-06,
+      "raw_ensemble_bias2": 6.978994239748095e-07,
+      "corrected_bias2": -5.5999177726730305e-08,
+      "estimated_expected_mse": 4.663341295838988e-06
+    },
+    "rep_mse_relative_change": 0.023988989933590554,
+    "seed_variance_relative_change": 0.02576162431296991,
+    "structured_bias2_over_iid_expected_mse": 0.0,
+    "gate_pass": false
+  },
+  "per_mlp": [
+    {
+      "mlp_index": 0,
+      "mlp_name": "daniel-harrison",
+      "seeds": [
+        2186555395,
+        12486429726396869976,
+        16574147354679955020,
+        18180767020280458758,
+        15944711072092659149,
+        8464715923206694413
+      ],
+      "iid": {
+        "mean_rep_mse": 3.726146791563754e-06,
+        "seed_variance": 3.7897157783055525e-06,
+        "raw_ensemble_bias2": 5.680503096424697e-07,
+        "corrected_bias2": -6.356898674178906e-08,
+        "estimated_expected_mse": 3.7897157783055525e-06
+      },
+      "structured": {
+        "mean_rep_mse": 4.039386992018718e-06,
+        "seed_variance": 3.426433864496033e-06,
+        "raw_ensemble_bias2": 1.18402543827203e-06,
+        "corrected_bias2": 6.129531275226912e-07,
+        "estimated_expected_mse": 4.0393869920187246e-06
+      },
+      "rep_mse_relative_change": 0.08406544829746387
+    },
+    {
+      "mlp_index": 1,
+      "mlp_name": "dustin-robinson",
+      "seeds": [
+        1670239215,
+        6244356061520940764,
+        2080949656051730387,
+        12709972360765276425,
+        14669279276157802258,
+        13831091056070863478
+      ],
+      "iid": {
+        "mean_rep_mse": 7.128210659433248e-06,
+        "seed_variance": 7.519329146839762e-06,
+        "raw_ensemble_bias2": 8.621030370667833e-07,
+        "corrected_bias2": -3.9111848740651037e-07,
+        "estimated_expected_mse": 7.519329146839762e-06
+      },
+      "structured": {
+        "mean_rep_mse": 4.8876631107548055e-06,
+        "seed_variance": 5.040380056887441e-06,
+        "raw_ensemble_bias2": 6.87346396681944e-07,
+        "corrected_bias2": -1.5271694613262947e-07,
+        "estimated_expected_mse": 5.040380056887441e-06
+      },
+      "rep_mse_relative_change": -0.3143211747976854
+    },
+    {
+      "mlp_index": 2,
+      "mlp_name": "cole-martin",
+      "seeds": [
+        2571478064,
+        795928001855939509,
+        17218525476367071772,
+        11298675510647742135,
+        5915635171733977698,
+        18164235074850362193
+      ],
+      "iid": {
+        "mean_rep_mse": 1.0051187653306184e-05,
+        "seed_variance": 1.0035645191404978e-05,
+        "raw_ensemble_bias2": 1.6881499938020821e-06,
+        "corrected_bias2": 1.5542461901252452e-08,
+        "estimated_expected_mse": 1.005118765330623e-05
+      },
+      "structured": {
+        "mean_rep_mse": 1.3426115187142703e-05,
+        "seed_variance": 1.330450654954379e-05,
+        "raw_ensemble_bias2": 2.339026395856109e-06,
+        "corrected_bias2": 1.2160863759881092e-07,
+        "estimated_expected_mse": 1.34261151871426e-05
+      },
+      "rep_mse_relative_change": 0.33577400504769095
+    },
+    {
+      "mlp_index": 3,
+      "mlp_name": "donna-clarke",
+      "seeds": [
+        3952087115,
+        12401207925095536687,
+        5191549464966966624,
+        686876106089928905,
+        1227694118481840268,
+        1132212252399140097
+      ],
+      "iid": {
+        "mean_rep_mse": 2.0773656352562984e-06,
+        "seed_variance": 2.030798257692925e-06,
+        "raw_ensemble_bias2": 3.850337538455307e-07,
+        "corrected_bias2": 4.656737756337653e-08,
+        "estimated_expected_mse": 2.0773656352563018e-06
+      },
+      "structured": {
+        "mean_rep_mse": 1.5881785928911896e-06,
+        "seed_variance": 1.705298553711023e-06,
+        "raw_ensemble_bias2": 1.6709646479867022e-07,
+        "corrected_bias2": -1.171199608198336e-07,
+        "estimated_expected_mse": 1.705298553711023e-06
+      },
+      "rep_mse_relative_change": -0.23548432402211883
+    },
+    {
+      "mlp_index": 4,
+      "mlp_name": "rebecca-walker",
+      "seeds": [
+        892964673,
+        5589178189091432302,
+        14118560981657339509,
+        2706077669162637653,
+        13381442837727137440,
+        16257624798969390004
+      ],
+      "iid": {
+        "mean_rep_mse": 2.9793797278150202e-06,
+        "seed_variance": 2.577354129922712e-06,
+        "raw_ensemble_bias2": 8.315846195460851e-07,
+        "corrected_bias2": 4.020255978922998e-07,
+        "estimated_expected_mse": 2.9793797278150118e-06
+      },
+      "structured": {
+        "mean_rep_mse": 2.0735390898925296e-06,
+        "seed_variance": 2.2423076301275247e-06,
+        "raw_ensemble_bias2": 2.049493981195897e-07,
+        "corrected_bias2": -1.6876854023499774e-07,
+        "estimated_expected_mse": 2.2423076301275247e-06
+      },
+      "rep_mse_relative_change": -0.30403665214799747
+    },
+    {
+      "mlp_index": 5,
+      "mlp_name": "monique-stevens",
+      "seeds": [
+        427264694,
+        12679419461958047179,
+        4409774630335376034,
+        6697865208118176503,
+        13600475663007017518,
+        7034015029739251130
+      ],
+      "iid": {
+        "mean_rep_mse": 4.013621301966199e-06,
+        "seed_variance": 3.864912733227973e-06,
+        "raw_ensemble_bias2": 7.928606909428855e-07,
+        "corrected_bias2": 1.487085687382233e-07,
+        "estimated_expected_mse": 4.013621301966197e-06
+      },
+      "structured": {
+        "mean_rep_mse": 4.380311847942756e-06,
+        "seed_variance": 4.643639531905458e-06,
+        "raw_ensemble_bias2": 5.106122380215406e-07,
+        "corrected_bias2": -2.633276839627024e-07,
+        "estimated_expected_mse": 4.643639531905458e-06
+      },
+      "rep_mse_relative_change": 0.09136152077848547
+    },
+    {
+      "mlp_index": 6,
+      "mlp_name": "keith-brock",
+      "seeds": [
+        2847111487,
+        7923834688784308324,
+        3501290194230473624,
+        5456260375818662837,
+        5354830054340779119,
+        12542609890776336983
+      ],
+      "iid": {
+        "mean_rep_mse": 3.884129781374969e-06,
+        "seed_variance": 3.832632733138473e-06,
+        "raw_ensemble_bias2": 6.902691704262333e-07,
+        "corrected_bias2": 5.1497048236487724e-08,
+        "estimated_expected_mse": 3.884129781374961e-06
+      },
+      "structured": {
+        "mean_rep_mse": 3.68812683837598e-06,
+        "seed_variance": 4.204086197999114e-06,
+        "raw_ensemble_bias2": 1.847216733767132e-07,
+        "corrected_bias2": -5.159593596231391e-07,
+        "estimated_expected_mse": 4.204086197999114e-06
+      },
+      "rep_mse_relative_change": -0.050462511304039004
+    },
+    {
+      "mlp_index": 7,
+      "mlp_name": "robert-huff",
+      "seeds": [
+        4169750627,
+        16727994610987055703,
+        3745296624943433192,
+        286555614748278664,
+        16769846804269854690,
+        978232267735526356
+      ],
+      "iid": {
+        "mean_rep_mse": 1.853886025991289e-06,
+        "seed_variance": 1.9369911367254315e-06,
+        "raw_ensemble_bias2": 2.3972674538676566e-07,
+        "corrected_bias2": -8.31051107341396e-08,
+        "estimated_expected_mse": 1.9369911367254315e-06
+      },
+      "structured": {
+        "mean_rep_mse": 3.3619458244392524e-06,
+        "seed_variance": 2.697010733263256e-06,
+        "raw_ensemble_bias2": 1.114436880053203e-06,
+        "corrected_bias2": 6.649350911759937e-07,
+        "estimated_expected_mse": 3.36194582443925e-06
+      },
+      "rep_mse_relative_change": 0.8134587441218728
+    },
+    {
+      "mlp_index": 8,
+      "mlp_name": "kimberly-caldwell",
+      "seeds": [
+        426397155,
+        13609908033982807760,
+        6398071091264066690,
+        13829269193408074495,
+        15613570637444438113,
+        14539666963128660210
+      ],
+      "iid": {
+        "mean_rep_mse": 6.1129483435957565e-06,
+        "seed_variance": 6.581390504701752e-06,
+        "raw_ensemble_bias2": 6.284562563442854e-07,
+        "corrected_bias2": -4.684421611060066e-07,
+        "estimated_expected_mse": 6.581390504701752e-06
+      },
+      "structured": {
+        "mean_rep_mse": 5.09887796694216e-06,
+        "seed_variance": 5.6600461076366855e-06,
+        "raw_ensemble_bias2": 3.821728772449193e-07,
+        "corrected_bias2": -5.611681406945283e-07,
+        "estimated_expected_mse": 5.6600461076366855e-06
+      },
+      "rep_mse_relative_change": -0.16588891638778358
+    },
+    {
+      "mlp_index": 9,
+      "mlp_name": "annette-hansen",
+      "seeds": [
+        3915938992,
+        5865214597433654022,
+        5582453701610635289,
+        2736856228393777983,
+        3700018458699254129,
+        1270850827027296067
+      ],
+      "iid": {
+        "mean_rep_mse": 1.8004723851926981e-06,
+        "seed_variance": 1.9291133951074574e-06,
+        "raw_ensemble_bias2": 1.9287788926981873e-07,
+        "corrected_bias2": -1.286410099147575e-07,
+        "estimated_expected_mse": 1.9291133951074574e-06
+      },
+      "structured": {
+        "mean_rep_mse": 2.1297788744250968e-06,
+        "seed_variance": 2.3102068765220614e-06,
+        "raw_ensemble_bias2": 2.0460647732337548e-07,
+        "corrected_bias2": -1.804280020969681e-07,
+        "estimated_expected_mse": 2.3102068765220614e-06
+      },
+      "rep_mse_relative_change": 0.18290004997613685
+    }
+  ]
+}
