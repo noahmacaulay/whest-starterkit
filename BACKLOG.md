@@ -15,6 +15,21 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B30** (infra, explore) - CLAIMED claude 2026-07-16T19:00:00Z - Diagnose WHY
+  B25's Mini-split promotion (B29 showed) failed to replicate on the
+  Full split, to inform promotion methodology. Two structural facts to
+  establish and quantify: (1) whether the Mini and Full splits share
+  MLPs (if disjoint, a Mini promotion and a Full evaluation measure
+  different populations); (2) the per-MLP effect-size distribution of
+  B25 vs B0 on the Full split (mean vs per-MLP std -- if the std dwarfs
+  the mean, a 100-MLP gate has enough sampling variance to promote a
+  marginal candidate on a favorable draw). Deliverable: a written
+  characterization plus a concrete recommendation FOR THE LEAD (who owns
+  prioritization) on whether the promotion gate needs strengthening for
+  small-effect candidates. Pure analysis of existing immutable reports
+  (B24 B0-Full, B26 B25-Full) plus dataset metadata -- no harness runs,
+  no estimator change.
+
 - [x] **B29** (infra, exploit) - DONE claude 2026-07-16T18:30:00Z - Paired Full-split
   gate for the B25 champion vs the B0 champion, computed from two
   already-complete reports (B24's B0 Full report + B26's B25 Full
