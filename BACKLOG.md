@@ -503,6 +503,16 @@ unclaimed items with the next free ID and a one-line hypothesis.
   composing the two variance reductions makes the final-layer gain reliable
   at bit-comparable FLOPs. Promote only by the standard paired Mini gate.
 
+- [ ] **B41** (exploit) - CLAIMED gpt 2026-07-16T22:09:57Z - Partial-Haar
+  orthogonal direction blocks for the B25 radial-exact champion. B22 proved
+  that full 256-row Haar blocks lower final-layer MSE by 5.5%, while B40
+  proved their dense QR wall time makes the adjusted score worse. Test
+  thinner k-row Haar frames (k in {16, 32, 64, 128}) whose reduced-QR cost
+  falls with k while retaining part of the negative-dependence gain. First
+  measure MSE and wall-time/effective-compute tradeoffs on 10 canonical Mini
+  MLPs with multiple seeds; run the standard paired 100-MLP Mini harness only
+  if a k has a clear predicted adjusted-score advantage over radial-iid.
+
 ## Done
 
 - [x] **B0** (exploit, run this first) - Baseline everything. DONE gpt 2026-07-16T01:32:05Z
