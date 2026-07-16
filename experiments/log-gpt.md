@@ -126,6 +126,17 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Full/submission gate: NOT_RUN; feasibility failed, so no promotion, Full evaluation, reservation, or submission was attempted.
 - New ideas queued: none.
 
+## 2026-07-16T22:17:24Z - B41-gpt-20260716T220957Z: Partial-Haar orthogonal direction blocks
+- Hypothesis: thinner Haar-orthogonal k-frames may retain enough of B22's real variance reduction while reducing the QR wall-time penalty that made full 256-row frames uncompetitive.
+- Base champion: estimator.py @ 2227ef3 (B25-claude-20260716T160000Z, source result 1cf928a); candidate_gpt.py @ 97ed134; claim commit b26501e.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock last changed @ 9b677e2b91b0b4791c73c9449b6d5e5491093ddb.
+- Evaluation: predeclared feasibility gate on indices 0-9 of `hf://aicrowd/arc-whestbench-public-2026@v1-phase1` (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433), split=mini, 4 independent seeds per MLP, 6,500 directions, k in {16,32,64,128,256}. Exact commands and immutable results are in `experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-summary.json` and its linked feasibility report. `uv run --frozen whest validate --estimator candidate_gpt.py` passed. Per the claimed gate, the standard 100-MLP subprocess pair was NOT_RUN because no k had a clear predicted adjusted-score advantage.
+- Change: generate batched width-by-k Gaussian matrices, take sign-corrected reduced QR factors to obtain exact Haar-uniform orthonormal k-frames, flatten frames to 6,500 sphere directions, forward through the B25 radial-exact estimator, and compare repeated-seed MSE plus direction-generation wall time against radial-iid.
+- Result: iid mean MSE=4.589307340187e-06. k=16: MSE ratio=1.487270, predicted adjusted-score ratio=1.621439; k=32: 1.101641 and 1.238236; k=64: 0.966077 and 2.512338; k=128: 1.162079 and 4.332660; k=256: 0.997522 and 2.165696. Although k=64 reduced MSE 3.39%, median direction generation rose from 0.0268s to 0.5077s, implying estimated effective compute 2.60x the champion. For k=64, only 5/10 MLPs improved and the worst per-MLP repeated-seed MSE regression was +87.66% (`donna-clarke`). Harness adjusted scores, FLOPs, paired mean/95% CI, and failure flags are NOT_RUN/NOT_APPLICABLE because feasibility failed before a harness evaluation.
+- Verdict: REJECTED at the predeclared feasibility gate. Partial Haar frames do not create a useful cost/variance sweet spot: small k is cheap but fails to reduce MSE reliably, while k large enough to show a modest aggregate benefit pays far more QR residual compute than that benefit can offset.
+- Full/submission gate: NOT_RUN; feasibility failed, so no promotion, Full evaluation, reservation, or submission was attempted.
+- New ideas queued: none.
+
 ## 2026-07-16T18:15:52Z - B36-gpt-20260716T180943Z: Output-space collapse denoising
 - Hypothesis: depth-32 rank-1 output covariance makes the champion's final-layer sample mean denoisable by projecting it onto a deterministic covariance-propagation template while retaining a Monte Carlo-fitted global scale.
 - Base champion: estimator.py @ 2227ef3 (B25-claude-20260716T160000Z, source result 1cf928a); candidate_gpt.py @ f685617; claim commit 53ac7ac.

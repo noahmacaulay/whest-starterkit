@@ -503,7 +503,8 @@ unclaimed items with the next free ID and a one-line hypothesis.
   composing the two variance reductions makes the final-layer gain reliable
   at bit-comparable FLOPs. Promote only by the standard paired Mini gate.
 
-- [ ] **B41** (exploit) - CLAIMED gpt 2026-07-16T22:09:57Z - Partial-Haar
+- [x] **B41** (exploit) - DONE gpt 2026-07-16T22:17:24Z
+  (feasibility-rejected) - Partial-Haar
   orthogonal direction blocks for the B25 radial-exact champion. B22 proved
   that full 256-row Haar blocks lower final-layer MSE by 5.5%, while B40
   proved their dense QR wall time makes the adjusted score worse. Test
@@ -512,6 +513,13 @@ unclaimed items with the next free ID and a one-line hypothesis.
   measure MSE and wall-time/effective-compute tradeoffs on 10 canonical Mini
   MLPs with multiple seeds; run the standard paired 100-MLP Mini harness only
   if a k has a clear predicted adjusted-score advantage over radial-iid.
+  Result: REJECTED at the predeclared 10-MLP, four-seed feasibility gate.
+  Only k=64 lowered repeated-seed MSE (-3.39%), but its batched reduced QR
+  added ~0.48s and raised estimated effective compute 2.60x, for a predicted
+  adjusted-score regression of +151.23%. The cheapest candidate, k=32,
+  increased MSE 10.16% and predicted adjusted score 23.82%. The 100-MLP
+  paired harness was therefore NOT_RUN. See `experiments/log-gpt.md` and
+  `experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-summary.json`.
 
 ## Done
 

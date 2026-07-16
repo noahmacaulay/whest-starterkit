@@ -1,0 +1,107 @@
+{
+  "experiment_id": "B41-gpt-20260716T220957Z",
+  "title": "Partial-Haar orthogonal direction blocks",
+  "agent": "gpt",
+  "status": "REJECTED_FEASIBILITY",
+  "base_champion": {
+    "experiment_id": "B25-claude-20260716T160000Z",
+    "estimator_commit": "2227ef3",
+    "source_result_commit": "1cf928a",
+    "shared_state_at_start": "8b4ba9224aad9008192dd91123c5e325da06e16f"
+  },
+  "claim_commit": "b26501e",
+  "candidate_commit": "97ed134",
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "n_samples": 6500,
+    "repetitions": 4,
+    "block_sizes": [16, 32, 64, 128, 256],
+    "flop_budget": 272000000000,
+    "runner": "feasibility_numpy",
+    "commands": [
+      "uv run --frozen whest validate --estimator candidate_gpt.py",
+      "uv run --frozen python experiments/b41_feasibility_gpt.py --report experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-feasibility.json --n-mlps 10 --repetitions 4"
+    ],
+    "command_exit_codes": {
+      "validate": 0,
+      "feasibility": 0
+    },
+    "raw_report": "experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-feasibility.json"
+  },
+  "timing_model": {
+    "champion_effective_compute": 30046423292.01,
+    "residual_compute_per_second": 100000000000.0,
+    "method": "Add only each method's median direction-generation time beyond iid to the champion effective compute; unchanged forward FLOPs and any further tracking overhead are omitted, making this a conservative lower bound on candidate cost."
+  },
+  "aggregate": {
+    "iid": {
+      "mean_mse": 4.589307340187407e-06,
+      "median_generation_time_s": 0.026824850006960332
+    },
+    "haar_k16": {
+      "mean_mse": 6.8255413671826855e-06,
+      "mse_ratio_vs_iid": 1.4872704879477434,
+      "estimated_compute_ratio_vs_iid": 1.090211236566266,
+      "predicted_adjusted_score_ratio_vs_iid": 1.6214389977740231
+    },
+    "haar_k32": {
+      "mean_mse": 5.0557692439623635e-06,
+      "mse_ratio_vs_iid": 1.1016410253656945,
+      "estimated_compute_ratio_vs_iid": 1.1239922955917945,
+      "predicted_adjusted_score_ratio_vs_iid": 1.2382360250188853
+    },
+    "haar_k64": {
+      "mean_mse": 4.4336223205226836e-06,
+      "mse_ratio_vs_iid": 0.9660765758044947,
+      "median_generation_time_s": 0.5077353500018944,
+      "estimated_compute_ratio_vs_iid": 2.600558227251024,
+      "predicted_adjusted_score_ratio_vs_iid": 2.512338387362876,
+      "n_improved_mlps": 5,
+      "n_regressed_mlps": 5,
+      "worst_mlp_regression": {
+        "mlp_name": "donna-clarke",
+        "relative_mse_change": 0.876577296153349
+      }
+    },
+    "haar_k128": {
+      "mean_mse": 5.33313566207529e-06,
+      "mse_ratio_vs_iid": 1.162078559301175,
+      "estimated_compute_ratio_vs_iid": 3.728371001174283,
+      "predicted_adjusted_score_ratio_vs_iid": 4.33266000158489
+    },
+    "haar_k256": {
+      "mean_mse": 4.577933390870089e-06,
+      "mse_ratio_vs_iid": 0.997521641399407,
+      "estimated_compute_ratio_vs_iid": 2.1710768252701396,
+      "predicted_adjusted_score_ratio_vs_iid": 2.1656961183476833
+    }
+  },
+  "gate": {
+    "criterion": "Run the official 100-MLP pair only if the best conservative predicted adjusted-score ratio is below 0.98.",
+    "best_method": "haar_k32",
+    "best_predicted_adjusted_score_ratio_vs_iid": 1.2382360250188853,
+    "passed": false
+  },
+  "official_mini_pair": {
+    "status": "NOT_RUN",
+    "reason": "The predeclared feasibility gate failed.",
+    "candidate_adjusted_score": null,
+    "champion_adjusted_score": null,
+    "paired_mean_delta": null,
+    "paired_95pct_ci": null,
+    "flops_used": null,
+    "failure_flags": "NOT_APPLICABLE"
+  },
+  "promotion": "NOT_ATTEMPTED",
+  "full_gate": "NOT_RUN",
+  "submission": "NOT_RUN",
+  "verdict": "Partial Haar frames have no useful cost/variance sweet spot: small k does not lower MSE reliably, while k large enough for a modest MSE gain is dominated by QR residual compute."
+}
