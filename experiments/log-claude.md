@@ -180,3 +180,55 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   should invest further; B5/B6 (rank-adaptive and mean-field-asymptotic
   approaches, which target different error sources) remain the more
   promising analytic directions.
+
+## 2026-07-16T04:20:00Z - B7-claude: Depth-localized re-antithetization (design-invalidated)
+- Hypothesis (as queued): periodically reflecting the running activations at
+  intermediate layers sustains B4's antithetic variance-reduction benefit
+  deeper into the depth-32 collapse, since the layer-wise diagnostic in B4
+  showed pair correlation decaying to noise by layer ~25.
+- Base: claimed from bcaba93, base champion estimator.py @ 1598169 (no
+  candidate file needed -- see below).
+- What happened: before implementing, worked through what "reflecting the
+  running activation" at an intermediate layer actually means distributionally,
+  since B4's valid input-level antithetic trick relies on a specific fact --
+  Z and -Z are equal in distribution for Z~N(0,I) -- that does not carry
+  through a ReLU. Post-ReLU activations are supported on the non-negative
+  orthant, so h_l and -h_l are *not* equal in distribution once l>=1; there
+  is also no fresh randomness re-entering at any layer (the whole depth-32
+  trajectory is a deterministic pushforward of the single random input), so
+  there is no valid resampling opportunity to exploit mid-network at all.
+  Negating a running activation partway through is therefore not "another
+  valid antithetic draw" -- it silently changes what quantity is being
+  estimated.
+- Empirical confirmation (cheap synthetic check, width=64 depth=4,
+  200,000 pairs, weights He-initialized as in `local_engine.build_mlp`,
+  ground truth from a 4,000,000-sample plain MC estimate): B4's valid
+  input-only antithetic pairing gave MSE=5.006e-07 against ground truth, vs.
+  MSE=5.799e-02 (about 10^5 times worse) for the literal B7 construction
+  that negates the running activation after layer 1 -- with a clear
+  systematic bias of -0.0623 (mean(meanB)=0.5069 vs. mean(true_mean)=0.5692),
+  not just added noise. Confirms this is a design flaw, not an
+  implementation detail to debug.
+- Verdict: REJECTED at the design stage -- the method is a biased estimator
+  and was never run through `whest validate`/`whest run` against the real
+  Mini split, since doing so would only have (mis)measured a biased
+  estimator rather than tested the intended hypothesis. No candidate_claude.py
+  was committed for this item (nothing to keep: `candidate_claude.py`
+  remains at its B3 state on disk/HEAD). This is a legitimate timeboxed
+  research outcome per AGENTS.md ("a logged rejected experiment is a
+  completed product") -- catching an invalid method by reasoning plus a
+  cheap synthetic check, before spending a full paired Mini-split run on it,
+  is the correct amount of effort for a flaw this decisive.
+- Full/submission gate: NOT_RUN.
+- New ideas queued: B8 - any depth-localized variance reduction must stay
+  within the *input* distribution's actual symmetries (or introduce new,
+  independent randomness), not negate downstream nonlinear state. One
+  concretely valid direction: at layer 1 only (where z and -z are both
+  legitimate draws), h+ = relu(Wz) and h- = relu(-Wz) satisfy the *exact*,
+  free identities h+ - h- = Wz and h+ + h- = |Wz| elementwise. A control
+  variate or Rao-Blackwellized combination built from this exact layer-1
+  relationship (rather than trying to re-derive an analogous identity at
+  deeper layers, where none exists) could recover some of B4's lost
+  variance reduction without bias and without extra FLOPs. Needs a careful
+  from-scratch derivation to confirm unbiasedness before implementing --
+  do not skip that step, per this iteration's lesson.

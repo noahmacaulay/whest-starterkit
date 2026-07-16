@@ -116,7 +116,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   submission. Until then the Full gate can still be run and recorded, but no
   network submission may happen.
 
-- [ ] **B7** (explore) - CLAIMED claude 2026-07-16T04:05:00Z - Depth-localized re-antithetization. B4's layer-wise
+- [x] **B7** (explore) - DONE claude 2026-07-16T04:20:00Z (design-invalidated) - Depth-localized re-antithetization. B4's layer-wise
   diagnostic shows antithetic-pair (z, -z) correlation, and thus its
   variance-reduction benefit, decaying from -46% MSE at layer 0 to noise
   level by layer ~25 of 32, well before the scored final layer. Hypothesis:
@@ -132,6 +132,27 @@ unclaimed items with the next free ID and a one-line hypothesis.
   B7 builds directly on B4's validated infrastructure with a concrete,
   already-diagnosed target. B6 remains open for a future iteration with
   more room for derivation work.)
+  Result: REJECTED at the design stage, before any harness run. Post-ReLU
+  activations don't share Z's symmetry (Z and -Z are equal in distribution,
+  but h_l and -h_l are not for l>=1), and no fresh randomness re-enters
+  after the input, so there is no valid mid-network resampling to exploit;
+  "reflecting" a running activation silently changes the estimated
+  quantity. Confirmed with a cheap synthetic check (width=64, depth=4):
+  the literal construction has MSE ~10^5x worse than valid input-only
+  antithetic pairing, with a clear systematic bias (-0.0623), not just
+  noise. See `experiments/log-claude.md`. No candidate file was needed or
+  committed. Follow-up (a *valid* reformation) queued as B8.
+
+- [ ] **B8** (explore) - Exact layer-1 sign/magnitude control variate. From
+  B7's invalidation: at layer 1 only (where z and -z are both legitimate
+  input draws), h+ = relu(Wz) and h- = relu(-Wz) satisfy the exact, free
+  identities h+ - h- = Wz and h+ + h- = |Wz| elementwise -- no derivation
+  risk there, unlike trying to extend antithetic structure to deeper
+  layers where no such identity exists. Hypothesis: a control variate or
+  Rao-Blackwellized combination built from this exact layer-1 relationship
+  recovers some of B4's lost variance reduction without bias and without
+  extra FLOPs. Must derive and validate unbiasedness on a synthetic check
+  (as B3/B7 did) before wiring into a candidate -- do not skip that step.
 
 ## Done
 
