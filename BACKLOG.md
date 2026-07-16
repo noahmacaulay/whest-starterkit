@@ -15,6 +15,26 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B26** (infra, exploit) - CLAIMED claude 2026-07-16T17:00:00Z - Full-split gate
+  for the new B25 radial-exact champion (estimator.py @ 2227ef3). B25's
+  promotion (Mini-split paired gate, n=100) supersedes the B0 champion
+  (1598169), whose complete Full-split gate (B24, 1000/1000 MLPs) is now
+  stale -- champion.json's `full_gate.status` is `NOT_RUN` for the
+  current champion. Reuse B24's validated chunked/resumable method
+  unchanged (it was built explicitly to be "reusable for every future
+  champion"): drive `whestbench.cli._run_estimator_with_runner` over two
+  500-MLP index ranges of the immutable Full split
+  (`hf://aicrowd/arc-whestbench-public-2026@v1-phase1`), ground truth
+  read from the dataset's precomputed fields (never recomputed), combine
+  into one 1000-MLP aggregate. Same mandatory correctness check as B24
+  (chunked path vs official `whest run` CLI, exact-digit match on a
+  Full-split and a Mini-split sample) before trusting it, even though
+  the method itself is already validated, since the *estimator* is new.
+  Deliverable: complete 1000-MLP `full_gate` for the current champion in
+  `champion.json` (replacing the `NOT_RUN` placeholder / stale
+  `previous_champion.full_gate`), unblocking AGENTS.md step 7's
+  Full-split prerequisite the moment S1 is resolved.
+
 - [ ] **B22** (explore) - CLAIMED gpt 2026-07-16T12:15:00Z - Block-orthogonal Gaussian Monte Carlo. Replace
   independent normal input rows with randomized orthogonal directions in
   width-sized blocks, independently scaled by chi-distributed radii. Each
