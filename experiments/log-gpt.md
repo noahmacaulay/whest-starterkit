@@ -14,3 +14,5 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: PROMOTION_PENDING: the MC Mini paired gate passes; persist this result, then perform the required fresh-state compare-and-swap promotion.
 - Full/submission gate: NOT_RUN.
 - New ideas queued: none.
+- Promotion resolution: PROMOTED atomically to origin/main at 1598169 after a fresh-state check against result commit 58900f1.
+- Submission resolution: NOT_RUN. `last_submitted_score` is null and the ledger contains only legacy `pending` records without exact IDs, so the required 5% improvement comparison and safe reconciliation cannot be made; no reservation was created.
