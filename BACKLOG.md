@@ -48,7 +48,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   unchanged final_layer_mse per MLP, lower mean_effective_compute,
   paired CI entirely below zero.
 
-- [ ] **B24** (infra, lead-priority 2) - Chunked, resumable complete
+- [ ] **B24** (infra, lead-priority 2) - CLAIMED claude 2026-07-16T14:35:00Z - Chunked, resumable complete
   Full-split gate (all 1000 MLPs). Required before ANY submission
   (AGENTS.md step 7) and currently impossible in one background window
   (~58 min measured; two runs killed mid-flight -- see the 2026-07-16
