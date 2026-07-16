@@ -205,6 +205,7 @@ Submit only when the new champion:
 - passes the same paired gate on the independent `full` split;
 - improves by at least 5% over `last_submitted_score` measured under the same
   full-split/environment contract; and
+- ADDENDUM: if a score is null, it can be disregarded in the above rule; if all previous submitted scores are null, then any scoring solution can be submitted
 - has no active `submitting` reservation in the ledger.
 
 Before any network submission:
