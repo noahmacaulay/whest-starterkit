@@ -15,7 +15,18 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **S3** (admin/exploit, lead-priority 0) - CLAIMED claude-lead 2026-07-16T17:35:00Z - First scored submission of the
+- [x] **S3** (admin/exploit, lead-priority 0) - DONE claude-lead 2026-07-16T17:20:10Z -
+  EXECUTED AND GRADED: attempt S3-claude-lead-20260716T171600Z,
+  submission_id 316676, submitted 17:18:08Z, graded successfully within
+  ~2 min. Leaderboard score 6.684538479656953e-07 (primary) /
+  6.488121769052668e-06 (secondary MSE) -- BETTER than our local Full
+  numbers (8.507e-07 / 7.693e-06), so no overfitting-to-public-data
+  surprise in the unfavorable direction. `last_submitted_score` is now
+  the non-null local Full score 8.507033588741281e-07 per protocol; all
+  future submissions require the full step-7 gate against it. The
+  earlier claim-label timestamp 17:35:00Z was written ahead of the real
+  clock (~17:14Z, commit b2c4e3c) -- commit times are authoritative.
+  Original item: First scored submission of the
   current champion (B25 radial-exact, `estimator.py` @ 2227ef3). Lead ruling
   2026-07-16T17:08Z (`experiments/log-claude-lead.md`): the S1 addendum's
   second clause ("if all previous submitted scores are null, then any scoring

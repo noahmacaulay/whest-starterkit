@@ -91,7 +91,8 @@
     }
   },
   "submission_readiness": {
-    "status": "CLEARED_FOR_FIRST_SUBMISSION",
+    "status": "FIRST_SUBMISSION_GRADED",
+    "current_state": "S3 executed 2026-07-16T17:18Z: submission_id 316676, graded, leaderboard score 6.684538479656953e-07. last_submitted_score is now the non-null local Full score 8.507033588741281e-07. From here on, every submission requires the FULL AGENTS.md step 7 gate: paired Full-split comparison vs THIS submitted champion, >=5% improvement over last_submitted_score under the same full-split contract, and the reservation protocol. The first-submission lead ruling below is spent and does not apply again.",
     "lead_ruling": {
       "ruled_at": "2026-07-16T17:08:00Z",
       "ruled_by": "claude-lead",
@@ -128,17 +129,20 @@
     "raw_computation": "Not persisted as a separate raw report -- this is a closed-form calculation from already-public dataset fields (sampling_budget_breakdown, avg_variance) plus a one-off flopscope calibration measurement, not a harness run. Full derivation and calibration values in experiments/log-claude.md's B28 entry."
   },
   "bake_command": null,
-  "last_submitted_score": null,
+  "last_submitted_score": 8.507033588741281e-07,
+  "last_submitted_score_note": "Set by S3 (attempt S3-claude-lead-20260716T171600Z, submission_id 316676, graded 2026-07-16). Per AGENTS.md this is the exact recorded LOCAL Full-split score of the submitted champion (B26 report), the reference for future 5% improvement comparisons under the same full-split/environment contract. The AIcrowd leaderboard scored the same artifact 6.684538479656953e-07 (primary) / 6.488121769052668e-06 (secondary) on the private evaluation -- recorded in the submission entry, not used for the 5% rule.",
   "submissions_board": "https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026/submissions",
   "team_names": ["noahmacaulay", "DalTeam"],
   "submissions": [
     {
       "attempt_id": "S3-claude-lead-20260716T171600Z",
       "timestamp": "2026-07-16T17:16:00Z",
+      "submitted_at": "2026-07-16T17:18:08Z",
+      "graded_at": "2026-07-16T17:20:10Z",
       "agent": "claude-lead",
       "backlog_item": "S3",
-      "status": "submitting",
-      "submission_id": null,
+      "status": "graded",
+      "submission_id": 316676,
       "champion_experiment_id": "B25-claude-20260716T160000Z",
       "estimator_file_commit": "2227ef3",
       "reserved_on_main_commit": "b2c4e3c",
@@ -150,7 +154,9 @@
       "local_full_report": "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json",
       "environment": {"whestbench": "0.12.0rc3", "flopscope": "0.8.0rc5", "uv_lock_last_changed": "9b677e2"},
       "authorized_by": "Lead ruling 2026-07-16T17:08Z (experiments/log-claude-lead.md) under the user's S1 addendum; first scored submission only.",
-      "leaderboard_score": null,
+      "leaderboard_score": 6.684538479656953e-07,
+      "leaderboard_score_secondary": 6.488121769052668e-06,
+      "grading_response": {"id": 316676, "challenge_id": 1174, "challenge_round_id": 1428, "created_at": "2026-07-16T17:18:08.660Z", "grading_status_cd": "graded", "grading_message": "Graded successfully", "score": 6.684538479656953e-07, "score_secondary": 6.488121769052668e-06},
       "note": "Reservation for the FIRST scored submission. Timestamp correction for the record: the S3 claim edit was labeled 2026-07-16T17:35:00Z but actually pushed ~17:14Z (label written ahead of the clock; commit b2c4e3c is authoritative). If this entry is ever found stuck in status=submitting with a null submission_id, reconcile ONLY via this exact attempt_id in the submission description field -- never by timestamp."
     },
     {

@@ -128,3 +128,48 @@ Environment on this machine: `uv sync --frozen` clean, whestbench
   remains gpt's.
 
 Phase 2 of this tick: claim and execute S3.
+
+## 2026-07-16T17:20:10Z - S3-claude-lead-20260716T171600Z: first scored submission
+- Hypothesis: not an estimator experiment — execute the first scored
+  submission of the current champion under the Phase-1 lead ruling
+  (S1 addendum permits it; no previously-submitted baseline exists for
+  the paired Full gate to protect).
+- Base champion: B25 radial-exact MC, `estimator.py` @ 2227ef3
+  (bit-identical since promotion; re-verified this tick), Full gate
+  COMPLETE per B26 (1000/1000, zero failure flags,
+  adjusted_final_layer_score=8.507033588741e-07).
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock last
+  changed @ 9b677e2; `uv sync --frozen` clean on the claude-lead
+  machine; `whest validate` passed.
+- Evaluation: no new harness runs — submission gated on the existing
+  immutable B26 Full report per the lead ruling.
+- Change: packaged `estimator.py` with `whest package` →
+  `submissions/S3-claude-lead-20260716T171600Z-2227ef3.tar.gz`
+  (sha256 d6c807381092c244e1936e36b8d1e26e5f95ecc7f4a3547b5a258503b27fa7a5;
+  packaged estimator.py sha256 verified identical to the repo champion
+  via the manifest, aec3ca5b...). Artifact retained locally
+  (*.tar.gz gitignored). Reservation pushed atomically (9398a6d) as the
+  sole active `submitting` entry BEFORE any network call.
+- Result: `whest submit <artifact> --watch --format json` returned
+  submission_id=316676, created 2026-07-16T17:18:08Z, status GRADED
+  ("Graded successfully"): leaderboard score=6.684538479656953e-07
+  (primary), 6.488121769052668e-06 (secondary/MSE). Both are BETTER
+  than our local Full-split numbers (8.507e-07 / 7.693e-06) — the
+  private evaluation is consistent with, indeed slightly friendlier
+  than, our local contract; no adverse-generalization signal.
+- Verdict: DONE — first scored submission on the board.
+  `last_submitted_score` set to the exact recorded LOCAL Full score
+  8.507033588741281e-07 per protocol (leaderboard numbers recorded in
+  the ledger entry but not used for the 5% rule). The
+  first-submission ruling is spent: every future submission needs the
+  full step-7 gate (paired Full vs this champion + >=5% over
+  last_submitted_score + reservation).
+- Full/submission gate: PASS (per lead ruling); attempt
+  S3-claude-lead-20260716T171600Z, submission 316676, graded.
+- New ideas queued: none beyond Phase 1's B34/B35 (B34 inverse-error
+  fusion is now also the most direct route to a future >=5%-better
+  submission).
+- Housekeeping note: my own claim-label timestamp for S3 (17:35:00Z)
+  was written ahead of the true clock (~17:14Z) — the exact defect
+  flagged in this tick's Phase 1 audit. Commit b2c4e3c is
+  authoritative; timestamps in this entry are from the real clock.
