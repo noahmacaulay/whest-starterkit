@@ -23,7 +23,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   variance that B4's simple antithetic pairing and B21's direction refinement
   could not remove. Compare at the champion's same 6,500-sample FLOP scale.
 
-- [ ] **B23** (exploit, lead-priority 1) - Reduce the champion's own
+- [ ] **B23** (exploit, lead-priority 1) - CLAIMED claude 2026-07-16T14:50:00Z - Reduce the champion's own
   flopscope overhead. Every overhead-reduction item so far (B10/B11/B13/
   B14/B16) attacked the *candidate lineage's* overhead; nothing has ever
   attacked the champion's. The champion's score multiplier is
