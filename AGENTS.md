@@ -68,12 +68,12 @@ hf://aicrowd/arc-whestbench-public-2026@v1-phase1
 | File/ref | Owner | Rule |
 |---|---|---|
 | `origin/main` | shared | Serialization point and complete research history. Every accepted update is a normal fast-forward push. |
-| `agent/claude`, `agent/gpt` | per-agent | Local worktree branches. Rebase onto `origin/main`; never push them implicitly. |
+| `agent/claude`, `agent/gpt`, `lead/claude` | per-agent | Local worktree branches. Rebase onto `origin/main`; never push them implicitly. |
 | `estimator.py` | shared | Always the current champion. Change only in an atomic promotion commit. |
-| `candidate_claude.py`, `candidate_gpt.py` | per-agent | Scratch implementation. Never edit the other agent's candidate. |
+| `candidate_claude.py`, `candidate_gpt.py`, `candidate_claude_lead.py` | per-agent | Scratch implementation. Never edit another agent's candidate. |
 | `champion.json` | shared | Champion and submission ledger. Never update it separately from the estimator/result it describes. |
 | `BACKLOG.md` | shared | Idea queue. Claims become valid only when pushed to `origin/main`. |
-| `experiments/log-claude.md`, `experiments/log-gpt.md` | per-agent | Append-only human summaries. Read both from `origin/main` each iteration. |
+| `experiments/log-claude.md`, `experiments/log-gpt.md`, `experiments/log-claude-lead.md` | per-agent | Append-only human summaries. Read all of them from `origin/main` each iteration. |
 | `experiments/results/<agent>/` | per-agent | Immutable machine-readable reports, named by experiment ID and base-champion short SHA. |
 
 At the beginning and end of every tick, the worktree must be clean. Candidate
@@ -284,24 +284,34 @@ Terra High every 30 minutes, Sol High every 6 hours, and Sol XHigh every 24
 hours. Max and Ultra remain manual modes because they are not ordinary
 `codex exec` reasoning-effort values.
 
-The Claude lead review runs unattended once daily (07:00 local) via the
-Windows scheduled task `WHEST Claude Lead Review`, from the dedicated
-`whest-claude-lead` worktree on the lead-only branch `lead/claude` (this
-branch performs lead reviews only — no experiments, no submissions — and
-pushes shared changes to `origin/main` like any agent branch). The runner and
-its prompt are machine-local under that worktree's `.autoresearch-runtime/`.
-The Claude worker remains an interactive `/loop` session in `whest-claude`
-on `agent/claude` and is not scheduled.
+The Claude lead tick runs unattended three times daily (06:00, 14:00, 22:00
+local) via the Windows scheduled task `WHEST Claude Lead Review`, from the
+dedicated `whest-claude-lead` worktree on branch `lead/claude`, as agent
+`claude-lead` (Fable): a mandatory lead review, then optionally one deep
+experiment, per "Worker ticks and lead reviews". The runner and its prompt
+are machine-local under that worktree's `.autoresearch-runtime/`. The Claude
+worker remains an interactive `/loop` session in `whest-claude` on
+`agent/claude` and is not scheduled.
 
 ## Worker ticks and lead reviews
 
 - **Worker tick** (default): perform exactly one iteration above. Workers may
   append ideas but do not reorder priorities or delete lines of research.
-- **Lead review** (strong model, explicitly invoked about once or twice per
-  day): perform no experiment. Read both logs/results, reconcile exact-ID
+- **Lead tick** (strong model, scheduled a few times per day; agent id
+  `claude-lead`, branch `lead/claude`): two phases, in order.
+  *Phase 1 — review (mandatory):* read all logs/results, reconcile exact-ID
   pending submissions, audit the champion math and reproducibility metadata,
   and reprioritize/prune/merge backlog items with rationale in the lead's own
-  log. Never clear an ambiguous submission reservation automatically.
+  log. Never clear an ambiguous submission reservation automatically. Only
+  lead ticks may reorder backlog priorities.
+  *Phase 2 — deep experiment (optional, at most one):* after the review, the
+  lead may claim and execute exactly one backlog item as a normal worker
+  iteration under its own identity (`CLAIMED claude-lead`,
+  `candidate_claude_lead.py`, `experiments/results/claude-lead/`,
+  `experiments/log-claude-lead.md`), subject to every worker gate including
+  promotion CAS and the submission reservation protocol. Prefer items whose
+  bottleneck is mathematical subtlety over mechanical sweeps; skip Phase 2
+  when the review surfaced coordination problems that need recording first.
 
 ## Guardrails
 
