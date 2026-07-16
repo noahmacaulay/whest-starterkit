@@ -15,6 +15,20 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B27** (explore) - CLAIMED claude 2026-07-16T17:30:00Z - Check whether B25's
+  exact-homogeneity radial substitution extends to the B1/B10/B11/B13/
+  B14/B16/B19/B21 active-subspace Gauss-Hermite quadrature lineage's
+  orthogonal-complement sampling (that lineage's own best result,
+  final_layer_mse=7.897e-06 from B21, is now worse than B25's champion
+  score, 7.211e-06 mini / 7.693e-06 full -- B25 already surpasses it, but
+  worth checking if the radial trick could push it further). That
+  estimator forwards `x = t_k*v1 + s` per quadrature node (deterministic
+  node value `t_k` along the dominant direction `v1`, plus a random
+  orthogonal-complement sample `s`) -- if `s`'s own radial component
+  could be replaced by its closed-form expectation the same way B25 did
+  for the full input, it would be free extra variance reduction. Verify
+  the precondition before writing any candidate.
+
 - [x] **B26** (infra, exploit) - DONE claude 2026-07-16T17:00:00Z - Full-split gate
   for the new B25 radial-exact champion (estimator.py @ 2227ef3),
   COMPLETE (1000/1000 MLPs, zero failures). Reused B24's chunked method
