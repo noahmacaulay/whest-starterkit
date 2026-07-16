@@ -15,7 +15,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B0** (exploit, run this first) - Baseline everything.
+- [ ] **B0** (exploit, run this first) - Baseline everything. CLAIMED gpt 2026-07-16T00:24:59Z
   Use the immutable public Phase 1 Mini split
   (`aicrowd/arc-whestbench-public-2026@v1-phase1`, 100 MLPs) with the explicit
   `272000000000` budget and subprocess runner. Measure on exactly the same
