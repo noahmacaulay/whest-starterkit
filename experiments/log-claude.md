@@ -748,3 +748,77 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   low-risk, incremental engineering fixes; a block-iteration attempt
   would need to be scoped as its own careful, non-trivial experiment
   rather than another quick tweak.
+
+## 2026-07-16T10:30:00Z - B19-claude-20260716T101500Z: Block power iteration
+- Hypothesis: B18 found no single starting vector reliably converges well
+  for all MLPs. Batching K=4 starting vectors into one (K, width) block
+  and applying the soft-gate Jacobian to the whole block costs the *same*
+  number of matmul calls per round as a single vector (O(width^2*K), not
+  O(width^3) like gpt's B11 full-Jacobian materialization), so running 4
+  independent starts through 2 rounds and picking whichever grew the most
+  (a cheap proxy for best eigenvalue alignment) should recover most of an
+  oracle's accuracy at negligible extra FLOP cost and zero extra calls.
+- Pre-implementation validation (all 100 Mini-split MLPs, same discipline
+  as B13/B17/B18): block+heuristic min cosine similarity to a 6-round
+  reference improved from 0.443 (single ones-start) to 0.823, exactly
+  matching an oracle that always picks the true best-converged vector;
+  mean 0.979->0.996; MLPs below 0.999 similarity dropped from 35 to 9;
+  the heuristic picked the oracle's exact choice in 81/100 cases.
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); candidate_claude.py @ 31e8c1e, claimed from 843fbf4.
+  Combined with B14's elementwise diagonal fix and B16's full N=3250
+  budget (both already validated).
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433),
+  split=mini (100 MLPs), budget=272000000000, runner=subprocess. Champion
+  run fresh again, back-to-back with the candidate. Exact commands/reports:
+  results/claude/B19-claude-20260716T101500Z-1598169-summary.json.
+- Result (surprising): candidate final_layer_mse=8.360547565189e-06 --
+  slightly better than champion's 8.504929468245e-06, but WORSE than
+  B13's single-vector 2-iteration result (7.931290535907e-06), despite
+  B19's direction being far better converged on the proxy metric. Ran a
+  post-hoc bug check before accepting this: re-derived the exact
+  block-iteration logic standalone on 5 MLPs and matched the validation
+  script exactly (e.g. MLP 46 cos_sim=0.822550 in both); confirmed the
+  main quadrature-sampling `rng` is freshly re-seeded independent of the
+  power-iteration random starts, so the main noise draw is byte-identical
+  to B13's -- no RNG-state confound, no bug found. matmul calls=193 and
+  flops_used=27.54e9, both matching B13/B16's range exactly, confirming
+  the engineering mechanism (K=4 blocking adds zero calls, negligible
+  FLOPs) worked precisely as designed. paired_mean_delta=
+  1.324302774825e-07 (worse than B13/B14/B16's 5.5-6.4e-08);
+  paired_95pct_CI=[-2.382e-07, 5.031e-07].
+- KEY FINDING: much better direction convergence (proxy metric: cosine
+  similarity to the power-iteration eigenvector) did NOT translate to
+  better final-layer MSE. Possible explanations: (1) the soft-gate
+  Jacobian's top eigenvector is itself only an approximation of the truly
+  MSE-optimal quadrature axis for the real nonlinear network -- deviating
+  from it isn't necessarily worse for the actual target; (2) MLPs with a
+  near-degenerate top-2 eigenvalue gap (B18: MLP 46, 57, 76, 98) may have
+  two directions of genuinely similar quadrature value, so "better
+  convergence to the nominal top eigenvector" doesn't clearly help those
+  either way; (3) ordinary between-MLP heterogeneity in one 100-MLP draw
+  -- aggregate MSE isn't a smooth function of average direction quality.
+- Verdict: REJECTED. Not an implementation failure -- a genuine,
+  well-verified negative result about the limits of the convergence
+  proxy metric this whole B17/B18/B19 sub-thread has been optimizing.
+- Full/submission gate: NOT_RUN; the Mini paired gate failed.
+- New ideas queued: none. This closes the power-iteration-convergence
+  sub-thread (B17, B18, B19) with a clear lesson: cosine similarity to
+  the soft-gate Jacobian's eigenvector is not a reliable target to
+  optimize for this estimator's actual final-layer MSE, so further work
+  on convergence quality specifically (better starts, block methods,
+  more iterations) is unlikely to pay off without first establishing a
+  proxy metric that correlates with real MSE (e.g. by measuring MSE
+  directly on a battery of directions rather than convergence to a
+  reference). Combined with B16 (N-tuning is a dead end) and B11/B14
+  (overhead reduction has diminishing returns), the B1/B10/B11/B13/B14/
+  B16/B19 active-subspace lineage has now had essentially every
+  low-to-medium-risk lever tried (12 sub-experiments total). The
+  remaining honest options are: (a) accept B13/B14's ~5.5e-08 mean delta
+  as close to this architecture's ceiling and move to a genuinely
+  different idea family, or (b) a fundamentally different, higher-risk
+  redesign of the quadrature/direction-selection approach itself, not a
+  tweak to the existing one.

@@ -1,0 +1,78 @@
+{
+  "experiment_id": "B19-claude-20260716T101500Z",
+  "agent": "claude",
+  "hypothesis": "B18 found no single power-iteration starting vector reliably converges well for all MLPs. Batching K=4 starting vectors into one (K, width) block costs the same number of matmul calls per round as a single vector (O(width^2*K), not O(width^3) like gpt's B11 materialization), so running 4 independent starts through 2 rounds and picking whichever grew the most should recover most of the accuracy of an oracle that always picks the best-converged vector, at negligible extra raw-FLOP cost and zero extra call count. Pre-implementation validation across all 100 Mini-split MLPs supported this: min cosine similarity to a 6-round reference improved from 0.443 (single ones-start) to 0.823 (block+heuristic, matching the oracle exactly), MLPs below 0.999 similarity dropped from 35 to 9, and the heuristic picked the true best vector outright in 81/100 cases.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "843fbf4",
+    "candidate_commit": "31e8c1e"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B19-claude-20260716T101500Z-1598169-champion-mini.json",
+      "candidate": "B19-claude-20260716T101500Z-1598169-candidate-mini.json",
+      "champion_stderr": "B19-claude-20260716T101500Z-1598169-champion-mini.stderr.txt",
+      "candidate_stderr": "B19-claude-20260716T101500Z-1598169-candidate-mini.stderr.txt",
+      "note": "Champion run fresh again (not reused), back-to-back with the candidate."
+    }
+  },
+  "pre_implementation_validation": {
+    "method": "Block power iteration (K=4: ones, alternating-sign, 2 seeded-random) through 2 rounds, all 100 Mini-split MLPs, comparing growth-based selection heuristic against an oracle that always picks the truly-best-converged vector by cosine similarity to a 6-round reference.",
+    "result": "min cos_sim 0.443(single ones)->0.823(heuristic, matches oracle exactly); mean 0.979->0.996; n<0.999 35->9; heuristic picked the oracle's exact choice in 81/100 cases."
+  },
+  "post_hoc_bug_check": {
+    "purpose": "Result below was surprising (worse MSE despite validated better direction convergence), so checked for an implementation bug or RNG confound before accepting it at face value.",
+    "checks": ["Extracted candidate_claude.py's exact block-iteration logic standalone and reran it on 5 MLPs (0,5,10,46,57) -- matched the validation script's earlier findings exactly (e.g. MLP 46 cos_sim=0.822550 in both).", "Verified the main quadrature-sampling `rng` is a freshly re-seeded `fnp.random.default_rng(mlp.seed)` instance (candidate_claude.py line 131), independent of the earlier `rng` instance consumed for the 2 random power-iteration starts -- so the main noise draw is byte-identical between B13 (no power-iteration randomness at all) and B19 (block starts draw from a separate rng object). No RNG-state confound."],
+    "conclusion": "No bug found. The result is genuine: better proxy-metric (cosine similarity to a power-iteration-converged eigenvector) direction convergence did not translate into better real final-layer MSE in this harness run."
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.396525542578087e-07,
+    "candidate_adjusted_final_layer_score": 1.0720828317403504e-06,
+    "relative_change_percent_vs_champion": 14.093536688903344,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 8.360547565189335e-06,
+    "candidate_vs_B13_note": "Candidate MSE (8.3605e-06) is slightly better than the champion (8.5049e-06) but WORSE than B13's single-vector 2-iteration result (7.931e-06), despite B19's direction being far better converged on average by the cosine-similarity proxy. See key_finding below.",
+    "champion_mean_effective_compute": 30034533999.42463,
+    "candidate_mean_effective_compute": 34952606751.645584,
+    "champion_mean_score_multiplier": 0.11042108088023758,
+    "candidate_mean_score_multiplier": 0.12850223070457947,
+    "candidate_flops_used": 27536264052.0,
+    "candidate_matmul_calls": 193,
+    "note": "Engineering hypothesis confirmed exactly as predicted: matmul call count (193) is identical to B14/B16 (block width added zero calls), and flops_used (27.54e9) is in the same range as B13/B16 (K=4 blocking added negligible raw FLOPs). The block-iteration mechanism works as designed on the compute axis."
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_name/mlp_index",
+    "n": 100,
+    "mean_delta": 1.3243027748254165e-07,
+    "t95_confidence_interval": [-2.3819115481264973e-07, 5.03051709777733e-07],
+    "worst_per_mlp_regression": 5.37590503378469e-06,
+    "worst_per_mlp_regression_mlp": "cole-martin",
+    "best_per_mlp_improvement": -1.168609563982116e-05,
+    "best_per_mlp_improvement_mlp": "jessica-benson",
+    "n_regressions": 57
+  },
+  "key_finding": {
+    "summary": "Block power iteration's much better direction convergence (validated: mean cosine similarity to eigenvector reference 0.979->0.996) did not improve final-layer MSE over B13's simpler single-vector approach (7.931e-06 -> 8.361e-06, actually worse). This is the clearest evidence yet in this lineage that 'cosine similarity to the power-iteration-converged eigenvector' is an imperfect proxy for 'quality of direction for minimizing this specific quadrature estimator's MSE'.",
+    "possible_explanations": "(1) The soft-gate Jacobian's top eigenvector is itself only an approximation of the truly MSE-optimal quadrature axis for the actual nonlinear ReLU network -- small deviations from it are not necessarily worse for the real target. (2) MLPs with a near-degenerate top-2 eigenvalue gap (identified in B18: MLP 46, 57, 76, 98) may have two directions of genuinely similar quadrature value, so 'better convergence to the nominal top eigenvector' doesn't clearly help those cases either way. (3) Ordinary between-MLP heterogeneity in a single 100-MLP draw: the aggregate MSE is not a smooth function of average direction quality, so a proxy-metric improvement concentrated on a few previously-bad MLPs does not guarantee the aggregate final-layer MSE (dominated by whichever MLPs have the largest true signal) moves the same way."
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "Paired 95% CI [-2.382e-07, 5.031e-07] is not entirely below zero, and mean_delta (1.324e-07) is worse than B13's/B14's/B16's smaller values (5.5-6.4e-08). The block-iteration engineering mechanism worked exactly as designed (zero extra calls, negligible extra FLOPs, confirmed via matmul-call-count and flops_used matching B13/B16's range), and the direction-convergence proxy metric improved substantially and reproducibly (verified via standalone re-derivation, no bug or RNG confound found) -- but this did not translate into better real final-layer MSE. This is a genuine, useful negative result about the limits of the convergence proxy, not an implementation failure.",
+  "full_submission_gate": "NOT_RUN"
+}

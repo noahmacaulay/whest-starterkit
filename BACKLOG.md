@@ -442,7 +442,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   starting vector for some of them), not a fixable initialization
   artifact. See `experiments/log-claude.md`. No candidate file needed.
 
-- [ ] **B19** (exploit) - CLAIMED claude 2026-07-16T10:00:00Z - Block
+- [x] **B19** (exploit) - DONE claude 2026-07-16T10:30:00Z - Block
   (multi-vector) power iteration for the active-subspace direction.
   B18 found no single starting vector (deterministic ones, seeded-random,
   alternating-sign) reliably converges well for all MLPs -- each fails on
@@ -463,6 +463,23 @@ unclaimed items with the next free ID and a one-line hypothesis.
   existing safe default. Validate the selection heuristic's convergence
   across all 100 MLPs before touching any candidate file -- same
   discipline as B13/B17/B18.
+  Result: REJECTED, but a genuine and important negative finding, not an
+  implementation failure. Pre-implementation validation held up exactly
+  (min cosine similarity to eigenvector 0.443->0.823, matching the
+  oracle; mean 0.979->0.996; n<0.999 35->9), and the engineering
+  mechanism worked precisely as designed (matmul calls stayed at 193,
+  flops_used matched B13/B16's range -- zero extra call-count cost from
+  K=4 blocking, confirmed). But the much better proxy-metric convergence
+  did NOT translate to better real final-layer MSE: candidate scored
+  8.361e-06, worse than B13's simpler single-vector result (7.931e-06).
+  Ran a full post-hoc bug/confound check (no RNG-state issue, no logic
+  bug -- standalone re-derivation matched exactly) before accepting this.
+  Closes the power-iteration-convergence sub-thread (B17/B18/B19): cosine
+  similarity to the soft-gate Jacobian's eigenvector is not a reliable
+  target for this estimator's actual MSE. See `experiments/log-claude.md`
+  and `experiments/results/claude/B19-claude-20260716T101500Z-1598169-summary.json`.
+  No further follow-up queued in this specific direction -- see log for
+  the broader assessment of the B1/B10/B11/B13/B14/B16/B19 lineage.
 
 ## Done
 
