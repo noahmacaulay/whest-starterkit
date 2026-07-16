@@ -27,3 +27,14 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: REJECTED: the adjusted score regressed and the conservative paired confidence interval is not entirely below zero.
 - Full/submission gate: NOT_RUN; the Mini promotion gate failed.
 - New ideas queued: none.
+
+## 2026-07-16T02:21:51Z - B2-gpt-20260716T022151Z: Soft-gate affine control variate
+- Hypothesis: a diagonal-Gaussian soft-gate affine control, whose sampled expectation is the analytic intercept, reduces MC variance enough to dominate the plain 6,500-sample champion at comparable FLOPs.
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source result 58900f1); candidate_gpt.py @ c4b2b50.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1 (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433), split=mini (100 MLPs), budget=272000000000, runner=subprocess. Exact commands and immutable raw reports are in results/gpt/B2-gpt-20260716T022151Z-f46426c-summary.json.
+- Change: B2 propagates diagonal Gaussian moments and a soft-gated input Jacobian, then returns `analytic_mean + mean(true_MC - affine_control)` using 3,250 shared standard-normal draws. The affine control has the analytic mean by construction, so the correction remains unbiased even if the diagonal recursion is inaccurate.
+- Result: candidate adjusted score=1.705461503122e-06; champion=9.372216070962e-07; relative_change=+81.969930%; paired_mean_delta=7.682398960260e-07; paired_95pct_CI=[4.160712073034e-07,1.120408584749e-06]; worst_per_MLP_regression=8.084468507160e-06 (78/100). Candidate final-layer MSE=1.373127810325e-05 vs champion=8.504929468245e-06; candidate mean effective compute=3.381394405609e+10 vs 2.999551920011e+10. All failure/budget/time/error flags=0.
+- Verdict: REJECTED: the control both increased final-layer MSE and added enough compute to worsen adjusted score; its paired interval is wholly positive.
+- Full/submission gate: NOT_RUN; the Mini promotion gate failed.
+- New ideas queued: none.
