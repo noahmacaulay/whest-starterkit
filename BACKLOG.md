@@ -164,6 +164,14 @@ unclaimed items with the next free ID and a one-line hypothesis.
   input-local/early-layer structure well before the scored layer. See
   `experiments/log-claude.md`. No candidate file was needed or committed.
 
+- [ ] **B9** (explore) - Input Sobol/QMC Monte Carlo at the full useful
+  budget. Complete the untested QMC half of B4 with a deterministic
+  scrambled Sobol sequence mapped through the normal inverse CDF and seeded
+  only from `mlp.seed`. Hypothesis: low-discrepancy coverage of the entire
+  input distribution survives the deterministic forward pass more effectively
+  than input antithetic correlation, reducing final-layer MC error enough to
+  beat the plain-MC champion at the same FLOP regime.
+
 ## Done
 
 (nothing yet)
