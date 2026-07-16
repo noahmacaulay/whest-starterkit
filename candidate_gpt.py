@@ -12,6 +12,7 @@ import importlib.util
 import math
 from pathlib import Path
 
+import numpy as _np
 import flopscope as flops
 import flopscope.numpy as fnp
 from whestbench import MLP, BaseEstimator
@@ -21,7 +22,7 @@ _COV_RESCALE_THRESHOLD = 1e100
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Radial-exact antithetic Monte Carlo (B37).
+        """Radial-exact randomized-Hadamard orthogonal MC (B39).
 
         For z ~ N(0, I_d), z = r*u with r = ||z|| ~ chi(d), u = z/r ~
         Uniform(sphere), r independent of u. `MLP` has no bias field, so
@@ -31,15 +32,44 @@ class Estimator(BaseEstimator):
         forward only directions, eliminating the radial component of MC
         variance entirely at negligible extra FLOP cost.
         """
-        n_directions = 3_250
+        n_samples = 6_500
         _ = budget
         width = mlp.width
 
         rng = fnp.random.default_rng(mlp.seed)
-        z = rng.standard_normal((n_directions, width)).astype(fnp.float32)
-        norms = fnp.linalg.norm(z, axis=1)
-        positive_u = z / norms[:, None]
-        u = fnp.concatenate((positive_u, -positive_u), axis=0)
+        n_blocks, remainder = divmod(n_samples, width)
+
+        # H D1 H D2 H D3 is exactly orthogonal, while its rows approach
+        # Haar-sphere marginals by repeated Rademacher mixing.  A batched
+        # FWHT avoids B22's expensive dense QR generation.
+        q = _np.broadcast_to(
+            _np.eye(width, dtype=_np.float32),
+            (n_blocks, width, width),
+        ).copy()
+        for _stage in range(3):
+            step = 1
+            while step < width:
+                shaped = q.reshape(n_blocks, width, -1, 2, step)
+                left = shaped[..., 0, :]
+                right = shaped[..., 1, :]
+                q = _np.concatenate((left + right, left - right), axis=-1)
+                q = q.reshape(n_blocks, width, width)
+                step *= 2
+            q /= math.sqrt(width)
+            signs = _np.asarray(
+                rng.standard_normal((n_blocks, width)), dtype=_np.float32
+            )
+            signs = _np.where(signs >= 0.0, 1.0, -1.0).astype(_np.float32)
+            q *= signs[:, None, :]
+
+        directions = q.reshape(n_blocks * width, width)
+        if remainder:
+            z = _np.asarray(
+                rng.standard_normal((remainder, width)), dtype=_np.float32
+            )
+            z /= _np.linalg.norm(z, axis=1)[:, None]
+            directions = _np.concatenate((directions, z), axis=0)
+        u = fnp.array(directions)
 
         rows = []
         for w in mlp.weights:
