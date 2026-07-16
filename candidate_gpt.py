@@ -1,4 +1,4 @@
-"""B11 active-subspace Gauss-Hermite candidate."""
+"""B14 active-subspace Gauss-Hermite candidate."""
 
 from __future__ import annotations
 
@@ -27,12 +27,12 @@ _GH_PAIRS = tuple(max(1, round(weight * 3_250)) for weight in _GH_WEIGHTS)
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """B11: B10's estimator with a materialized soft-gate Jacobian.
+        """B14: B13's batched quadrature estimator without variance matmuls.
 
-        This is algebraically the same four power iterations used by B10.
-        Materializing the 256-by-256 Jacobian replaces 256 fragmented
-        layer-wise matrix-vector calls with 32 matrix products and eight
-        matrix-vector calls, retaining the same quadrature batch and weights.
+        The diagonal Gaussian-moment pass computes each variance as an exact
+        elementwise reduction instead of a one-row matrix multiply.  This
+        preserves the estimator while testing whether it avoids the remaining
+        per-layer matmul tracing overhead.
         """
         _ = budget
         width = mlp.width
@@ -42,7 +42,9 @@ class Estimator(BaseEstimator):
         gains = []
         for weight in mlp.weights:
             pre_mean = weight.T @ mean
-            pre_variance = fnp.maximum((weight * weight).T @ variance, 1e-12)
+            pre_variance = fnp.maximum(
+                fnp.sum((weight * weight) * variance[:, None], axis=0), 1e-12
+            )
             sigma = fnp.sqrt(pre_variance)
             gain = flops.stats.norm.cdf(pre_mean / sigma)
             mean = pre_mean * gain + sigma * flops.stats.norm.pdf(pre_mean / sigma)
@@ -51,18 +53,15 @@ class Estimator(BaseEstimator):
             variance = fnp.maximum(second - mean * mean, 1e-12)
             gains.append(gain)
 
-        # J = diag(g_L) W_L^T ... diag(g_1) W_1^T.  Applying J then J^T
-        # is exactly B10's forward/reverse soft-gate power iteration.
-        jacobian = fnp.eye(width)
-        for weight, gain in zip(mlp.weights, gains):
-            layer_jacobian = gain[:, None] * weight.T
-            jacobian = layer_jacobian @ jacobian
-
         direction = fnp.ones(width)
         direction = direction / fnp.sqrt(fnp.sum(direction * direction))
-        for _ in range(4):
-            direction = jacobian @ direction
-            direction = jacobian.T @ direction
+        for _ in range(2):
+            image = direction
+            for weight, gain in zip(mlp.weights, gains):
+                image = gain * (weight.T @ image)
+            direction = image
+            for weight, gain in zip(reversed(mlp.weights), reversed(gains)):
+                direction = weight @ (gain * direction)
             direction = direction / fnp.sqrt(fnp.sum(direction * direction))
 
         total_pairs = sum(_GH_PAIRS)
