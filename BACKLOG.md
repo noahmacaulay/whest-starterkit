@@ -143,7 +143,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   noise. See `experiments/log-claude.md`. No candidate file was needed or
   committed. Follow-up (a *valid* reformation) queued as B8.
 
-- [ ] **B8** (explore) - CLAIMED claude 2026-07-16T05:20:00Z - Exact layer-1 sign/magnitude control variate. From
+- [x] **B8** (explore) - DONE claude 2026-07-16T05:35:00Z (feasibility-rejected) - Exact layer-1 sign/magnitude control variate. From
   B7's invalidation: at layer 1 only (where z and -z are both legitimate
   input draws), h+ = relu(Wz) and h- = relu(-Wz) satisfy the exact, free
   identities h+ - h- = Wz and h+ + h- = |Wz| elementwise -- no derivation
@@ -153,6 +153,16 @@ unclaimed items with the next free ID and a one-line hypothesis.
   recovers some of B4's lost variance reduction without bias and without
   extra FLOPs. Must derive and validate unbiasedness on a synthetic check
   (as B3/B7 did) before wiring into a candidate -- do not skip that step.
+  Result: REJECTED before any candidate was written. A held-out
+  (train/test split, ridge-regularized) regression of the final-layer
+  antithetic pair-mean on the free layer-1 control, on a width=256 depth=32
+  synthetic network (20,000 pairs), showed 0/256 final-layer neurons with
+  any real variance reduction and a 2.6% mean variance *increase* (pure
+  estimation noise) -- the layer-1 quantity carries no exploitable
+  correlation with the depth-32 output. Combined with B4/B7, this is now
+  three convergent pieces of evidence that depth-32 collapse destroys any
+  input-local/early-layer structure well before the scored layer. See
+  `experiments/log-claude.md`. No candidate file was needed or committed.
 
 ## Done
 

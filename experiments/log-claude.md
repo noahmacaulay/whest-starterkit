@@ -232,3 +232,58 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   variance reduction without bias and without extra FLOPs. Needs a careful
   from-scratch derivation to confirm unbiasedness before implementing --
   do not skip that step, per this iteration's lesson.
+
+## 2026-07-16T05:35:00Z - B8-claude: Exact layer-1 control variate (feasibility-rejected)
+- Hypothesis (as queued): a control variate or Rao-Blackwellized combination
+  built from the exact, free layer-1 identities h+ - h- = Wz and
+  h+ + h- = |Wz| (available at zero extra FLOP cost from the antithetic
+  pair already computed) recovers some of B4's lost variance reduction at
+  the scored final layer, without bias.
+- Base: claimed from aaa87c8; base champion estimator.py @ 1598169.
+- What happened: before implementing, worked through whether this control
+  can plausibly help at all. Two considerations: (1) B2 already tried a
+  *richer*, more expensive analytic control (diagonal-Gaussian soft-gate
+  propagation through all 32 layers) and it was REJECTED -- its own
+  approximation error dominated any variance it removed. A layer-1-only
+  control has access to strictly less information about the network's
+  depth-32 behavior than B2's control did, so it is a priori unlikely to
+  do better on the correlation-with-truth axis, even though it is cheaper
+  (near-zero marginal FLOPs vs. B2's ~13% overhead). (2) There is no
+  leftover randomness to condition on after layer 1 -- the entire depth-32
+  trajectory is a deterministic pushforward of the single input draw z, so
+  this is not a classic Rao-Blackwellization setting; it reduces to an
+  ordinary (optimal-coefficient) control variate, whose value depends
+  entirely on how correlated the free layer-1 quantity is with the final
+  *scored* layer -- exactly the quantity B4/B7's diagnostics already showed
+  decaying to noise well before layer 32.
+- Empirical confirmation (cheap synthetic check, width=256 depth=32,
+  matching the real problem shape, 20,000 antithetic pairs, He-initialized
+  weights as in `local_engine.build_mlp`): fit the per-final-neuron
+  optimal-coefficient regression of the antithetic pair-mean on the free
+  layer-1 control (`Wz`, i.e. `h+_1 - h-_1`), ridge-regularized, using a
+  train/test split to get an honest (not in-sample-overfit) estimate of
+  variance reduction. Held-out result: mean variance *increased* by 2.6%
+  (0.026686 vs. 0.025998), and 0/256 final-layer neurons showed any real
+  reduction -- i.e. the free layer-1 signal carries no exploitable
+  correlation with the depth-32 output; what a nonzero in-sample
+  correlation would show is pure regression/estimation noise from fitting
+  256 coefficients on finite data, not a real effect.
+- Verdict: REJECTED at the feasibility-check stage, before any candidate
+  was written or harness run. This is a completed, informative product
+  (AGENTS.md: "a logged rejected experiment is a completed product") --
+  the ~2 minutes of synthetic validation here is strictly cheaper than
+  writing, validating, and running a doomed candidate through the full
+  Mini-split paired gate.
+- Full/submission gate: NOT_RUN.
+- New ideas queued: none directly. Taken together, B4/B7 (antithetic decay)
+  and B8 (zero correlation of any layer-1-derived quantity with the final
+  layer) now give three independent, convergent pieces of evidence that
+  depth-32 mean-field collapse destroys *any* exploitable structure tied to
+  early-layer values or input-level coordinate symmetries well before the
+  scored layer. Cheap, input-local tricks (antithetic pairs, layer-1
+  control variates) are very likely exhausted as a research direction for
+  this problem; MC-side gains would have to come from something that
+  persists through depth by construction (e.g. genuinely low-discrepancy
+  structure across the *whole* forward pass, not a single-layer trick --
+  the still-untested Sobol/QMC half of B4's original hypothesis) rather
+  than anything anchored to layer 1 specifically.
