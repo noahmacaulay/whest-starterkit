@@ -383,7 +383,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B16-claude-20260716T084500Z-1598169-summary.json`.
   Follow-up queued as B17.
 
-- [ ] **B17** (exploit) - CLAIMED claude 2026-07-16T09:10:00Z - Since B16 rules out sample-count tuning as a
+- [x] **B17** (exploit) - DONE claude 2026-07-16T09:20:00Z (feasibility-rejected) - Since B16 rules out sample-count tuning as a
   lever, the only remaining lever for the B1/B10/B11/B13/B14/B16 lineage
   is cutting the ~128 power-iteration calls further (already reduced
   from 256 in B13). B12's and B16's results both reconfirm strong rank-1
@@ -395,6 +395,21 @@ unclaimed items with the next free ID and a one-line hypothesis.
   diagonal fix (validated safe to stack) at the FULL N=3250 budget (not
   reduced, per B16's finding) for the best remaining shot at closing the
   gap to the champion.
+  Result: REJECTED before any harness run -- and it's a correction, not
+  just a rejection. Rechecked B13's convergence claim across all 100
+  Mini-split MLPs instead of 5: at 2 iterations, min cosine similarity is
+  only 0.443 (35/100 MLPs below 0.999), and at 1 iteration it's 0.137
+  (68/100 below 0.99) -- B13's 5-MLP spot-check (claiming >=0.9986 at 2
+  iterations) was not representative; it avoided the ~35 poorly-converged
+  MLPs by chance. 4 iterations (B1/B10/B11's original choice) converges
+  solidly (min=0.906). Given this, reducing below 2 iterations is clearly
+  unsafe -- did not spend a harness run confirming the foregone
+  conclusion. Note: B13/B16's own measured aggregate MSE from real
+  harness runs was still competitive despite this, so their results
+  stand unchanged; this just means the 5-MLP proxy check should not be
+  trusted again without a full-dataset recheck. Closes off further
+  iteration-count reduction as a lever for this lineage. See
+  `experiments/log-claude.md`. No candidate file was needed or committed.
 
 ## Done
 

@@ -627,3 +627,60 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   quality, combine with B14's elementwise diagonal fix (already validated
   safe to stack) at the FULL N=3250 budget (not reduced, per this
   experiment's finding) for the best remaining shot at closing the gap.
+
+## 2026-07-16T09:20:00Z - B17-claude: Power-iteration convergence, full-dataset recheck (feasibility-rejected)
+- Hypothesis (as queued): since B16 ruled out sample-count tuning, the
+  only remaining lever is cutting the ~128 power-iteration calls further
+  (B13's 2 iterations, down from B1/B10/B11's 4). B12/B16 reconfirmed
+  strong rank-1 dominance, suggesting even fewer iterations (or an
+  adaptive early-stopping check) might still converge safely, given B13's
+  spot-check found cosine similarity >=0.9986 at 2 iterations across 5
+  MLPs.
+- What happened: before implementing anything, re-ran the convergence
+  check B13 used, but across all 100 Mini-split MLPs instead of 5. The
+  result overturned B13's finding rather than extending it. At 2
+  iterations: min cosine similarity across the 100 MLPs is 0.443 (not
+  0.9986), with 35/100 MLPs below 0.999 similarity to a 6-iteration
+  reference. At 1 iteration: min similarity is 0.137 (essentially
+  uncorrelated with the true direction for the worst MLP), with 68/100
+  below 0.99. B13's 5-MLP sample (indices 0,1,2,5,10) was not
+  representative -- it happened to avoid the ~35 MLPs where 2-iteration
+  convergence is genuinely poor (e.g. MLP indices 34, 46, 54, 81, 84 are
+  the worst at 1 iteration; MLP 46 is still only 0.443 similar even at 2
+  iterations). For reference, 4 iterations (B1/B10/B11's original choice)
+  converges solidly: min=0.906, only 4/100 below 0.999.
+- Base: claimed from 3332dc5; no candidate needed (see below).
+- Given 1-iteration convergence is this poor for over two-thirds of the
+  dataset, did not run a harness experiment to confirm -- the pre
+  -implementation check already shows unambiguously that reducing below
+  B13's 2 iterations is not defensible, so a costly paired Mini-split run
+  would only be confirming a foregone conclusion (same reasoning as B7/B8:
+  a decisive cheap check beats spending a full run on a doomed candidate).
+- Verdict: REJECTED at the feasibility-check stage -- "cut iterations
+  further" is now closed off definitively, not just left untested. This
+  is also an important methodological correction to B13/B16, which both
+  used 2 power iterations on the strength of the (non-representative)
+  5-MLP check: their AGGREGATE final-layer MSE across the official
+  100-MLP Mini harness runs was still competitive/good in every actual
+  measurement (B13=7.931e-06, B16=9.936e-06 with also-reduced N), so the
+  poor per-MLP direction convergence for ~35% of MLPs did not translate
+  into an aggregate accuracy problem in practice -- but this was not
+  something the 5-MLP proxy check could have told us, and should not be
+  trusted again without a full-dataset check. No regression to B13/B16's
+  own results is implied; their promotion-relevant numbers stand as
+  measured. This closes the "fewer iterations" sub-lever of the
+  B1/B10/B11/B13/B14/B16 lineage; 2 iterations (B13's choice) is the
+  floor worth keeping, not something to push further, and going back up
+  to 3-4 remains an open question but is not urgent given B13's measured
+  aggregate results already looked fine at 2.
+- Full/submission gate: NOT_RUN.
+- New ideas queued: none directly. The B1/B10/B11/B13/B14/B16 lineage's
+  levers are now largely exhausted: N-tuning is a dead end (B16),
+  iteration count has a hard floor at 2 (this experiment), and the
+  diagonal/main-sampling phases are already batched (B10/B14). What
+  remains untried is whether the power-iteration phase itself can be
+  restructured (not just shortened) -- e.g. a genuinely batched multi
+  -vector iteration (power method on a small block instead of one
+  vector, amortizing the per-call overhead across several starting
+  vectors at once) -- but that is a real engineering undertaking, not a
+  quick hyperparameter tweak, and would need its own careful scoping.
