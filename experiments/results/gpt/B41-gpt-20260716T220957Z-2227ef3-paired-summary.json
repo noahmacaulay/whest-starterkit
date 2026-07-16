@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "record_type": "recovery_addendum",
+  "experiment_id": "B41-gpt-20260716T220957Z",
+  "title": "Partial-Haar orthogonal direction blocks: supplemental official Mini pair",
+  "agent": "gpt",
+  "status": "RECOVERED_REJECTED",
+  "created_utc": "2026-07-16T23:40:45Z",
+  "interruption": {
+    "scheduler_run_id": "20260716T220704Z-worker",
+    "shared_state_at_run": "b93b4fa6d7dd1d01bdbb748fea2a0e253cedbd7d",
+    "failure": "apply_patch verification failed against experiments/log-gpt.md after BACKLOG.md had been updated",
+    "recovery_scope": "Preserve the two complete official Mini reports, persist their paired analysis, and retain the existing B41 feasibility rejection without promotion or submission."
+  },
+  "base_champion": {
+    "experiment_id": "B25-claude-20260716T160000Z",
+    "estimator_commit": "2227ef32b2cd797e966b312b956ad9b89c5c7666",
+    "source_result_commit": "1cf928a",
+    "candidate_commit": "97ed1340a7038148515f5e2c6f4d9a9c5b48b10d"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "width": 256,
+    "depth": 32,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "commands": {
+      "champion": "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+      "candidate": "uv run --frozen whest run --estimator candidate_gpt.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+      "recovery_validation": "uv run --frozen whest validate --estimator candidate_gpt.py"
+    },
+    "command_exit_codes": {
+      "champion": 0,
+      "candidate": 0,
+      "recovery_validation": 0
+    },
+    "raw_reports": {
+      "champion": {
+        "path": "experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-champion-mini.json",
+        "sha256": "95f969184bcf181617479adf6f1ebf1fdd91667c2fe0c9791a74524c83c024d7",
+        "duration_s": 225.17939925193787,
+        "json_parse_ok": true
+      },
+      "candidate": {
+        "path": "experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-candidate-mini.json",
+        "sha256": "1a87f652afd23bcc74922b3913e597170221dd6889bc974049897d5969214db2",
+        "duration_s": 272.5854187011719,
+        "json_parse_ok": true
+      },
+      "champion_stderr": "experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-champion-mini.stderr.txt",
+      "candidate_stderr": "experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-candidate-mini.stderr.txt"
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_score": 7.88106990663307e-07,
+    "candidate_adjusted_score": 2.06926005016095e-06,
+    "relative_adjusted_score_change": 1.62560803885188,
+    "champion_final_layer_mse": 7.21078774915895e-06,
+    "candidate_final_layer_mse": 7.23831795028218e-06,
+    "relative_final_layer_mse_change": 0.00381791866310843,
+    "champion_mean_effective_compute": 29730344392.331493,
+    "candidate_mean_effective_compute": 77909442992.3167,
+    "champion_mean_score_multiplier": 0.10930273673651286,
+    "candidate_mean_score_multiplier": 0.2864317757070467,
+    "champion_mean_flops_used": 27349512192,
+    "candidate_mean_flops_used": 27344520192
+  },
+  "paired": {
+    "metric": "candidate_adjusted_final_layer_score - champion_adjusted_final_layer_score",
+    "n": 100,
+    "mean_delta": 1.28115305949764e-06,
+    "sample_sd": 2.09299341535391e-06,
+    "conservative_95pct_ci_method": "mean +/- 2 * sample_sd / sqrt(n)",
+    "conservative_95pct_ci": [
+      8.62554376426859e-07,
+      1.69975174256842e-06
+    ],
+    "n_improved": 13,
+    "n_regressed": 87,
+    "worst_regressions": [
+      {
+        "mlp_name": "jessica-benson",
+        "adjusted_score_delta": 1.18749126167641e-05,
+        "final_layer_mse_delta": -1.34807924041525e-05
+      },
+      {
+        "mlp_name": "jessica-henderson",
+        "adjusted_score_delta": 9.58286820751829e-06,
+        "final_layer_mse_delta": 2.76683158517699e-05
+      },
+      {
+        "mlp_name": "alan-campbell",
+        "adjusted_score_delta": 8.45512950660988e-06,
+        "final_layer_mse_delta": 1.00135439424776e-05
+      },
+      {
+        "mlp_name": "todd-jenkins",
+        "adjusted_score_delta": 8.03101332356522e-06,
+        "final_layer_mse_delta": 2.09606696444098e-05
+      },
+      {
+        "mlp_name": "alexandra-adkins",
+        "adjusted_score_delta": 6.93822386930056e-06,
+        "final_layer_mse_delta": -2.23449824261479e-05
+      }
+    ]
+  },
+  "failures": {
+    "champion_n_failed_mlps": 0,
+    "candidate_n_failed_mlps": 0,
+    "champion": {
+      "budget_exhausted": 0,
+      "time_exhausted": 0,
+      "residual_wall_time_exhausted": 0,
+      "combined_budget_exhausted": 0,
+      "error": 0
+    },
+    "candidate": {
+      "budget_exhausted": 0,
+      "time_exhausted": 0,
+      "residual_wall_time_exhausted": 0,
+      "combined_budget_exhausted": 0,
+      "error": 0
+    }
+  },
+  "gate": {
+    "mean_delta_below_zero": false,
+    "confidence_interval_entirely_below_zero": false,
+    "passed": false
+  },
+  "promotion": "NOT_ATTEMPTED",
+  "full_gate": "NOT_RUN",
+  "submission": "NOT_RUN",
+  "verdict": "REJECTED: the official Mini pair confirms a large adjusted-score regression caused by QR residual compute."
+}

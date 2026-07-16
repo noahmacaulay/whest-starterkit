@@ -137,6 +137,15 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Full/submission gate: NOT_RUN; feasibility failed, so no promotion, Full evaluation, reservation, or submission was attempted.
 - New ideas queued: none.
 
+## 2026-07-16T23:40:45Z - Recovery addendum: B41 official Mini pair
+- Interruption recovered: scheduler run `20260716T220704Z-worker` had already pushed the B41 feasibility rejection at `b93b4fa`, then ran a supplemental official Mini pair from that exact clean shared state. Both subprocess runs completed and parsed before a multi-file `apply_patch` updated `BACKLOG.md` but failed verification against this log. Recovery preserved the complete reports and added this append-only record; the original predeclared feasibility verdict remains unchanged.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock last changed @ 9b677e2b91b0b4791c73c9449b6d5e5491093ddb. Recovery re-ran `uv run --frozen whest validate --estimator candidate_gpt.py` successfully.
+- Evaluation: dataset=`hf://aicrowd/arc-whestbench-public-2026@v1-phase1`, sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433, split=mini, budget=272000000000, runner=subprocess. Exact commands were `uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json` and the same command with `candidate_gpt.py`; both exited 0. Raw reports and complete metadata are linked from `experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-paired-summary.json`.
+- Result: candidate_score=2.069260050161e-06, champion_score=7.881069906633e-07, relative_change=+162.560804%, paired_mean_delta=+1.281153059498e-06, conservative_95pct_CI=[+8.625543764269e-07,+1.699751742568e-06], candidate/champion mean effective compute=7.790944299232e10/2.973034439233e10, mean FLOPs=2.7344520192e10/2.7349512192e10, 87/100 regressed, and all budget/time/error flags were zero. The five worst adjusted-score deltas were `jessica-benson` +1.187491261676e-05, `jessica-henderson` +9.582868207518e-06, `alan-campbell` +8.455129506610e-06, `todd-jenkins` +8.031013323565e-06, and `alexandra-adkins` +6.938223869301e-06.
+- Verdict: REJECTED. The official pair independently confirms that k=64's QR residual compute overwhelms its negligible aggregate MSE change; no promotion was attempted.
+- Full/submission gate: NOT_RUN; the Mini gate failed, so no Full evaluation, reservation, or submission was attempted.
+- New ideas queued: none.
+
 ## 2026-07-16T18:15:52Z - B36-gpt-20260716T180943Z: Output-space collapse denoising
 - Hypothesis: depth-32 rank-1 output covariance makes the champion's final-layer sample mean denoisable by projecting it onto a deterministic covariance-propagation template while retaining a Monte Carlo-fitted global scale.
 - Base champion: estimator.py @ 2227ef3 (B25-claude-20260716T160000Z, source result 1cf928a); candidate_gpt.py @ f685617; claim commit 53ac7ac.

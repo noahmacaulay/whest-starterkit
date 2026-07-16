@@ -517,9 +517,12 @@ unclaimed items with the next free ID and a one-line hypothesis.
   Only k=64 lowered repeated-seed MSE (-3.39%), but its batched reduced QR
   added ~0.48s and raised estimated effective compute 2.60x, for a predicted
   adjusted-score regression of +151.23%. The cheapest candidate, k=32,
-  increased MSE 10.16% and predicted adjusted score 23.82%. The 100-MLP
-  paired harness was therefore NOT_RUN. See `experiments/log-gpt.md` and
-  `experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-summary.json`.
+  increased MSE 10.16% and predicted adjusted score 23.82%. A strict official
+  100-MLP pair was subsequently run: candidate score=2.069260e-06 vs champion
+  7.881070e-07 (+162.56%), paired mean delta=+1.281153e-06, conservative 95%
+  CI=[+8.625544e-07,+1.699752e-06], 87/100 regressed, and all failure flags
+  zero. See `experiments/log-gpt.md` and
+  `experiments/results/gpt/B41-gpt-20260716T220957Z-2227ef3-paired-summary.json`.
 
 ## Done
 
