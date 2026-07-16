@@ -18,122 +18,99 @@ from whestbench import MLP, BaseEstimator
 
 _COV_RESCALE_THRESHOLD = 1e100
 
-# Fixed Gauss-Legendre quadrature for the exact off-diagonal ReLU cross-moment
-# correction (see predict() docstring). N=16 is validated to ~1e-4 vs.
-# brute-force Monte Carlo across correlations from 0 to 0.9999+; the
-# integrand is smooth (no true singularity after the arccos substitution),
-# so this converges far faster than the width/depth of the network calls for.
-_GL_N = 16
-_GL_NODES, _GL_WEIGHTS = _np.polynomial.legendre.leggauss(_GL_N)
-_HALF_PI = _np.pi / 2.0
+# 16-node probabilists' Gauss-Hermite rule for a standard normal (weights sum
+# to 1). Standard published quadrature constants, not algorithm-specific.
+_GH_NODES = (-6.630878198393129, -5.472225705949343, -4.492955302520011,
+             -3.6008736241715487, -2.7602450476307014, -1.9519803457163334,
+             -1.1638291005549648, -0.3867606045005574, 0.3867606045005574,
+             1.1638291005549648, 1.9519803457163334, 2.7602450476307014,
+             3.6008736241715487, 4.492955302520011, 5.472225705949343,
+             6.630878198393129)
+_GH_WEIGHTS = (1.4978147231618412e-10, 1.309473216286817e-07,
+               1.530003216248732e-05, 0.0005259849265739087,
+               0.007266937601184749, 0.04728475235401406,
+               0.1583383727509497, 0.286568521238012, 0.286568521238012,
+               0.1583383727509497, 0.04728475235401406,
+               0.007266937601184749, 0.0005259849265739087,
+               1.530003216248732e-05, 1.309473216286817e-07,
+               1.4978147231618412e-10)
+_GH_PAIRS = tuple(max(1, round(w * 3_250)) for w in _GH_WEIGHTS)
 
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """B3: covariance propagation with the exact bivariate ReLU cross-moment.
+        """B10: active-subspace Gauss-Hermite quadrature, single-batch forward pass.
 
-        Replaces the B0-era gain-product off-diagonal approximation
-        `cov_post[i,j] ~= Phi(alpha_i)*Phi(alpha_j)*cov_pre[i,j]` with the
-        exact value. Derivation: for jointly Gaussian (X,Y) with marginal
-        means/stds (mu_x,sigma_x),(mu_y,sigma_y) and correlation rho, Price's
-        theorem gives d/drho E[X+ Y+] = sigma_x*sigma_y*P(X>0,Y>0), and
-        integrating from rho=0 (independence, closed form) while swapping the
-        order of the resulting double integral over rho reduces everything to
-        a single integral of the plain bivariate normal density in the
-        standardized cross-correlation variable. Substituting t=cos(theta)
-        exactly cancels that density's 1/sqrt(1-t^2) factor -- the "arccos
-        kernel" substitution -- leaving a smooth, bounded integrand over
-        theta with no singularity at rho -> +-1. The result:
+        Same statistical estimator as the B1 experiment (soft-gate active
+        direction via 4 power iterations, 16-node Gauss-Hermite quadrature
+        along it, antithetic conditional draws in the orthogonal
+        complement): B1 measured a genuine final-layer MSE improvement over
+        the champion (7.995e-06 vs 8.505e-06) but lost the paired promotion
+        gate because its `mean_effective_compute` was 28% higher even
+        though its raw `flops_used` was within 0.4% of the champion's --
+        the gap was call-overhead from 1,360 separate small matmuls (16
+        nodes x pos/neg x 32 layers, plus power-iteration passes) versus
+        the champion's 32 single full-batch matmuls (one per layer).
 
-            cov_post[i,j] = cov_pre[i,j]*Phi(alpha_i)*Phi(alpha_j)
-                            + sigma_i*sigma_j*I(alpha_i, alpha_j, rho_ij)
-
-        where I is the theta-substituted correction integral evaluated by
-        fixed Gauss-Legendre quadrature below. Validated against brute-force
-        Monte Carlo cross moments (~1e-4 agreement) for a range of means,
-        correlations (including |rho|>0.999), and signs before use here.
-        The diagonal keeps the pre-existing exact marginal variance formula.
+        This version builds one combined (~6,516, width) sample batch up
+        front -- weighting each row by weight_i/(2*pairs_i) at aggregation
+        time instead of averaging per node separately -- and forwards it
+        through each layer with a single matmul call, matching the
+        champion's call structure, to test whether the accuracy gain
+        survives once the overhead artifact is removed.
         """
-        _rng = fnp.random.default_rng(mlp.seed)
-        _ = _rng
         _ = budget
         width = mlp.width
 
-        mu = fnp.zeros(width)
-        cov = fnp.eye(width)
-        log_scale = 0.0
+        # --- soft-gate diagonal Jacobian (cheap: O(depth*width) per layer) ---
+        mean = fnp.zeros(width)
+        variance = fnp.ones(width)
+        gains = []
+        for w in mlp.weights:
+            pre_mean = w.T @ mean
+            pre_variance = fnp.maximum((w * w).T @ variance, 1e-12)
+            sigma = fnp.sqrt(pre_variance)
+            gain = flops.stats.norm.cdf(pre_mean / sigma)
+            mean = pre_mean * gain + sigma * flops.stats.norm.pdf(pre_mean / sigma)
+            second = (pre_mean * pre_mean + pre_variance) * gain + pre_mean * sigma * flops.stats.norm.pdf(pre_mean / sigma)
+            variance = fnp.maximum(second - mean * mean, 1e-12)
+            gains.append(gain)
 
-        gl_nodes = fnp.array(_GL_NODES)
-        gl_weights = fnp.array(_GL_WEIGHTS)
+        # --- dominant direction via 4 power iterations through the soft-gate Jacobian ---
+        direction = fnp.ones(width)
+        direction = direction / fnp.sqrt(fnp.sum(direction * direction))
+        for _ in range(4):
+            image = direction
+            for w, gain in zip(mlp.weights, gains):
+                image = gain * (w.T @ image)
+            direction = image
+            for w, gain in zip(reversed(mlp.weights), reversed(gains)):
+                direction = w @ (gain * direction)
+            direction = direction / fnp.sqrt(fnp.sum(direction * direction))
+
+        # --- build one combined batch for all 16 quadrature nodes ---
+        total_pairs = sum(_GH_PAIRS)
+        rng = fnp.random.default_rng(mlp.seed)
+        noise = fnp.array(rng.standard_normal((total_pairs, width)).astype(fnp.float32))
+        noise = noise - fnp.outer(noise @ direction, direction)
+
+        node_per_pair = fnp.array(
+            _np.repeat(_np.array(_GH_NODES, dtype=_np.float32), _GH_PAIRS)
+        )
+        offset = fnp.outer(node_per_pair, direction)
+        positive = offset + noise
+        negative = offset - noise
+        x = fnp.concatenate([positive, negative], axis=0)
+
+        row_weight_per_pair = _np.repeat(
+            _np.array(_GH_WEIGHTS) / (2.0 * _np.array(_GH_PAIRS)), _GH_PAIRS
+        ).astype(_np.float32)
+        row_weights = fnp.array(_np.concatenate([row_weight_per_pair, row_weight_per_pair]))
 
         rows = []
         for w in mlp.weights:
-            cov_diag = fnp.diag(cov)
-            max_var_np = float(fnp.max(cov_diag))
-            if max_var_np > _COV_RESCALE_THRESHOLD:
-                s = float(fnp.sqrt(max_var_np))
-                mu = mu / s
-                cov = cov / (s * s)
-                log_scale += float(fnp.log(s))
-
-            mu_pre = w.T @ mu
-            cov_pre = fnp.einsum("ij,ia,jb->ab", cov, w, w)
-
-            var_pre = fnp.maximum(fnp.diag(cov_pre), 1e-12)
-            sigma_pre = fnp.sqrt(var_pre)
-
-            alpha = mu_pre / sigma_pre
-            phi_alpha = flops.stats.norm.pdf(alpha)
-            Phi_alpha = flops.stats.norm.cdf(alpha)
-
-            mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
-
-            ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
-            var_post = fnp.maximum(ez2 - mu * mu, 0.0)
-
-            # --- exact off-diagonal cross moment (replaces Step 7 gain product) ---
-            # All of this sub-block runs in float64 (matching the existing
-            # float64 upcast for `gain` below) since the correction is most
-            # sensitive to precision exactly where |rho| is close to 1 --
-            # the common case here given depth-32 rank-1 dominance.
-            alpha64 = fnp.asarray(alpha, dtype=fnp.float64)
-            sigma64 = fnp.asarray(sigma_pre, dtype=fnp.float64)
-            cov_pre64 = fnp.asarray(cov_pre, dtype=fnp.float64)
-            Phi64 = fnp.asarray(Phi_alpha, dtype=fnp.float64)
-
-            sigma_outer = fnp.outer(sigma64, sigma64)
-            rho = fnp.clip(cov_pre64 / fnp.maximum(sigma_outer, 1e-30), -0.999999, 0.999999)
-
-            theta_rho = fnp.arccos(rho)
-            lo = fnp.minimum(theta_rho, _HALF_PI)
-            hi = fnp.maximum(theta_rho, _HALF_PI)
-            sign = fnp.where(theta_rho <= _HALF_PI, 1.0, -1.0)
-
-            mid = 0.5 * (hi + lo)
-            half = 0.5 * (hi - lo)
-            theta = mid[None, :, :] + half[None, :, :] * gl_nodes[:, None, None]
-            quad_w = half[None, :, :] * gl_weights[:, None, None]
-
-            costh = fnp.cos(theta)
-            sinth = fnp.sin(theta)
-
-            alpha_sq = alpha64 * alpha64
-            aa_bb = alpha_sq[:, None] + alpha_sq[None, :]
-            ab = fnp.outer(alpha64, alpha64)
-            num = aa_bb[None, :, :] - 2.0 * ab[None, :, :] * costh
-            denom = 2.0 * sinth * sinth
-            integrand = (rho[None, :, :] - costh) / (2.0 * _np.pi) * fnp.exp(-num / denom)
-            correction = sign * fnp.sum(quad_w * integrand, axis=0)
-
-            cov64 = cov_pre64 * fnp.outer(Phi64, Phi64) + sigma_outer * correction
-            cov = fnp.array(cov64.astype(fnp.float32))
-
-            # Replace the diagonal with the exact marginal variances.
-            fnp.fill_diagonal(cov, var_post)
-
-            scale_factor = float(fnp.exp(log_scale))
-            rows.append(mu * scale_factor)
-
+            x = fnp.maximum(x @ w, 0.0)
+            rows.append(fnp.sum(row_weights[:, None] * x, axis=0))
         return fnp.stack(rows, axis=0)
 
 
