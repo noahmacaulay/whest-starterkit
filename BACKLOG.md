@@ -449,6 +449,15 @@ unclaimed items with the next free ID and a one-line hypothesis.
   Done exactly as specified: renamed to `mean_effective_compute`, added
   correct `flops_used: 27346176000.0`, no other champion fields touched.
 
+- [ ] **B37** (exploit) - Radial-exact antithetic directions. Combine B25's
+  exact integration over the Gaussian radius with B4's direction pairing:
+  draw 3,250 iid sphere directions, forward both `u` and `-u`, and multiply
+  their 6,500-sample angular mean by the exact chi-radius mean. B4 measured a
+  noisy 6.6% adjusted-score improvement from antithetics before radial
+  exactness, while B25 independently removed radial variance; test whether
+  composing the two variance reductions makes the final-layer gain reliable
+  at bit-comparable FLOPs. Promote only by the standard paired Mini gate.
+
 ## Done
 
 - [x] **B0** (exploit, run this first) - Baseline everything. DONE gpt 2026-07-16T01:32:05Z
