@@ -106,7 +106,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   See `experiments/log-claude.md` for full detail and all raw report
   paths.
 
-- [ ] **B25** (explore, lead-priority 3) - Radial (chi-quantile)
+- [ ] **B25** (explore, lead-priority 3) - CLAIMED claude 2026-07-16T15:35:00Z - Radial (chi-quantile)
   stratification of input norms. Evidence so far: every *directional*
   or sign-based input structure dies in the depth-32 collapse
   (B4 antithetic, B7 mid-depth reflection, B8 layer-1 control variate,
