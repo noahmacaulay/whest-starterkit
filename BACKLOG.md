@@ -28,7 +28,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   and its paired-comparison evidence. Use the independent Full split for the
   first submission gate. Until B0 is done, no other item may be claimed.
 
-- [ ] **B4** (explore, lead-priority 1) - QMC plus antithetic sampling. Sobol
+- [ ] **B4** (explore, lead-priority 1) - CLAIMED claude 2026-07-16T02:35:00Z - QMC plus antithetic sampling. Sobol
   points and/or antithetic pairs for whatever MC component the champion uses,
   applied in the active subspace first. Hypothesis: error decays faster than
   `N^(-1/2)`, strictly dominating plain MC at fixed FLOPs. Lead note
