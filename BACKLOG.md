@@ -172,6 +172,32 @@ unclaimed items with the next free ID and a one-line hypothesis.
   than input antithetic correlation, reducing final-layer MC error enough to
   beat the plain-MC champion at the same FLOP regime.
 
+- [ ] **B10** (exploit) - CLAIMED claude 2026-07-16T05:50:00Z - Batched
+  active-subspace Gauss-Hermite quadrature. B1's REJECTED result
+  (results/gpt/B1-gpt-20260716T022115Z-76c2ab2-summary.json) shows
+  candidate final-layer MSE=7.995e-06 vs champion=8.505e-06 -- a genuine
+  6% accuracy improvement -- but lost the paired gate on
+  `mean_effective_compute` (3.892e10 vs champion's 3.035e10, +28%).
+  Diagnosis from the raw per-MLP reports: candidate's raw `flops_used`
+  (27.449e9) is *virtually identical* to champion's (27.346e9, +0.4%);
+  the entire 28% effective-compute gap comes from flopscope/wall-clock
+  overhead (candidate ratio effective_compute/flops_used=1.464 vs
+  champion's 1.186), driven by call fragmentation -- candidate makes 1,360
+  separate small matmul calls (16 quadrature nodes x positive/negative x
+  32 layers, plus power-iteration passes) vs champion's 32 single
+  full-batch matmul calls, one per layer. Hypothesis: reimplementing the
+  *same* statistical estimator (soft-gate active-subspace direction, 4
+  power iterations, 16-node Gauss-Hermite quadrature with antithetic
+  conditional draws) but restructured to build one combined (~6,516,
+  width) input batch up front and forward it through each layer with a
+  single matmul call (weighting each row by weight_i/(2*pairs_i) at
+  aggregation time instead of averaging per-node separately) reproduces
+  the same ~6% accuracy gain while cutting the call-overhead penalty back
+  toward champion's ~1.19x ratio, which back-of-envelope suggests would
+  drop the candidate's adjusted score close to or slightly below the
+  champion's -- worth an honest empirical test. Independent implementation
+  in candidate_claude.py (does not touch candidate_gpt.py).
+
 ## Done
 
 (nothing yet)
