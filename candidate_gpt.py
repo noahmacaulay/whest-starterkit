@@ -18,11 +18,12 @@ import flopscope.numpy as fnp
 from whestbench import MLP, BaseEstimator
 
 _COV_RESCALE_THRESHOLD = 1e100
+_BLOCK_SIZE = 64
 
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Radial-exact randomized-Hadamard orthogonal MC (B39).
+        """Radial-exact partial-Haar orthogonal Monte Carlo (B41).
 
         For z ~ N(0, I_d), z = r*u with r = ||z|| ~ chi(d), u = z/r ~
         Uniform(sphere), r independent of u. `MLP` has no bias field, so
@@ -37,39 +38,28 @@ class Estimator(BaseEstimator):
         width = mlp.width
 
         rng = fnp.random.default_rng(mlp.seed)
-        n_blocks, remainder = divmod(n_samples, width)
+        block_size = min(_BLOCK_SIZE, width)
+        n_blocks, remainder = divmod(n_samples, block_size)
 
-        # H D1 H D2 H D3 is exactly orthogonal, while its rows approach
-        # Haar-sphere marginals by repeated Rademacher mixing.  A batched
-        # FWHT avoids B22's expensive dense QR generation.
-        q = _np.broadcast_to(
-            _np.eye(width, dtype=_np.float32),
-            (n_blocks, width, width),
-        ).copy()
-        for _stage in range(3):
-            step = 1
-            while step < width:
-                shaped = q.reshape(n_blocks, width, -1, 2, step)
-                left = shaped[..., 0, :]
-                right = shaped[..., 1, :]
-                q = _np.concatenate((left + right, left - right), axis=-1)
-                q = q.reshape(n_blocks, width, width)
-                step *= 2
-            q /= math.sqrt(width)
-            signs = _np.asarray(
-                rng.standard_normal((n_blocks, width)), dtype=_np.float32
-            )
-            signs = _np.where(signs >= 0.0, 1.0, -1.0).astype(_np.float32)
-            q *= signs[:, None, :]
-
-        directions = q.reshape(n_blocks * width, width)
+        # A reduced QR of a width-by-k Gaussian matrix yields a Haar-uniform
+        # k-frame. Every row below is therefore marginally uniform on the
+        # sphere, while directions inside each block are exactly orthogonal.
+        matrices = _np.asarray(
+            rng.standard_normal((n_blocks, width, block_size)),
+            dtype=_np.float64,
+        )
+        q, r = _np.linalg.qr(matrices, mode="reduced")
+        signs = _np.sign(_np.diagonal(r, axis1=-2, axis2=-1))
+        signs[signs == 0.0] = 1.0
+        directions = _np.transpose(q * signs[:, None, :], (0, 2, 1))
+        directions = directions.reshape(n_blocks * block_size, width)
         if remainder:
             z = _np.asarray(
-                rng.standard_normal((remainder, width)), dtype=_np.float32
+                rng.standard_normal((remainder, width)), dtype=_np.float64
             )
             z /= _np.linalg.norm(z, axis=1)[:, None]
             directions = _np.concatenate((directions, z), axis=0)
-        u = fnp.array(directions)
+        u = fnp.array(directions.astype(_np.float32))
 
         rows = []
         for w in mlp.weights:
