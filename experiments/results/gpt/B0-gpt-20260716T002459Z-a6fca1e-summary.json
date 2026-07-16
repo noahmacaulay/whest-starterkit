@@ -1,0 +1,40 @@
+{
+  "experiment_id": "B0-gpt-20260716T002459Z",
+  "agent": "gpt",
+  "base_champion_commit": "a6fca1e",
+  "candidate_commit": "966a985",
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess"
+  },
+  "commands": {
+    "champion": "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "monte_carlo": "uv run --frozen whest run --estimator candidate_gpt.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "mean_propagation": "uv run --frozen whest run --estimator examples/02_mean_propagation.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "covariance_propagation": "uv run --frozen whest run --estimator examples/03_covariance_propagation.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json"
+  },
+  "scores": {
+    "champion": {"adjusted_final_layer_score": 8.366271929844516e-06, "final_layer_mse": 8.366271929844516e-05, "mean_effective_compute": 2649890140.7451787},
+    "monte_carlo": {"adjusted_final_layer_score": 9.393561814840653e-07, "final_layer_mse": 8.504929468244882e-06, "mean_effective_compute": 30109415000.581963},
+    "mean_propagation": {"adjusted_final_layer_score": 9.482214921445121e-05, "final_layer_mse": 0.0009482214921445121, "mean_effective_compute": 483122156.5150242},
+    "covariance_propagation": {"adjusted_final_layer_score": 8.366271929844516e-06, "final_layer_mse": 8.366271929844516e-05, "mean_effective_compute": 2612035140.8738346}
+  },
+  "paired_monte_carlo_minus_champion": {
+    "mean_delta": -7.42691574836045e-06,
+    "confidence_interval_95": [-8.625623788742e-06, -6.228207707979e-06],
+    "relative_change": -0.88772105552,
+    "worst_per_mlp_regression": 2.020052241232e-06,
+    "regressed_mlps": 1
+  },
+  "failure_flags": "all zero for all four reports",
+  "verdict": "monte_carlo passes the Mini paired promotion gate; promotion pending a fresh shared-state check"
+}
