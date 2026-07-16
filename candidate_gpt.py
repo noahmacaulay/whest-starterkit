@@ -1,49 +1,53 @@
-"""B22 block-orthogonal Gaussian Monte Carlo candidate."""
+"""B35 radial-exact estimators for affine effective-compute calibration."""
 
 from __future__ import annotations
 
-import numpy as _np
+import math
+
 import flopscope.numpy as fnp
-from whestbench import MLP, BaseEstimator
+from whestbench import BaseEstimator, MLP
 
 
-_N_SAMPLES = 6_500
+class _RadialExactEstimator(BaseEstimator):
+    """Run the champion algorithm at a configurable directional sample count."""
 
+    n_samples = 6_500
 
-def _block_orthogonal_normals(width: int, rng) -> fnp.ndarray:
-    """Draw marginally standard-normal rows with orthogonal directions.
-
-    A Haar-uniform direction times an independent chi(width) radius is exactly
-    standard normal. Directions in each full block are mutually orthogonal,
-    which provides space-filling negative dependence without changing any
-    individual row's distribution.
-    """
-    full_blocks, remainder = divmod(_N_SAMPLES, width)
-    blocks = []
-    for _ in range(full_blocks):
-        matrix = _np.asarray(rng.standard_normal((width, width)), dtype=_np.float64)
-        q, r = _np.linalg.qr(matrix)
-        signs = _np.sign(_np.diag(r))
-        signs[signs == 0.0] = 1.0
-        directions = (q * signs[None, :]).T
-        radius_seed = _np.asarray(rng.standard_normal((width, width)), dtype=_np.float64)
-        radii = _np.sqrt(_np.sum(radius_seed * radius_seed, axis=1))
-        blocks.append(directions * radii[:, None])
-    if remainder:
-        blocks.append(
-            _np.asarray(rng.standard_normal((remainder, width)), dtype=_np.float64)
-        )
-    return fnp.array(_np.concatenate(blocks, axis=0).astype(_np.float32))
-
-
-class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Estimate all layer means with block-orthogonal Gaussian MC."""
         _ = budget
+        width = mlp.width
+
         rng = fnp.random.default_rng(mlp.seed)
-        x = _block_orthogonal_normals(mlp.width, rng)
+        z = rng.standard_normal((self.n_samples, width)).astype(fnp.float32)
+        norms = fnp.linalg.norm(z, axis=1)
+        u = z / norms[:, None]
+
         rows = []
         for weight in mlp.weights:
-            x = fnp.maximum(x @ weight, 0.0)
-            rows.append(fnp.mean(x, axis=0))
-        return fnp.stack(rows, axis=0)
+            u = fnp.maximum(fnp.matmul(u, weight), 0.0)
+            rows.append(fnp.mean(u, axis=0))
+
+        expected_radius = math.sqrt(2.0) * math.exp(
+            math.lgamma((width + 1) / 2.0) - math.lgamma(width / 2.0)
+        )
+        return expected_radius * fnp.stack(rows, axis=0)
+
+
+class Estimator3250(_RadialExactEstimator):
+    n_samples = 3_250
+
+
+class Estimator6500(_RadialExactEstimator):
+    n_samples = 6_500
+
+
+class Estimator13000(_RadialExactEstimator):
+    n_samples = 13_000
+
+
+class Estimator26000(_RadialExactEstimator):
+    n_samples = 26_000
+
+
+class Estimator(Estimator26000):
+    """B35 candidate: highest calibration sample count if feasibility passes."""
