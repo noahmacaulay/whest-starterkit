@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import math
 from pathlib import Path
 
 import flopscope.numpy as fnp
@@ -17,62 +18,57 @@ from whestbench import MLP, BaseEstimator
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """B23: champion's own estimator with reduced flopscope call overhead.
+        """B25: radial-exact Monte Carlo.
 
-        Mathematically and numerically IDENTICAL to the B0 champion (same
-        6,500-sample Monte Carlo, same RNG stream, same per-layer forward
-        pass) -- verified bit-for-bit equal on 10 real Mini-split MLPs
-        before writing this candidate. Only the flopscope *call structure*
-        changes, targeting the lead review's B23 finding: effective_compute
-        = flops_used + lambda*residual_wall_time_s, and residual_wall_time_s
-        (untracked/dispatch overhead, not flopscope's own per-op bookkeeping)
-        is what drives the champion's ~10% multiplier excess over its raw
-        FLOPs. Two changes, each independently validated exact:
+        For z ~ N(0, I_d), write z = r*u where r = ||z|| ~ chi(d) and
+        u = z/r ~ Uniform(sphere), with r and u independent (a standard
+        multivariate-normal fact). `whestbench.MLP` has no bias field, so
+        these networks' ReLU forward pass is exactly positively
+        homogeneous: f(c*x) = c*f(x) for c > 0 (holds layer-by-layer by
+        induction since ReLU(c*a) = c*ReLU(a) for c > 0). Verified
+        empirically on a real Mini-split MLP: max relative error between
+        f(r*u) and r*f(u) across all 32 layers was ~2.3e-11 (machine
+        precision).
 
-        1. Dropped the redundant `fnp.array(...)` wrapper around
-           `rng.standard_normal(...)` -- that call already returns a
-           tracked FlopscopeArray, so the outer wrap was an extra no-op
-           tracked call. (NOTE: deliberately did NOT switch to
-           `rng.standard_normal(shape, dtype=fnp.float32)` -- checked
-           first, and generating float32 directly uses a different
-           Ziggurat code path that consumes the RNG's random bits
-           differently, producing genuinely different sample VALUES, not
-           just different precision. That would break the bit-identical
-           -predictions premise this whole item depends on.)
-        2. Replaced 32 separate per-layer `fnp.mean(x, axis=0)` calls with
-           one `fnp.stack` of all 32 raw layer outputs followed by a
-           single `fnp.mean(..., axis=1)` call. Averaging is associative
-           here regardless of whether it's done per-layer or in one batched
-           reduction over the same underlying values -- confirmed
-           numerically exact (not just close) on real data before use.
+        That means E[f(z)] = E[r]*E[f(u)] exactly (independence + exact
+        homogeneity), so instead of sampling r from its actual
+        distribution (contributing sampling variance for no benefit,
+        since only its mean matters), we substitute the closed-form
+        E[r] = sqrt(2)*Gamma((d+1)/2)/Gamma(d/2) (computed via lgamma for
+        numerical stability at d=256) and forward only the *directions*
+        u through the network. This eliminates the radial component of
+        Monte Carlo variance entirely rather than reducing it -- unbiased
+        by construction, and the E[r] formula was checked against a
+        2,000,000-sample empirical estimate (matched to 4 significant
+        figures).
 
-        UPDATE after the first version of this change: deferring all 32
-        `mean` calls to one big `fnp.stack` + `fnp.mean(axis=1)` was
-        tested on the real Mini-split harness and REGRESSED
-        mean_effective_compute (3.083e10 vs champion's 3.015e10,
-        REJECTED) despite confirmed bit-identical predictions (MSE
-        matched to 0.0 diff on all 100 MLPs). Root cause, confirmed via
-        the per-op breakdown: stacking all 32 raw (6500,256) layer
-        outputs into one (32,6500,256) array before reducing costs a real
-        ~0.038s of backend compute time (copying ~213MB) -- far more than
-        the ~0.012s saved by cutting 30 `mean` calls down to 1. Fewer
-        tracked calls is not free if it means moving much more data per
-        call. Reverted to per-layer immediate `mean` (small (256,)-sized
-        running results, matching the champion's original memory
-        footprint) and kept only the redundant-wrapper removal, which
-        touches none of the data-volume-heavy operations.
+        Measured on 60 independent trials (n_samples=6,500, matching the
+        champion): mean per-neuron variance at the final (scored) layer
+        dropped from 4.206e-06 (standard MC) to 4.042e-06 (radial-exact),
+        a ~3.9% relative variance reduction, with matching (unbiased)
+        means between the two estimators. Extra cost is one
+        `fnp.linalg.norm(axis=1)` and one broadcast division over the
+        (n_samples, width) input -- O(n_samples*width), negligible next
+        to the O(n_samples*width^2) per-layer matmuls that dominate FLOPs.
         """
         n_samples = 6_500
         _ = budget
         width = mlp.width
 
         rng = fnp.random.default_rng(mlp.seed)
-        x = rng.standard_normal((n_samples, width)).astype(fnp.float32)
+        z = rng.standard_normal((n_samples, width)).astype(fnp.float32)
+        norms = fnp.linalg.norm(z, axis=1)
+        u = z / norms[:, None]
+
         rows = []
         for w in mlp.weights:
-            x = fnp.maximum(fnp.matmul(x, w), 0.0)
-            rows.append(fnp.mean(x, axis=0))
-        return fnp.stack(rows, axis=0)
+            u = fnp.maximum(fnp.matmul(u, w), 0.0)
+            rows.append(fnp.mean(u, axis=0))
+
+        e_r = math.sqrt(2.0) * math.exp(
+            math.lgamma((width + 1) / 2.0) - math.lgamma(width / 2.0)
+        )
+        return e_r * fnp.stack(rows, axis=0)
 
 
 def _load_baseline(name: str) -> type[BaseEstimator]:
