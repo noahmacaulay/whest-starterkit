@@ -1756,3 +1756,53 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   axis is closed. Full numbers:
   experiments/results/claude/B34-claude-20260716T203000Z-summary.json.
 - Full/submission gate: NOT_RUN (no candidate).
+
+## 2026-07-16T21:00:00Z - B38-claude: Last-layer Gaussian-moment Rao-Blackwellization (feasibility-rejected)
+- Hypothesis: the scored final layer computes mean_i ReLU(p_i), p_i =
+  h_31_i @ W_32. Each p_j is a 256-term He-weighted sum, ~Gaussian by
+  CLT, and for Gaussian p, E[ReLU(p)] = mu*Phi(mu/s)+s*phi(mu/s) exactly.
+  Replace the noisy sample mean of ReLU outputs with this smooth moment
+  formula at the sample mean/variance of p (per neuron). Unlike full
+  analytic propagation (B1/B3/B34, biased because the Gaussian approx
+  compounds over 32 layers) the approx is used ONCE at the last layer
+  (small, non-compounding bias) and is essentially FREE (no multiplier
+  hit). Rao-Blackwell intuition: (mu_hat, s_hat) near-sufficient for
+  E[ReLU(p)], so the moment estimator should have <= sample-mean
+  variance. Delta-method theory bounded the gain at ~3% (ReLU near-linear
+  for mu>>s, near-zero for mu<<-s; the formula only helps near
+  alpha ~ 0). At zero compute cost even a clean 2-3% bias-free cut could
+  clear the Mini gate and possibly Full (B30 SE: a ~2.3e-7 MSE effect is
+  ~2.5 sigma at n=1000), so it was worth an empirical check.
+- Pre-validation (standalone numpy, 10 Mini MLPs, 24 seeds each, vs
+  dataset final_means; separates bias from seed-variance): forwarded the
+  radial-exact directions through layers 1-31, took the final
+  pre-activation p, and compared the champion's mean(ReLU(p)) against the
+  moment estimator f(mean(p), std(p)), both scaled by E[r].
+- Result: DECISIVELY REJECTED, and the theory was optimistic on BOTH
+  counts. (1) The Rao-Blackwell variance reduction does NOT materialize:
+  measured mean seed-variance reduction is +0.1% (per-MLP range -0.2% to
+  +0.4%), not ~3% -- in practice mean(ReLU(p)) and f(mu_hat,s_hat) are
+  driven by the same sample fluctuations and track each other almost
+  exactly, so there is essentially no RB gain. (2) The CLT-Gaussian
+  approximation adds real BIAS: mom_bias^2 ~ 9.6e-7 per neuron (mean),
+  about 16% of the MC seed-variance (5.9e-6), because the post-ReLU h_31
+  inputs make p imperfectly Gaussian (non-negative, correlated summands
+  slow the CLT). Net: final-layer MSE-vs-truth is -12.9% (WORSE) across
+  the 10 MLPs (per-MLP -7.4% to -32.4%); every MLP regressed.
+- Why this matters: it closes the "last-layer analytic denoising"
+  sub-family, complementing gpt's B36 (last-layer template projection,
+  also rejected because the template's shape bias exceeded MC noise).
+  Both die for the same root reason as every analytic attempt
+  (B1/B3/B34/B36): a deterministic or Gaussian approximation's BIAS
+  exceeds the variance it saves. Here the variance saved is ~0 (the RB
+  gain is illusory for a single ReLU whose sample-mean already nearly
+  equals its Gaussian-moment value) and the bias is real, so it is a
+  strict loss. Combined with B32 (directional variance is irreducibly
+  ~255-dim), this reinforces that plain radial-exact MC (B25) is at the
+  accuracy frontier for this compute budget: neither variance reduction
+  (directions diffuse) nor analytic denoising (bias too large) can
+  improve it.
+- Verdict: REJECTED (feasibility, pre-harness). No candidate file, no
+  harness compute spent. Validated the "check cheaply before the harness"
+  discipline again: 240 numpy forward passes settled it.
+- Full/submission gate: NOT_RUN (no candidate).
