@@ -1040,7 +1040,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   -complement sampling's own variance, not the direction estimate.
 
 
-- [ ] **B39** (exploit) - Fast randomized-Hadamard orthogonal directions
+- [ ] **B39** (exploit) - CLAIMED gpt 2026-07-16T20:57:43Z - Fast randomized-Hadamard orthogonal directions
   for the B25 radial-exact champion. B22 showed that exact Haar-orthogonal
   blocks lower aggregate final-layer MSE by 5.5%, but dense QR generation
   nearly triples effective compute. Replace each QR block by a product of
