@@ -20,17 +20,68 @@ _COV_RESCALE_THRESHOLD = 1e100
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Plain 6,500-sample Monte Carlo baseline for B0."""
-        n_samples = 6_500
+        """Top-1 Gauss-Hermite quadrature with antithetic conditional MC."""
         _ = budget
         width = mlp.width
 
-        rng = fnp.random.default_rng(mlp.seed)
-        x = fnp.array(rng.standard_normal((n_samples, width)).astype(fnp.float32))
-        rows = []
+        # First construct the soft-gate Jacobian at the unconditional mean.
+        # At depth 32 its top right-singular direction is highly dominant.
+        mean = fnp.zeros(width)
+        variance = fnp.ones(width)
+        gains = []
         for w in mlp.weights:
-            x = fnp.maximum(fnp.matmul(x, w), 0.0)
-            rows.append(fnp.mean(x, axis=0))
+            pre_mean = w.T @ mean
+            pre_variance = fnp.maximum((w * w).T @ variance, 1e-12)
+            sigma = fnp.sqrt(pre_variance)
+            gain = flops.stats.norm.cdf(pre_mean / sigma)
+            mean = pre_mean * gain + sigma * flops.stats.norm.pdf(pre_mean / sigma)
+            second = (pre_mean * pre_mean + pre_variance) * gain + pre_mean * sigma * flops.stats.norm.pdf(pre_mean / sigma)
+            variance = fnp.maximum(second - mean * mean, 1e-12)
+            gains.append(gain)
+
+        direction = fnp.ones(width)
+        direction = direction / fnp.sqrt(fnp.sum(direction * direction))
+        for _ in range(4):
+            image = direction
+            for w, gain in zip(mlp.weights, gains):
+                image = gain * (w.T @ image)
+            direction = image
+            for w, gain in zip(reversed(mlp.weights), reversed(gains)):
+                direction = w @ (gain * direction)
+            direction = direction / fnp.sqrt(fnp.sum(direction * direction))
+
+        # 16-node probabilists' Gauss-Hermite rule for a standard normal.
+        nodes = (-6.630878198393129, -5.472225705949343, -4.492955302520011,
+                 -3.6008736241715487, -2.7602450476307014, -1.9519803457163334,
+                 -1.1638291005549648, -0.3867606045005574, 0.3867606045005574,
+                 1.1638291005549648, 1.9519803457163334, 2.7602450476307014,
+                 3.6008736241715487, 4.492955302520011, 5.472225705949343,
+                 6.630878198393129)
+        weights = (1.4978147231618412e-10, 1.309473216286817e-07,
+                   1.530003216248732e-05, 0.0005259849265739087,
+                   0.007266937601184749, 0.04728475235401406,
+                   0.1583383727509497, 0.286568521238012, 0.286568521238012,
+                   0.1583383727509497, 0.04728475235401406,
+                   0.007266937601184749, 0.0005259849265739087,
+                   1.530003216248732e-05, 1.309473216286817e-07,
+                   1.4978147231618412e-10)
+
+        rng = fnp.random.default_rng(mlp.seed)
+        rows = [fnp.zeros(width) for _ in mlp.weights]
+        for node, weight in zip(nodes, weights):
+            # Allocate pairs in proportion to quadrature mass; each pair is a
+            # conditional draw in the orthogonal complement of ``direction``.
+            pairs = max(1, int(round(weight * 3_250)))
+            noise = fnp.array(rng.standard_normal((pairs, width)).astype(fnp.float32))
+            noise = noise - fnp.outer(noise @ direction, direction)
+            positive = node * direction + noise
+            negative = node * direction - noise
+            for layer, w in enumerate(mlp.weights):
+                positive = fnp.maximum(positive @ w, 0.0)
+                negative = fnp.maximum(negative @ w, 0.0)
+                rows[layer] = rows[layer] + weight * 0.5 * (
+                    fnp.mean(positive, axis=0) + fnp.mean(negative, axis=0)
+                )
         return fnp.stack(rows, axis=0)
 
         # --- Step 1: initialise the input distribution ---
