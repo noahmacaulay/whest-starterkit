@@ -227,6 +227,30 @@ unclaimed items with the next free ID and a one-line hypothesis.
   as it already has once -- should push the paired mean delta entirely
   negative and produce the first promotable champion since B0.
 
+- [ ] **B12** (exploit) - CLAIMED claude 2026-07-16T06:35:00Z - Two-direction
+  active-subspace antithetic quadrature. B1/B10 use only the single top
+  power-iteration direction (AGENTS.md: depth-32 covariance is "often
+  rank-1 dominated", not purely rank-1). Checked B9's raw per-MLP data
+  first (no claim needed, B9 is DONE): even the 73/100 MLPs that didn't
+  crash from B9's float32-before-ppf bug scored ~27x worse MSE than
+  champion on average (0/73 better) -- confirms full-ambient-space
+  QMC/Sobol is a genuine statistical dead end here (consistent with
+  B4/B7/B8's finding that depth-32 collapse destroys input-level
+  structure), not just an implementation bug, so a bug-fixed Sobol retry
+  is not worth queuing. Pivoting instead to a direction complementary to
+  gpt's claimed B11 (which targets call-overhead only, same 1-D
+  estimator): deflate a second power-iteration direction orthogonal to
+  B1/B10's dominant direction, and instead of a second quadrature (avoids
+  needing to source/verify new GH constants under time pressure), use a
+  cheap 4-way antithetic split -- (+d2,+resid), (-d2,+resid), (+d2,-resid),
+  (-d2,-resid) -- on the two independent orthogonal-complement components
+  in place of B1/B10's single +-noise antithetic pair, at roughly the same
+  total sample budget (half as many base draws, 4 variants each instead of
+  2). All 4 variants share the same expectation by the same symmetry
+  argument as plain antithetic pairing, so this stays unbiased. Hypothesis:
+  if rank-1 dominance is imperfect, explicitly capturing the 2nd direction
+  reduces residual variance beyond B1/B10's single-direction quadrature.
+
 ## Done
 
 (nothing yet)
