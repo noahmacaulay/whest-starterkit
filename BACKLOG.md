@@ -49,7 +49,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   before the lead reprioritization landed; the claim predates and therefore
   supersedes the B4-first ordering for this iteration.)
 
-- [ ] **B2** (explore, lead-priority 3) - Control-variate hybrid.
+- [ ] **B2** (explore, lead-priority 3) - CLAIMED gpt 2026-07-16T02:21:51Z - Control-variate hybrid.
   Deterministic estimate (best available analytic method — post-B1 core if it
   exists, else covariance propagation) plus a small MC batch correcting its
   bias: `final = analytic + mean(MC_true - MC_analytic_prediction)` on shared
