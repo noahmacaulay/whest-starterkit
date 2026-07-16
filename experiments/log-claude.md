@@ -684,3 +684,67 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   vector, amortizing the per-call overhead across several starting
   vectors at once) -- but that is a real engineering undertaking, not a
   quick hyperparameter tweak, and would need its own careful scoping.
+
+## 2026-07-16T09:45:00Z - B18-claude: Seeded random power-iteration start (inconclusive, rejected)
+- Hypothesis: B17's full-dataset recheck found 2-iteration convergence
+  poor for ~35/100 Mini-split MLPs. Before attempting a real engineering
+  restructure (block power iteration), tested a much cheaper idea: is
+  this a starting-vector artifact rather than a fundamental convergence
+  -rate limit? The fixed, deterministic `ones(width)` start could have
+  systematically poor overlap with the true dominant direction for
+  certain He-initialized weight structures; a per-MLP seeded random start
+  (`fnp.random.default_rng(mlp.seed).standard_normal(width)`, consistent
+  with the seeding contract elsewhere) should have generically
+  non-degenerate overlap on average.
+- Base: claimed from 6f3b7d7; no candidate needed (see below).
+- Method: recomputed the full-100-MLP convergence check three ways --
+  the current `ones(width)` start, a per-MLP seeded random start, and a
+  third deterministic alternating-sign start ([1,-1,1,-1,...]) added as
+  a control once the random-start result looked ambiguous.
+- Result: seeded-random start substantially IMPROVED convergence for
+  most of the previously-poor MLPs (e.g. MLP 28: 0.891->1.000, MLP 34:
+  0.905->0.9999, MLP 46: 0.443->0.908, MLP 54: 0.808->0.995, MLP 81:
+  0.835->0.994) -- but it also *introduced* a new bad case that wasn't
+  there before: MLP 57 went from 0.996 (excellent with ones-start) to
+  0.275 (worse than the original global minimum). Aggregate: mean
+  improved marginally (0.979226->0.981545), min got WORSE (0.443->0.275),
+  n<0.999 improved only modestly (35->31). The alternating-sign start
+  showed the same pattern with yet another different set of poorly
+  -converged MLPs (worst: MLP 61 at 0.286, MLP 79, 98, 46, 5...), mean
+  0.978166, n<0.999=39 (worse than ones-start).
+- Interesting secondary finding: even the 6-iteration "converged"
+  reference direction itself differs depending on the starting vector for
+  several MLPs (e.g. MLP 46, 57, 76, 98 show ref_agreement of 0.975-0.993
+  between ones-start and random-start references, not 1.0) -- for these
+  specific MLPs, power iteration has not fully converged to a single
+  well-defined dominant direction even after 6 iterations regardless of
+  start, consistent with a genuinely small top-1/top-2 eigenvalue gap
+  rather than an unlucky initialization.
+- Verdict: REJECTED -- inconclusive/no reliable improvement. Three
+  different starting vectors (deterministic ones, seeded-random,
+  alternating) all show comparable aggregate convergence quality but each
+  fails on a *different* subset of MLPs, with no start dominating the
+  others. This rules out "pick a better starting vector" as a fix: poor
+  convergence for specific MLPs is an intrinsic spectral-gap property of
+  that MLP's soft-gate Jacobian (a near-degenerate top-2 eigenvalue
+  structure), not an artifact of a poorly-chosen deterministic start.
+  Switching to a random or alternative start would trade one set of edge
+  cases for another with no net gain, and would also make behavior
+  seed-dependent in a way that's harder to reason about for future
+  (Full-split or private) MLPs than the current deterministic choice.
+- Full/submission gate: NOT_RUN.
+- New ideas queued: none. This closes the "cheap fix" branch of the
+  power-iteration convergence problem definitively (alongside B17 closing
+  the "fewer iterations" branch). The only remaining lever identified so
+  far -- a genuinely restructured block/multi-vector power iteration,
+  which could plausibly narrow the spectral gap sensitivity by tracking
+  more than one direction during the iterative phase itself, not just at
+  the end (unlike B12's rejected post-hoc second direction) -- remains a
+  real engineering undertaking that no iteration in this lineage has
+  attempted yet. Given the diminishing returns across B10/B11/B12/B13/
+  B14/B15/B16/B17/B18 (nine iterations narrowing paired_mean_delta from
+  B1's 1.966e-07 down to B14's 5.477e-08 without crossing zero), the
+  B1/B10 lineage may be approaching a natural stopping point for
+  low-risk, incremental engineering fixes; a block-iteration attempt
+  would need to be scoped as its own careful, non-trivial experiment
+  rather than another quick tweak.

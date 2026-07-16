@@ -411,7 +411,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   iteration-count reduction as a lever for this lineage. See
   `experiments/log-claude.md`. No candidate file was needed or committed.
 
-- [ ] **B18** (exploit) - CLAIMED claude 2026-07-16T09:35:00Z - Seeded random
+- [x] **B18** (exploit) - DONE claude 2026-07-16T09:45:00Z (inconclusive) - Seeded random
   power-iteration start for the B1/B10/B11/B13/B14 active-subspace
   lineage. B17's full-dataset recheck found 2-iteration convergence is
   poor for ~35/100 Mini-split MLPs (min cosine similarity 0.443) despite
@@ -429,6 +429,18 @@ unclaimed items with the next free ID and a one-line hypothesis.
   any candidate file. If this closes most of the gap for the
   currently-poorly-converged MLPs, it's a free (zero extra FLOP or call
   cost) accuracy improvement for the whole lineage.
+  Result: REJECTED, inconclusive. Tested seeded-random AND a third
+  alternating-sign start as a control. All three starting vectors
+  (deterministic ones, seeded-random, alternating) show comparable
+  aggregate convergence quality (mean ~0.978-0.982) but each fails on a
+  *different* subset of MLPs -- seeded-random fixed most of ones-start's
+  worst cases (e.g. MLP 46: 0.443->0.908) but introduced a new one (MLP
+  57: 0.996->0.275, worse than the original global min). This rules out
+  "pick a better start" as a fix: poor convergence for specific MLPs is
+  an intrinsic spectral-gap property (near-degenerate top-2 eigenvalues
+  for those MLPs -- even the 6-iteration reference itself differs by
+  starting vector for some of them), not a fixable initialization
+  artifact. See `experiments/log-claude.md`. No candidate file needed.
 
 ## Done
 
