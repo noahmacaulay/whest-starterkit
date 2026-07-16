@@ -1,0 +1,61 @@
+{
+  "experiment_id": "B11-gpt-20260716T042143Z",
+  "agent": "gpt",
+  "hypothesis": "Materializing B10's soft-gate Jacobian should reduce power-iteration call overhead without changing the active-subspace Gauss-Hermite estimator.",
+  "base": {
+    "champion_estimator_commit": "136db85",
+    "source_result_commit": "58900f1",
+    "candidate_commit": "2d3e0fd"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "commands": [
+      "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+      "uv run --frozen whest run --estimator candidate_gpt.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json"
+    ],
+    "reports": {
+      "champion": "B11-gpt-20260716T042143Z-136db85-champion-mini.json",
+      "candidate": "B11-gpt-20260716T042143Z-136db85-candidate-mini.json",
+      "encoding": "UTF-16LE emitted by PowerShell redirection"
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.282648109981288e-07,
+    "candidate_adjusted_final_layer_score": 1.0200545517896954e-06,
+    "relative_change_percent_vs_champion": 9.888314164669065,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 7.995433086875892e-06,
+    "champion_mean_effective_compute": 29686056099.614662,
+    "candidate_mean_effective_compute": 34705750148.54873,
+    "champion_mean_flops_used": 27346176000.0,
+    "candidate_mean_flops_used": 28543928948.0
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_index",
+    "n": 100,
+    "mean_delta": 9.178974079156625e-08,
+    "t95_confidence_interval": [-2.062819180993836e-07, 3.898613996825161e-07],
+    "worst_per_mlp_regression": 3.6680905034244775e-06,
+    "worst_per_mlp_regression_mlp": "savannah-hayes",
+    "best_per_mlp_improvement": -8.841854433732299e-06,
+    "best_per_mlp_improvement_mlp": "jessica-benson",
+    "n_regressions": 60
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "The paired 95% confidence interval crosses zero and the candidate's mean adjusted score is 9.89% higher, so it cannot be promoted.",
+  "full_submission_gate": "NOT_RUN"
+}

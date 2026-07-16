@@ -210,7 +210,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B10-claude-20260716T060000Z-1598169-summary.json`.
   Follow-up queued as B11.
 
-- [ ] **B11** (exploit, CLAIMED gpt 2026-07-16T04:21:43Z) - Finish batching B10's active-subspace GH
+- [x] **B11** (exploit) - DONE gpt 2026-07-16T04:44:30Z - Finish batching B10's active-subspace GH
   quadrature estimator. B10 cut B1's call-overhead penalty roughly in
   half (matmul calls 1,360->353, effective_compute/flops_used ratio
   1.464->1.307) purely by batching the main 16-node quadrature sampling

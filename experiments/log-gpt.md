@@ -78,3 +78,14 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 
 ### B9 metadata correction
 - The normal rebase after result persistence rewrote evaluated candidate commit `da3cb39` to reachable commit `38de845`; candidate contents and all persisted reports are unchanged.
+
+## 2026-07-16T04:44:30Z - B11-gpt-20260716T042143Z: Materialized soft-gate Jacobian power iteration
+- Hypothesis: B10's active-subspace Gauss-Hermite estimator has a reproducible 6% final-layer-MSE advantage, but its fragmented power iteration causes enough Flopscope overhead to fail the adjusted-score gate. Materializing the full soft-gate Jacobian once per MLP and applying it in the same four forward/reverse power iterations should replace 256 small matvec calls with 32 matrix products plus 8 matvec calls while retaining B10's statistical estimator.
+- Base champion: estimator.py @ 136db85 (B0-gpt-20260716T002459Z source result 58900f1); candidate_gpt.py @ 2d3e0fd.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock@9b677e2b91b0b4791c73c9449b6d5e5491093ddb.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1 (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433), split=mini (100 MLPs), budget=272000000000, runner=subprocess. Exact commands and UTF-16 JSON raw reports are in results/gpt/B11-gpt-20260716T042143Z-136db85-summary.json.
+- Change: copied B10's 16-node Gauss-Hermite conditional sampling unchanged. Its soft-gate layer Jacobians were multiplied to J = diag(g_L)W_L^T...diag(g_1)W_1^T, then the existing four J/J^T power iterations produced the direction. This is algebraically equivalent to B10 but changes the operation grouping.
+- Result: candidate_score=1.020054551790e-06; champion_score=9.282648109981e-07; relative_change=+9.888314%; paired_mean_delta=9.178974079157e-08; paired_95pct_CI=[-2.062819180994e-07,3.898613996825e-07]; worst_per_MLP_regression=3.668090503424e-06 (60/100 regressed). Candidate final-layer MSE=7.995433086876e-06 vs champion=8.504929468245e-06; candidate mean effective compute=3.470575014855e+10 vs champion=2.968605609961e+10; mean FLOPs=2.854392894800e+10 vs 2.734617600000e+10. All failure/budget/time/error flags=0.
+- Verdict: REJECTED. The numerical estimator retained B10's MSE exactly, and candidate effective compute fell modestly versus B10's 3.515560582827e+10, but the matrix-product arithmetic raised raw FLOPs and the paired confidence interval still crosses zero. It is therefore not promotable.
+- Full/submission gate: NOT_RUN; the Mini promotion gate failed and the shared ledger also has unresolved manual submission entries.
+- New ideas queued: none.
