@@ -822,3 +822,59 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   different idea family, or (b) a fundamentally different, higher-risk
   redesign of the quadrature/direction-selection approach itself, not a
   tweak to the existing one.
+
+## 2026-07-16T10:55:00Z - B20-claude: Stein's-lemma pilot-sample direction (feasibility-rejected)
+- Hypothesis: B19 showed convergence to the soft-gate Jacobian's
+  eigenvector doesn't reliably predict this estimator's real MSE, so
+  further optimizing convergence *to that proxy* has diminishing value.
+  Tried a structurally different mechanism instead: Stein's lemma
+  (E[x f(x)] = E[grad f(x)] for x~N(0,I), f smooth) lets a small pilot
+  batch of real nonlinear forward passes (true hard ReLU, no soft-gate
+  linearization at all) directly estimate the network's average
+  output-sensitivity direction, with no dependence on the soft-gate
+  approximation that every direction-finding approach in this lineage
+  (B1/B10's power iteration, B12's deflated second direction, B18/B19's
+  alternative starts) has shared.
+- Given B19's lesson that even a well-behaved proxy metric doesn't
+  reliably predict harness MSE, planned to skip elaborate proxy
+  -validation and go straight to a real Mini-split comparison -- but
+  still ran a quick sanity check first (a basic "is this direction even
+  plausible" check, not a full convergence study) before spending harness
+  compute.
+- Method: computed the Stein direction two ways on 30 real dataset MLPs
+  -- (1) `mean(x_pilot * y_scalar[:,None], axis=0)` with y_scalar = summed
+  final-layer output per pilot sample (n_pilot=500), and (2) the dominant
+  left singular vector of the full per-neuron sensitivity matrix
+  `(x_pilot.T @ y_pilot)/n_pilot` via power iteration. Compared both
+  against the same 6-round soft-gate-eigenvector reference used in
+  B13/B17/B18/B19.
+- Result: both variants gave essentially the SAME, very low correlation
+  with the eigenvector reference -- mean cosine similarity ~0.128-0.129,
+  with 30/30 MLPs below 0.9 (most well below 0.2). This is not a
+  small-sample-noise pattern (both very different aggregation methods
+  converged to near-identical, near-orthogonal answers) -- it indicates a
+  genuine conceptual mismatch: Stein's lemma estimates *local gradient
+  sensitivity* of the output at/near the origin, but the quantity that
+  actually matters for this quadrature construction is the *dominant
+  eigenvector of the depth-32 variance-collapse operator* (which
+  direction of input variance survives 32 layers of mean-field collapse
+  without being averaged away) -- a related but different mathematical
+  object. Conflating them was the flaw in the hypothesis, not an
+  implementation bug (verified via two independent aggregation methods
+  agreeing).
+- Verdict: REJECTED at the feasibility stage, before any harness run --
+  the sanity check already shows this direction targets a fundamentally
+  different (and, per B4/B7/B8's precedent for near-arbitrary directions,
+  likely unhelpful) quantity for this problem. No candidate file needed.
+- Full/submission gate: NOT_RUN.
+- New ideas queued: none directly, but this sharpens the conceptual
+  picture: the RIGHT "different mechanism" idea for this lineage would
+  need to estimate the *collapse-operator's* dominant eigenvector from
+  real nonlinear dynamics (not a single-point gradient) -- e.g. tracking
+  the empirical covariance of a small pilot batch's *hidden* activations
+  across a few layers and taking its dominant eigenvector, rather than
+  a Stein/gradient-based approach at the input. That is a substantially
+  larger undertaking (needs its own careful derivation and validation)
+  and was not attempted here given this session's now-extensive run of
+  12+ rejected active-subspace variants; a natural point to let this
+  lineage rest and revisit with fresh eyes (or from the other agent).

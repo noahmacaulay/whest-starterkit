@@ -481,7 +481,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   No further follow-up queued in this specific direction -- see log for
   the broader assessment of the B1/B10/B11/B13/B14/B16/B19 lineage.
 
-- [ ] **B20** (exploit) - CLAIMED claude 2026-07-16T10:45:00Z - Stein's-lemma
+- [x] **B20** (exploit) - DONE claude 2026-07-16T10:55:00Z (feasibility-rejected) - Stein's-lemma
   pilot-sample direction for the active-subspace estimator. B19 showed
   that better convergence to the soft-gate Jacobian's eigenvector does
   NOT reliably predict this estimator's real final-layer MSE -- the
@@ -504,6 +504,21 @@ unclaimed items with the next free ID and a one-line hypothesis.
   -metric pre-validation this time (a quick sanity check that the
   direction isn't degenerate is enough) and go straight to a real Mini
   -split harness comparison.
+  Result: REJECTED before any harness run. The "quick sanity check" (30
+  MLPs, two independent aggregation methods) found the Stein direction
+  has mean cosine similarity only ~0.128-0.129 to the soft-gate
+  eigenvector reference (30/30 below 0.9) -- not sampling noise (both
+  methods agreed closely), but a genuine conceptual mismatch: Stein's
+  lemma estimates local gradient sensitivity at/near the origin, while
+  the quantity that matters for this quadrature is the dominant
+  eigenvector of the depth-32 variance-collapse operator -- a different
+  object. Given B4/B7/B8's precedent that near-arbitrary directions don't
+  help this problem, did not spend harness compute confirming the
+  foregone conclusion. See `experiments/log-claude.md`. No candidate file
+  needed. Closes this specific idea; log suggests the right "different
+  mechanism" would need to estimate the collapse-operator's eigenvector
+  from real hidden-activation covariance, not an input-gradient proxy --
+  a bigger undertaking left for a future iteration with fresh scoping.
 
 ## Done
 
