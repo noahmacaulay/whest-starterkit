@@ -1,0 +1,70 @@
+{
+  "experiment_id": "B10-claude-20260716T060000Z",
+  "agent": "claude",
+  "hypothesis": "B1-gpt's active-subspace Gauss-Hermite quadrature estimator has a genuinely better final-layer MSE than the champion (7.995e-06 vs 8.505e-06, ~6%) but lost the paired gate purely on mean_effective_compute (+28%) despite near-identical raw flops_used (+0.4%). Diagnosis: 1,360 fragmented small matmul calls vs. the champion's 32 single full-batch calls drive a flopscope/wall-clock overhead penalty unrelated to real arithmetic cost. Reimplementing the same statistical estimator with one combined (~6,516, width) batch forwarded through each layer with a single matmul call should recover most of that overhead while preserving the accuracy gain.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "1daf685",
+    "candidate_commit": "6275a01"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B10-claude-20260716T060000Z-1598169-champion-mini.json",
+      "candidate": "B10-claude-20260716T060000Z-1598169-candidate-mini.json",
+      "champion_stderr": "B10-claude-20260716T060000Z-1598169-champion-mini.stderr.txt",
+      "candidate_stderr": "B10-claude-20260716T060000Z-1598169-candidate-mini.stderr.txt",
+      "note": "Champion report reused byte-identical from the B4 experiment (same estimator.py@1598169, same deterministic dataset/seeds); candidate report freshly executed."
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.52408376098378e-07,
+    "candidate_adjusted_final_layer_score": 1.0341723746223542e-06,
+    "relative_change_percent_vs_champion": 8.584972641560483,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 7.995433086875892e-06,
+    "champion_mean_effective_compute": 30363295000.185635,
+    "candidate_mean_effective_compute": 35155605828.27236,
+    "champion_mean_score_multiplier": 0.11162976103009425,
+    "candidate_mean_score_multiplier": 0.12924855083923661,
+    "reference_B1_gpt_note": "candidate_final_layer_mse (7.995433086875892e-06) matches B1-gpt's original result (7.995440876130e-06) to 6 significant figures, confirming this is the mathematically identical estimator, just restructured for batched execution."
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_name/mlp_index",
+    "n": 100,
+    "mean_delta": 8.176399852397602e-08,
+    "t95_confidence_interval": [-2.2682084975682185e-07, 3.903488468047739e-07],
+    "worst_per_mlp_regression": 3.6754272193795726e-06,
+    "worst_per_mlp_regression_mlp": "savannah-hayes",
+    "best_per_mlp_improvement": -9.423435588379507e-06,
+    "best_per_mlp_improvement_mlp": "jessica-benson",
+    "n_regressions": 60,
+    "comparison_to_B1": "B1's paired_mean_delta was 1.966045905419e-07 (95% CI [-1.079e-07, 5.011e-07]); this run's mean_delta of 8.176e-08 is 58% smaller and the CI has narrowed and shifted toward zero, but is still not entirely below zero."
+  },
+  "overhead_diagnostic": {
+    "purpose": "Quantify how much of B1's effective_compute penalty was recovered by batching, and how much remains.",
+    "B1_original": {"flops_used": 27448881734, "effective_compute": 40184681751.25, "ratio": 1.4639824726075485, "matmul_calls": 1360},
+    "B10_this_run": {"flops_used": 27502695028, "effective_compute": 35941825027.897, "ratio": 1.3068473831857297, "matmul_calls": 353},
+    "champion_reference": {"flops_used": 27346176000, "effective_compute": 32435145993.8125, "ratio": 1.1860943919110483, "matmul_calls": 32},
+    "conclusion": "Batching the main 16-node quadrature sampling into one (~6,516, width) forward pass cut matmul call count from 1,360 to 353 (a 74% reduction) and the overhead ratio from 1.464 to 1.307 (about half the excess over the champion's 1.186 recovered). The remaining 321 extra calls (vs. champion's 32) come from two still-unbatched phases: 256 power-iteration matrix-vector products (4 iterations x 32 layers x 2 traversals) and 32 diagonal soft-gate propagation matmuls -- both currently done as per-layer vector ops rather than batched. Further batching those (e.g. running the power iteration as a small fixed-size batch, or algebraically folding the diagonal soft-gate pass into fewer calls) is the concrete remaining lever."
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "The paired 95% CI [-2.268e-07, 3.903e-07] is not entirely below zero, so this does not clear the promotion gate, despite recovering roughly half of B1's excess effective-compute overhead (ratio 1.464 -> 1.307, still above the champion's 1.186) and cutting the relative regression from B1's +20.7% to +8.6%. The underlying accuracy gain is real and reproducible (final-layer MSE matches B1 to 6 significant figures) but is not yet large enough to overcome the remaining ~31,000 avg. extra matmul-call overhead vs. the champion.",
+  "full_submission_gate": "NOT_RUN"
+}

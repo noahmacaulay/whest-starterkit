@@ -287,3 +287,72 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   structure across the *whole* forward pass, not a single-layer trick --
   the still-untested Sobol/QMC half of B4's original hypothesis) rather
   than anything anchored to layer 1 specifically.
+
+## 2026-07-16T06:15:00Z - B10-claude-20260716T060000Z: Batched active-subspace GH quadrature
+- Hypothesis: gpt's B1 experiment (active-subspace Gauss-Hermite quadrature)
+  measured a genuine final-layer MSE improvement over the champion
+  (7.995e-06 vs 8.505e-06, ~6%) but was REJECTED because its
+  mean_effective_compute was 28% higher than the champion's, even though
+  its raw flops_used was within 0.4% of the champion's. Root-caused this
+  before implementing: B1's candidate made 1,360 separate small matmul
+  calls (16 GH nodes x positive/negative x 32 layers, plus 256
+  power-iteration and 32 diagonal-soft-gate calls) vs. the champion's 32
+  single full-batch matmul calls; the effective_compute/flops_used ratio
+  was 1.464 for B1's candidate vs. 1.186 for the champion -- overhead from
+  call fragmentation, not real arithmetic. Hypothesis: reimplementing the
+  *same* statistical estimator with one combined (~6,516, width) batch
+  forwarded through each layer via a single matmul call recovers most of
+  that overhead while preserving the accuracy gain.
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); candidate_claude.py @ 6275a01, claimed from 1daf685
+  (independent reimplementation -- did not touch candidate_gpt.py).
+- Change: same soft-gate diagonal Jacobian, 4-iteration power method for
+  the dominant direction, and 16-node probabilists' Gauss-Hermite
+  quadrature with antithetic conditional draws as B1, but restructured:
+  builds one (total_pairs, width) noise batch and one (2*total_pairs,
+  width) positive/negative sample batch up front (vectorized `repeat`
+  instead of a per-node Python loop), assigns each row a fixed weight
+  `weight_i/(2*pairs_i)`, and forwards the whole batch through each layer
+  with a single matmul + weighted-sum, matching the champion's per-layer
+  call structure.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433),
+  split=mini (100 MLPs), budget=272000000000, runner=subprocess. Champion
+  report reused byte-identical from the B4 experiment; candidate report
+  freshly executed. Exact commands/reports:
+  results/claude/B10-claude-20260716T060000Z-1598169-summary.json.
+- Result: candidate adjusted score=1.034172374622e-06; champion=
+  9.524083760984e-07; relative_change=+8.584973% (vs. B1's +20.737562%).
+  candidate final_layer_mse=7.995433086876e-06 -- matches B1's
+  7.995440876130e-06 to 6 significant figures, confirming this is the
+  mathematically identical estimator. paired_mean_delta=8.176399852398e-08
+  (vs. B1's 1.966045905419e-07, 58% smaller); paired_95pct_CI=
+  [-2.268208497568e-07, 3.903488468048e-07] (narrower and shifted toward
+  zero vs. B1's [-1.079e-07, 5.011e-07], but still not entirely below
+  zero). worst_per_MLP_regression=3.675427219380e-06 (60/100 regressed,
+  vs. B1's 64/100). All failure/budget/time/error flags=0.
+- Overhead diagnostic: matmul calls dropped from B1's 1,360 to 353 (a 74%
+  reduction); effective_compute/flops_used ratio dropped from 1.464 to
+  1.307 (champion's ratio is 1.186) -- roughly half of B1's excess overhead
+  recovered. The remaining ~321 extra calls (vs. champion's 32) come from
+  two still-unbatched phases: the 256 power-iteration matrix-vector
+  products (4 iterations x 32 layers x 2 traversals) and the 32 diagonal
+  soft-gate propagation matmuls. Both are currently per-layer vector ops,
+  not batched.
+- Verdict: REJECTED -- the paired 95% CI is not entirely below zero. But
+  this is real, quantified progress on a previously-rejected method: the
+  accuracy gain is reproducible and the compute-overhead penalty that sank
+  B1 is now roughly half-closed purely by an implementation change (no
+  algorithm change). This is a much stronger candidate for a follow-up
+  iteration than a fresh idea would be.
+- Full/submission gate: NOT_RUN; the Mini paired gate failed.
+- New ideas queued: B11 - finish batching B10's estimator: fold the 256
+  power-iteration matrix-vector products and 32 diagonal-soft-gate matmuls
+  into far fewer, larger calls (e.g. stack the per-layer power-iteration
+  vector into a small batch, or algebraically combine steps) to close the
+  remaining gap from ratio 1.307 to the champion's 1.186. If the full
+  overhead gap closes while the ~6% MSE improvement is preserved (as this
+  run demonstrates it survives batching), the paired mean delta should
+  cross entirely below zero and this becomes a promotable champion.

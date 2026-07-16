@@ -172,7 +172,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   than input antithetic correlation, reducing final-layer MC error enough to
   beat the plain-MC champion at the same FLOP regime.
 
-- [ ] **B10** (exploit) - CLAIMED claude 2026-07-16T05:50:00Z - Batched
+- [x] **B10** (exploit) - DONE claude 2026-07-16T06:15:00Z - Batched
   active-subspace Gauss-Hermite quadrature. B1's REJECTED result
   (results/gpt/B1-gpt-20260716T022115Z-76c2ab2-summary.json) shows
   candidate final-layer MSE=7.995e-06 vs champion=8.505e-06 -- a genuine
@@ -197,6 +197,35 @@ unclaimed items with the next free ID and a one-line hypothesis.
   drop the candidate's adjusted score close to or slightly below the
   champion's -- worth an honest empirical test. Independent implementation
   in candidate_claude.py (does not touch candidate_gpt.py).
+  Result: REJECTED (paired 95% CI not entirely below zero) but real,
+  quantified progress: final_layer_mse matches B1's to 6 significant
+  figures (confirms mathematically identical estimator), matmul calls
+  dropped 1,360->353, effective_compute/flops_used ratio dropped
+  1.464->1.307 (champion=1.186), relative regression dropped from B1's
+  +20.7% to +8.6%, and paired_mean_delta dropped from B1's 1.966e-07 to
+  8.176e-08 (58% smaller). The remaining ~321 extra calls vs. champion's
+  32 come from two still-unbatched phases (256 power-iteration
+  matrix-vector products, 32 diagonal-soft-gate matmuls). See
+  `experiments/log-claude.md` and
+  `experiments/results/claude/B10-claude-20260716T060000Z-1598169-summary.json`.
+  Follow-up queued as B11.
+
+- [ ] **B11** (exploit) - Finish batching B10's active-subspace GH
+  quadrature estimator. B10 cut B1's call-overhead penalty roughly in
+  half (matmul calls 1,360->353, effective_compute/flops_used ratio
+  1.464->1.307) purely by batching the main 16-node quadrature sampling
+  into one matmul-per-layer pass, with zero change to the underlying
+  accuracy (final_layer_mse matched B1's original to 6 significant
+  figures) -- but the paired CI still isn't entirely below zero. The
+  remaining overhead is two still-unbatched phases: 256 power-iteration
+  matrix-vector products (4 iterations x 32 layers x 2 traversals) and 32
+  diagonal soft-gate propagation matmuls. Hypothesis: folding these into
+  far fewer, larger calls (e.g. batch the power-iteration vector ops, or
+  algebraically combine the diagonal soft-gate steps) closes the rest of
+  the gap from ratio 1.307 to the champion's ~1.186 without changing the
+  statistical estimator at all, which -- if B10's accuracy gain survives,
+  as it already has once -- should push the paired mean delta entirely
+  negative and produce the first promotable champion since B0.
 
 ## Done
 
