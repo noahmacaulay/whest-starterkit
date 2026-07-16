@@ -20,6 +20,8 @@ best reserved for deliberate, divisible reviews.
 The runner starts a fresh ephemeral Codex session each time. A Windows named
 mutex and Task Scheduler's `IgnoreNew` policy prevent overlap. Three
 consecutive failures pause the loop, with exponential backoff before then.
+The runner also forces UTF-8 for Python and child-process I/O so Windows'
+legacy console code page cannot break tests or WhestBench reports.
 
 ## Files
 

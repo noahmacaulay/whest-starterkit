@@ -14,6 +14,15 @@ if ([string]::IsNullOrWhiteSpace($RepoPath)) {
     $RepoPath = Split-Path -Parent $PSScriptRoot
 }
 
+# Windows scheduled tasks otherwise inherit a legacy code page. The repo,
+# pytest, and WhestBench all expect UTF-8 and may fail before doing useful work.
+$env:PYTHONUTF8 = "1"
+$env:PYTHONIOENCODING = "utf-8"
+$utf8NoBom = New-Object Text.UTF8Encoding($false)
+[Console]::InputEncoding = $utf8NoBom
+[Console]::OutputEncoding = $utf8NoBom
+$OutputEncoding = $utf8NoBom
+
 function Get-UtcTimestamp {
     return [DateTime]::UtcNow.ToString("o")
 }
