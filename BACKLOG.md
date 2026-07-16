@@ -1039,3 +1039,18 @@ unclaimed items with the next free ID and a one-line hypothesis.
   Any future work on this lineage should target the orthogonal
   -complement sampling's own variance, not the direction estimate.
 
+
+- [ ] **B39** (exploit) - Fast randomized-Hadamard orthogonal directions
+  for the B25 radial-exact champion. B22 showed that exact Haar-orthogonal
+  blocks lower aggregate final-layer MSE by 5.5%, but dense QR generation
+  nearly triples effective compute. Replace each QR block by a product of
+  normalized Walsh-Hadamard transforms and independent seeded Rademacher
+  diagonals, which remains exactly orthogonal and costs only O(width^2 log
+  width) additions/sign flips per block; use B25's closed-form chi-radius
+  mean rather than sampled radii. The structured row marginals only
+  approximate uniform sphere directions, so first measure bias and
+  seed-variance against the champion on 10 canonical Mini MLPs. Reject
+  before the full paired harness if squared bias erases the orthogonality
+  variance reduction; otherwise validate and run the standard 100-MLP Mini
+  pair.
+
