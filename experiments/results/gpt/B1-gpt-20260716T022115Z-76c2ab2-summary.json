@@ -1,0 +1,57 @@
+{
+  "experiment_id": "B1-gpt-20260716T022115Z",
+  "agent": "gpt",
+  "hypothesis": "Top-1 soft-gate active-subspace Gauss-Hermite quadrature plus antithetic conditional Monte Carlo improves the 6500-sample Monte Carlo champion.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "76c2ab2",
+    "candidate_commit": "a0dbad7"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B1-gpt-20260716T022115Z-76c2ab2-champion-mini.json",
+      "candidate": "B1-gpt-20260716T022115Z-76c2ab2-candidate-mini.json",
+      "champion_stderr": "B1-gpt-20260716T022115Z-76c2ab2-champion-mini.stderr.txt",
+      "candidate_stderr": "B1-gpt-20260716T022115Z-76c2ab2-candidate-mini.stderr.txt",
+      "encoding": "UTF-16LE PowerShell stdout redirection"
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.480602897957339e-07,
+    "candidate_adjusted_final_layer_score": 1.1446648803376293e-06,
+    "relative_change_percent": 20.737562016,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 7.995440876129578e-06,
+    "champion_mean_effective_compute": 30346389999.61406,
+    "candidate_mean_effective_compute": 38915891935.12957,
+    "champion_mean_score_multiplier": 0.11156761029269878,
+    "candidate_mean_score_multiplier": 0.14307313211444708
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m",
+    "mean_delta": 1.966045905418952e-07,
+    "t95_confidence_interval": [-1.079136381727695e-07, 5.011228192565600e-07],
+    "worst_per_mlp_regression": 4.120869834932584e-06,
+    "n_regressions": 64
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "Adjusted score regressed and the conservative paired 95% confidence interval was not entirely below zero.",
+  "full_submission_gate": "NOT_RUN"
+}

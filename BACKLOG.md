@@ -38,7 +38,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   and faster-than-`N^(-1/2)` error decay makes the score fall with N all the
   way up to the full 2.72e11 budget — the largest and cheapest expected win.
 
-- [ ] **B1** (exploit, lead-priority 2) - Productionize active-subspace Gauss-Hermite quadrature. CLAIMED gpt 2026-07-16T02:21:15Z
+- [x] **B1** (exploit, lead-priority 2) - Productionize active-subspace Gauss-Hermite quadrature. DONE gpt 2026-07-16T02:21:15Z
   From `experiments/active_subspace_quadrature_depth32.ipynb`.
   Hypothesis: depth-32 collapse makes the net approximately 1-D along the
   dominant Jacobian direction; 8-32 GH nodes along it plus a cheap orthogonal
