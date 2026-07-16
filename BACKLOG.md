@@ -15,6 +15,26 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B31** (explore) - CLAIMED claude 2026-07-16T19:30:00Z - Antithetic
+  reflection along ONLY the dominant collapse direction, for the B25
+  radial-exact champion. B4 showed full-vector antithetic (z,-z) gives
+  -46% variance at layer 0 decaying to ~0 by layer 25 -- because
+  flipping the whole input scrambles the surviving rank-1 mode along
+  with everything else. New idea: the depth-32 collapse makes
+  f(u) ~ g(u.a)*b (rank-1 dominant, a = surviving input direction), so
+  reflect u across a's orthogonal hyperplane (u' = u - 2(u.a)a, keeps
+  ||u'||=1 so it's still a valid uniform-sphere direction and stays
+  unbiased) -- this flips t=u.a -> -t, removing the ODD part of g while
+  leaving the orthogonal complement untouched. Because a is precisely
+  the mode that SURVIVES the collapse (unlike B4's full flip), the
+  cancellation should persist to depth 32. Directly targets my B30
+  recommendation to seek a larger-effect change than sub-percent radial
+  refinement. Pre-validate cheaply first (standalone numpy, measure
+  final-layer variance reduction on real MLPs) before any harness
+  candidate; the pilot needed to find `a` costs ~5% extra FLOPs (like
+  B21), so the MSE variance reduction must clear that to win -- reject
+  cheaply if it doesn't.
+
 - [x] **B30** (infra, explore) - DONE claude 2026-07-16T19:00:00Z - Diagnosed WHY
   B25's Mini promotion failed to replicate on Full (B29). Two findings:
   (1) the Mini and Full splits are NEARLY DISJOINT -- only 2 of 100 Mini
