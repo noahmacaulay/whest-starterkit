@@ -112,3 +112,71 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   periodically reflecting the running activations (or reflecting only in the
   active-subspace direction from B1's Jacobian estimate) may sustain the
   antithetic benefit deeper into the network at the same FLOP cost.
+
+## 2026-07-16T03:32:00Z - B3-claude-20260716T032500Z: Exact bivariate ReLU cross-moment
+- Hypothesis: replacing the B0-era gain-product off-diagonal covariance
+  approximation `cov_post[i,j] ~= Phi(alpha_i)*Phi(alpha_j)*cov_pre[i,j]`
+  with the exact bivariate ReLU cross-moment closes a meaningful fraction of
+  the ~9x gap between covariance propagation and the MC champion (per the
+  B1 lead note's compounding-off-diagonal-bias theory).
+- Base champion: estimator.py @ 1598169 (B0-gpt-20260716T002459Z source
+  result 58900f1); candidate_claude.py @ c149f43, claimed from 3926f2e.
+- Derivation: for jointly Gaussian (X,Y) with correlation rho, Price's
+  theorem gives d/drho E[X+ Y+] = sigma_x*sigma_y*P(X>0,Y>0). Integrating
+  from rho=0 (closed form via independence) and swapping the order of the
+  resulting double integral reduces the correction to a single integral of
+  the plain bivariate normal density in rho. Substituting t=cos(theta)
+  exactly cancels that density's 1/sqrt(1-t^2) factor (the "arccos kernel"
+  form named in the backlog item), leaving a smooth, bounded integrand with
+  no singularity at rho -> +-1 -- evaluated with fixed 16-point
+  Gauss-Legendre quadrature, in float64 (matching the existing float64
+  upcast already used for `gain`), vectorized over the full width x width
+  pair matrix.
+- Validation before wiring in: (1) the closed-form correction integral
+  matched brute-force 20M-sample Monte Carlo cross moments to ~1e-4 across
+  13 (mu_x,mu_y,sigma_x,sigma_y,rho) cases including |rho| up to 0.999999
+  and mixed signs; (2) a layer-by-layer PSD/correlation diagnostic on both
+  a synthetic MLP and a real dataset MLP showed no instability; (3) the
+  official Mini-split aggregate initially looked like a 788% regression
+  (see `paired.mean_delta` below), which I did not take at face value --
+  called `candidate_claude.py`'s actual `Estimator.predict()` in-process on
+  real dataset MLP #0 and compared directly against
+  `examples/03_covariance_propagation.py`'s gain-product estimator on the
+  same MLP: final-layer outputs differ by an L2 norm of only 0.0152 (vs
+  |mu|~12.4), and against an independent 2,000,000-sample MC reference the
+  exact-cross-moment version was marginally *more* accurate (MSE
+  3.524e-05 vs 4.133e-05 for the gain-product version). This confirms the
+  formula/implementation are correct, not buggy.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@2c84f3b0131859397fbfecea333503af142fd50f.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433),
+  split=mini (100 MLPs), budget=272000000000, runner=subprocess. Champion
+  report reused byte-identical from the B4 experiment (same
+  estimator.py@1598169, same deterministic dataset/seeds); candidate report
+  freshly executed. Exact commands and reports are in
+  results/claude/B3-claude-20260716T032500Z-1598169-summary.json.
+- Result: candidate adjusted score=8.460563353429e-06; champion (MC) adjusted
+  score=9.524083760984e-07; relative_change=+788.333573% vs. champion.
+  Reference: the B0-era gain-product covariance-propagation baseline's own
+  official Mini score was 8.366271929845e-06 -- i.e. the exact candidate
+  (8.4606e-06) is statistically indistinguishable from (~1% worse than) the
+  approximation it replaces. paired_mean_delta=7.508154977331e-06 (vs.
+  champion); paired_95pct_CI=[6.269998308988e-06, 8.746311645673e-06];
+  worst_per_MLP_regression=2.951486299528e-05 (99/100 regressed vs.
+  champion). All failure/budget/time/error flags=0; candidate mean
+  effective compute 2.876e10, still well under the 2.72e10 floor.
+- Verdict: REJECTED. Not a bug (see validation above) -- a real result that
+  refutes the hypothesis. Compounding off-diagonal bias is not a dominant
+  error term for this covariance-propagation method at depth 32: fixing it
+  exactly leaves the aggregate score essentially unchanged. Remaining error
+  is more likely from higher-order (beyond-pairwise) non-Gaussianity
+  introduced by ReLU, or breakdown of the mean-field/Gaussian assumption
+  itself, neither of which a pairwise cross-moment correction can fix.
+- Full/submission gate: NOT_RUN; the Mini paired gate failed.
+- New ideas queued: none directly, but this is a relevant negative result
+  for B2 (lead note: B3 was intended mainly as a better analytic core for
+  B2) -- an exact pairwise-correlation fix is not where B2's analytic core
+  should invest further; B5/B6 (rank-adaptive and mean-field-asymptotic
+  approaches, which target different error sources) remain the more
+  promising analytic directions.

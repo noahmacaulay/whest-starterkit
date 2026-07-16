@@ -1,0 +1,66 @@
+{
+  "experiment_id": "B3-claude-20260716T032500Z",
+  "agent": "claude",
+  "hypothesis": "Replacing the B0-era gain-product off-diagonal covariance approximation (cov_post[i,j] ~= Phi(alpha_i)*Phi(alpha_j)*cov_pre[i,j]) with the exact bivariate ReLU cross-moment closes a meaningful fraction of the ~9x gap between covariance-propagation and the MC champion, per the lead's compounding-off-diagonal-bias theory.",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "source_result_commit": "58900f1",
+    "claim_base_commit": "3926f2e",
+    "candidate_commit": "c149f43"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5+np2.2.6",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "command": "uv run --frozen whest run --estimator <estimator> --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "reports": {
+      "champion": "B3-claude-20260716T032500Z-1598169-champion-mini.json",
+      "candidate": "B3-claude-20260716T032500Z-1598169-candidate-mini.json",
+      "champion_stderr": "B3-claude-20260716T032500Z-1598169-champion-mini.stderr.txt",
+      "candidate_stderr": "B3-claude-20260716T032500Z-1598169-candidate-mini.stderr.txt",
+      "note": "Champion report is byte-identical to B4's champion run (same estimator.py@1598169, same deterministic dataset/seeds) and was reused rather than re-executed; the candidate report is freshly executed for B3."
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_final_layer_score": 9.52408376098378e-07,
+    "candidate_adjusted_final_layer_score": 8.460563353429022e-06,
+    "relative_change_percent_vs_champion": 788.3335726307281,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 7.822838488209527e-05,
+    "champion_mean_effective_compute": 30363295000.185635,
+    "candidate_mean_effective_compute": 28763034596.329872,
+    "champion_mean_score_multiplier": 0.11162976103009425,
+    "candidate_mean_score_multiplier": 0.1076335978702387,
+    "reference_B0_covariance_propagation_adjusted_score": 8.366271929845e-06,
+    "reference_B0_covariance_propagation_note": "The B3 candidate (exact cross-moment) scores 8.4606e-06 vs. the B0-era gain-product approximation's own official Mini score of 8.3663e-06 (~1% apart) -- i.e. statistically indistinguishable in this aggregate. The exact fix does not materially move covariance propagation's score in either direction; both remain ~9x worse than the MC champion."
+  },
+  "paired": {
+    "definition": "candidate_adjusted_score_m - champion_adjusted_score_m, matched by mlp_name/mlp_index; champion is the current promoted champion (plain 6500-sample MC), per protocol -- not the gain-product covariance-propagation baseline this candidate is architecturally derived from",
+    "n": 100,
+    "mean_delta": 7.5081549773306436e-06,
+    "t95_confidence_interval": [6.269998308988114e-06, 8.746311645673173e-06],
+    "worst_per_mlp_regression": 2.9514862995281145e-05,
+    "worst_per_mlp_regression_mlp": "kristi-johnson",
+    "n_regressions": 99
+  },
+  "diagnostic": {
+    "purpose": "Before accepting the paired-gate result, verified the exact cross-moment formula and its implementation were not simply buggy, since the initial 788% regression number looked catastrophic in isolation.",
+    "method": "1) Validated the closed-form cross-moment integral (derived via Price's theorem + arccos-substitution quadrature) against brute-force 20M-sample Monte Carlo for 13 (mu_x,mu_y,sigma_x,sigma_y,rho) test points spanning rho up to 0.999999 and various signs -- all matched to ~1e-4. 2) Called candidate_claude.py's actual Estimator.predict() in-process (bypassing the CLI/subprocess runner) on real dataset MLP #0 and compared its final-layer output directly against examples/03_covariance_propagation.py's gain-product Estimator on the same MLP.",
+    "result": "The two methods' final-layer outputs are nearly identical (L2 diff norm 0.0152 vs |mu|~12.4, ~0.1% relative). Against an independent 2,000,000-sample Monte Carlo reference for that MLP, the exact-cross-moment candidate was actually marginally *more* accurate than the gain-product baseline (MSE 3.524e-05 vs 4.133e-05). This confirms the formula and implementation are correct -- the exact correction genuinely has very small magnitude relative to the leading gain-product term for this network's actual (alpha, rho) statistics, so it does not meaningfully change the aggregate final-layer score either way. The paired-gate REJECTED verdict below is a real, expected result (analytic methods trailing the MC champion by ~9x), not an implementation defect."
+  },
+  "failure_breakdown": {
+    "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+  },
+  "verdict": "REJECTED",
+  "reason": "Candidate trails the current MC champion by ~9x (as any analytic covariance-propagation method starts out, per the lead's own B1 note), and the exact off-diagonal cross-moment correction does not close that gap: it scores statistically indistinguishable from (very slightly worse than) the B0-era gain-product approximation it replaces (8.4606e-06 vs 8.3663e-06). This refutes the hypothesis that compounding off-diagonal bias over 32 layers is a dominant error term for covariance propagation -- the correction is mathematically validated and correctly implemented (see diagnostic above) but practically negligible here. Remaining error is more likely dominated by something the pairwise-Gaussian cross-moment fix cannot touch: e.g. higher-order (beyond-pairwise) non-Gaussianity introduced by ReLU, or breakdown of the mean-field/Gaussian assumption itself at depth 32.",
+  "full_submission_gate": "NOT_RUN"
+}

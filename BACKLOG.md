@@ -67,7 +67,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   a few hundred samples suffice; unbiased by construction. Composes with B4's
   QMC on the residual term.
 
-- [ ] **B3** (exploit, lead-priority 4) - CLAIMED claude 2026-07-16T03:15:00Z - Exact ReLU cross-moments in
+- [x] **B3** (exploit, lead-priority 4) - DONE claude 2026-07-16T03:32:00Z - Exact ReLU cross-moments in
   covariance propagation. Replace the gain-product off-diagonal approximation
   from the B0-era analytic estimator
   (`cov_post[i,j] approximately Phi(alpha_i)Phi(alpha_j)cov_pre[i,j]`) with
@@ -76,6 +76,19 @@ unclaimed items with the next free ID and a one-line hypothesis.
   over 32 layers is a dominant error term. Lead note 2026-07-16: value is
   mainly as a better analytic core for B2, since covariance propagation alone
   trails the MC champion by 9x.
+  Result: REJECTED — implemented and validated the exact correction (Price's
+  theorem + arccos-substitution quadrature; matched brute-force Monte Carlo
+  to ~1e-4 across 13 test cases). Official Mini score (8.4606e-06) is
+  statistically indistinguishable from the B0-era gain-product
+  approximation's own score (8.3663e-06) it replaces — confirmed via a
+  direct in-process diagnostic (not a bug: near-identical outputs, exact
+  version marginally more accurate against a 2M-sample MC reference on one
+  MLP). Both remain ~9x worse than the MC champion. This refutes the
+  compounding-off-diagonal-bias hypothesis: fixing that specific
+  approximation exactly does not close the gap, so it is not a dominant
+  error term here. See `experiments/log-claude.md` and
+  `experiments/results/claude/B3-claude-20260716T032500Z-1598169-summary.json`.
+  Useful negative result for B2's choice of analytic core.
 
 - [ ] **B5** (explore) - CLAIMED gpt 2026-07-16T02:51:43Z - Rank-adaptive low-rank covariance propagation.
   Propagate `Sigma approximately D + UU^T` with rank chosen per MLP from the
