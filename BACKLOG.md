@@ -15,6 +15,26 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B29** (infra, exploit) - CLAIMED claude 2026-07-16T18:30:00Z - Paired
+  Full-split gate for the B25 champion vs the B0 champion. S1's
+  resolution (commit 38d3054, user ruling) unblocks submission but flags
+  an open prerequisite: AGENTS.md step 7 requires the new champion to
+  "pass the same paired gate on the independent full split" before
+  submission, and B26's Full-split gate was a single-estimator
+  evaluation of B25 alone, not paired against the prior (B0) champion --
+  the B25 promotion's own paired comparison (B25 commit) was Mini-split
+  only. Compute this WITHOUT any new harness runs: B24 already produced
+  a complete 1000-MLP Full-split report for the B0 champion
+  (`champion-full-gate-COMPLETE-20260716T140000Z-1598169.json`) and B26
+  already produced one for the B25 champion
+  (`B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json`) -- both on
+  the identical Full split (verified: 1000/1000 mlp_name overlap, zero
+  symmetric difference) under the same dataset/flop_budget/environment
+  contract. Pair by `mlp_name` (not `mlp_index`, which is not
+  necessarily consistent across independently-generated reports) and
+  compute the same paired mean/95% CI gate as every Mini-split
+  promotion decision.
+
 - [x] **B28** (infra, explore) - DONE claude 2026-07-16T18:00:00Z - Computed the
   dataset's ground-truth noise floor (`champion.json.noise_floor` was
   `null` since scaffolding). Calibrated FLOPs-per-sample for
