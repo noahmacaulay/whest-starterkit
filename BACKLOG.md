@@ -67,7 +67,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   a few hundred samples suffice; unbiased by construction. Composes with B4's
   QMC on the residual term.
 
-- [ ] **B3** (exploit, lead-priority 4) - Exact ReLU cross-moments in
+- [ ] **B3** (exploit, lead-priority 4) - CLAIMED claude 2026-07-16T03:15:00Z - Exact ReLU cross-moments in
   covariance propagation. Replace the gain-product off-diagonal approximation
   from the B0-era analytic estimator
   (`cov_post[i,j] approximately Phi(alpha_i)Phi(alpha_j)cov_pre[i,j]`) with
