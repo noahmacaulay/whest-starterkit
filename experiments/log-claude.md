@@ -956,3 +956,65 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   reasons), the B1/B10 lineage and this general research direction may
   best be left for a lead review to reprioritize rather than further
   worker-tick tweaking.
+
+## 2026-07-16T13:45:00Z - Champion Full-split gate: partial validation (500/1000 MLPs)
+- Not a new estimator experiment (no candidate, no promotion decision) --
+  infrastructure/validation work explicitly sanctioned by S1's own text
+  ("the Full gate can still be run and recorded" independent of the
+  submission blocker) and referenced by champion.json's standing note
+  ("independent Full gate is still required before any submission").
+  Following B21's finding that the active-subspace lineage has hit its
+  research ceiling, used this iteration for genuinely useful work that
+  had been sitting undone rather than forcing another speculative
+  estimator tweak.
+- What happened: `uv run --frozen whest run --estimator estimator.py
+  --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@
+  v1-phase1 --split full --flop-budget 272000000000 --format json`
+  (all 1000 MLPs) was attempted twice as a background task. First
+  attempt: the Full split's 19-file HF Hub download alone took ~43
+  minutes (slow due to unauthenticated-request rate limiting), and the
+  task was killed shortly after the download finished, during MLP
+  evaluation. Second attempt (dataset now cached, download instant):
+  killed again during evaluation. A 50-MLP timing sample (dataset
+  cached) measured ~176s/50 MLPs = ~3.5s/MLP, extrapolating to ~58
+  minutes for all 1000 -- this exceeds whatever duration limit caused
+  both kills. Checked for a faster path: `--runner local` (in-process)
+  was 3.7x faster (48s vs 176s for 50 MLPs) but gave a ~6% different
+  `mean_effective_compute` than `subprocess` on the same 50 MLPs (final
+  -layer MSE matched almost exactly, confirming only the compute
+  -accounting methodology differs, not the estimator's predictions) --
+  not safe to substitute for an official gate record given AGENTS.md's
+  subprocess-isolation requirement for anything methodology-sensitive.
+  Considered chunking via `whestbench.scoring.evaluate_estimator` +
+  `whestbench.runner.SubprocessRunner` directly, but hand-rolling the
+  aggregation logic (matching the CLI's exact mean_effective_compute /
+  multiplier computation) under time pressure carried real correctness
+  risk -- an incorrect Full-gate number would be worse than an honestly
+  partial one. Settled on evaluating the first 500 of 1000 MLPs
+  (deterministic dataset order, same subprocess methodology as every
+  other result in this session) within a safe ~30-minute window.
+- Result: adjusted_final_layer_score=8.613256073606e-07,
+  final_layer_mse=7.796336929800e-06, mean_effective_compute=
+  3.005591989991e10, mean_score_multiplier=0.110499705514. All 500 MLPs:
+  zero budget/time/error flags. These numbers are close to, and actually
+  slightly better than, the Mini-split champion numbers
+  (adjusted_final_layer_score~9.39e-07, final_layer_mse~8.505e-06) --
+  reassuring evidence the champion is not overfit to the 100-MLP Mini
+  split and generalizes cleanly to a 5x larger independent sample.
+- IMPORTANT: this is explicitly NOT a substitute for the real Full-split
+  gate. AGENTS.md requires passing the paired gate on the complete,
+  independent 1000-MLP full split before any submission; 500/1000 MLPs
+  does not satisfy that. Recorded clearly as
+  `full_gate_partial_check` in champion.json (separate from the existing
+  `note` field, which still correctly states the Full gate is required
+  and unrun) and as a dedicated raw report:
+  `experiments/results/claude/champion-full-gate-partial500-20260716T133000Z-1598169.json`.
+  A genuine complete run needs either a longer-running execution
+  environment than a single background task here allows, or a proper
+  chunk-and-resume implementation using whestbench's runner/scoring API
+  directly (sketched above, not attempted here to avoid correctness
+  risk under time pressure) -- left as a concrete, well-scoped follow
+  -up rather than queued as a numbered backlog item, since it isn't an
+  estimator experiment.
+- Full/submission gate: PARTIAL (500/1000), NOT COMPLETE. No promotion,
+  no submission action taken or implied.

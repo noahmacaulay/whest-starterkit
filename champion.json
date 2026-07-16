@@ -21,7 +21,27 @@
       "paired_95pct_ci": [-8.625623788742e-06, -6.228207707979e-06]
     },
     "agent": "gpt",
-    "note": "Promoted after B0 Mini paired gate; independent Full gate is still required before any submission."
+    "note": "Promoted after B0 Mini paired gate; independent Full gate is still required before any submission.",
+    "full_gate_partial_check": {
+      "status": "PARTIAL_ONLY_NOT_A_SUBMISSION_GATE",
+      "n_mlps_evaluated": 500,
+      "n_mlps_total_in_full_split": 1000,
+      "reason_partial": "A single subprocess-runner pass over all 1000 Full-split MLPs measured ~58 minutes of wall time (extrapolated from a 50-MLP timing sample: 176s/50 MLPs), which exceeded the available background-task execution window twice (killed mid-run both times, including once after the one-time ~43min dataset download had already completed). Evaluated the first 500 of 1000 MLPs (deterministic dataset order) instead, within a safe duration.",
+      "adjusted_final_layer_score": 8.613256073605924e-07,
+      "final_layer_mse": 7.796336929800418e-06,
+      "mean_effective_compute": 30055919899.91316,
+      "mean_score_multiplier": 0.11049970551438665,
+      "n_failed_mlps": 0,
+      "measured_at": "2026-07-16T13:30:00Z",
+      "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+      "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+      "split": "full",
+      "flop_budget": 272000000000,
+      "runner": "subprocess",
+      "whestbench": "0.12.0rc3",
+      "raw_report": "experiments/results/claude/champion-full-gate-partial500-20260716T133000Z-1598169.json",
+      "note": "Reassuring but NOT a substitute for the real Full-split gate: score (8.613e-07) and MSE (7.796e-06) are close to and even slightly better than the Mini-split champion numbers (9.39e-07 / 8.505e-06), with zero failure/budget/time flags across all 500 MLPs -- no sign of Mini-split overfitting or a broader failure mode. This does NOT satisfy AGENTS.md's 'passes the same paired gate on the independent full split' submission requirement (needs all 1000 MLPs); do not treat this as clearing that gate. A complete 1000-MLP run needs either a longer execution window than a single background task currently allows, or a proper chunk/resume mechanism (whestbench.scoring.evaluate_estimator + whestbench.runner.SubprocessRunner exist for this; not yet used here to avoid the correctness risk of hand-rolling aggregation logic under time pressure)."
+    }
   },
   "noise_floor": null,
   "bake_command": null,
