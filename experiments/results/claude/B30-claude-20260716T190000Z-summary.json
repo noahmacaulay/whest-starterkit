@@ -1,0 +1,43 @@
+{
+  "experiment_id": "B30-claude-20260716T190000Z",
+  "agent": "claude",
+  "purpose": "Diagnose the mechanism behind B29's finding (B25's Mini-split promotion advantage did not replicate on the Full split), to inform whether the promotion methodology needs strengthening. Pure analysis of existing immutable reports + dataset metadata; no harness runs, no estimator change.",
+  "inputs": {
+    "b0_full_report": "experiments/results/claude/champion-full-gate-COMPLETE-20260716T140000Z-1598169.json",
+    "b25_full_report": "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json",
+    "b25_mini_promotion_delta": -1.4337479573035662e-07,
+    "b25_mini_promotion_ci": [-2.5806878728564897e-07, -2.8680804175064248e-08]
+  },
+  "finding_1_splits_are_nearly_disjoint": {
+    "method": "Enumerated mlp_name for both the mini (100) and full (1000) splits of hf://aicrowd/arc-whestbench-public-2026@v1-phase1 and intersected them.",
+    "mini_size": 100,
+    "full_size": 1000,
+    "intersection_size": 2,
+    "conclusion": "The Mini and Full splits are nearly disjoint (only 2 of 100 Mini MLPs also appear in Full). A Mini-split promotion gate and a Full-split evaluation therefore measure almost entirely DIFFERENT MLP populations -- they are not the same population sampled at two sizes. This is the structural precondition for a promotion to not replicate: nothing forces the two populations to have the same mean paired effect for a given candidate."
+  },
+  "finding_2_effect_is_tiny_relative_to_per_mlp_noise": {
+    "metric": "per-MLP paired delta in adjusted_final_layer_score (B25 - B0) on the Full split, n=1000",
+    "population_mean_delta": -8.667732439883444e-09,
+    "population_per_mlp_std": 3.1965765357780707e-07,
+    "std_over_abs_mean_ratio": 36.9,
+    "implied_standard_error_at_n100": 3.1965765357780706e-08,
+    "implied_standard_error_at_n1000": 1.0108462568109422e-08,
+    "true_effect_in_standard_errors_at_n100": -0.271,
+    "true_effect_in_standard_errors_at_n1000": -0.857,
+    "per_mlp_mse_delta_distribution": {
+      "mean": -8.884e-08,
+      "std": 2.885e-06,
+      "n_big_wins_lt_-1e-6": 210,
+      "n_big_losses_gt_1e-6": 181,
+      "n_near_ties_abs_le_1e-6": 609,
+      "mse_delta_quantiles": {"q01": -1.078e-05, "q05": -3.994e-06, "q25": -7.899e-07, "q50": -7.055e-09, "q75": 5.942e-07, "q95": 3.007e-06, "q99": 6.996e-06},
+      "corr_with_b0_mse_level": -0.105
+    },
+    "conclusion": "B25's radial-exact trick delivers a genuine but very small mean improvement (~1% of the score), and the per-MLP effect is dominated by per-MLP heterogeneity: the per-MLP std (3.20e-07 in score units) is ~37x the population mean effect (8.67e-09). On the Full split the true effect is only 0.86 standard errors from zero -- consistent with B29's CI including zero. On a 100-MLP Mini sample the true effect is a mere 0.27 SE, so the population-level signal is essentially invisible at Mini scale; whatever a 100-MLP gate measures is dominated by which specific MLPs it drew."
+  },
+  "mechanism": "Putting the two together: (a) Mini and Full are near-disjoint populations, and (b) B25's true population effect (~-8.7e-09) is tiny vs per-MLP std (~3.2e-07). The Mini promotion measured -1.434e-07 -- about 16x more negative than the Full population mean, and ~4 standard errors (at n=100) below it. Under any reasonable sampling model that is a strongly favorable draw: the specific 100 Mini MLPs happened to be ones where B25's radial variance-reduction realization beat B0's by much more than the population-typical amount. The Mini paired CI correctly excluded zero FOR THAT SAMPLE, but the sample was not representative of the effect on the broader MLP distribution. This is not a bug in B25 or in the Mini gate's arithmetic -- it is the expected behavior of a 100-sample significance test applied to an effect whose true size is a fraction of one standard error at that sample size.",
+  "implication_for_b25_champion": "B25 remains a valid champion: it was promoted correctly under AGENTS.md's Mini-split promotion gate, and B29 confirmed it is not WORSE than B0 on the Full split (point estimate still slightly negative). But its real advantage over B0 is marginal and does not clear a significance bar on the representative Full population. No action to demote (protocol does not demote a not-worse champion), but no submission on this evidence either (per B29 / champion.json submission_readiness).",
+  "recommendation_for_lead": "This is a methodology observation for the lead, who owns prioritization (workers may not reorder priorities). Options worth weighing: (1) For candidates showing only a SMALL Mini effect (e.g. |paired_mean_delta| within a few x of the Mini standard error), require a confirmatory Full-split paired gate BEFORE promotion, not only before submission -- this would have flagged B25 as marginal at promotion time. (2) Alternatively, adopt a minimum-effect-size threshold on Mini (promote only if the Mini effect is large enough that it would survive the ~sqrt(10) SE shrinkage going to a 10x-larger sample). (3) At minimum, treat Mini-split promotions of small-effect candidates as provisional until Full-confirmed. The concrete evidence: B25's effect is 0.27 SE at n=100 and 0.86 SE at n=1000 -- it is fundamentally a sub-1-sigma effect that no realistic paired gate on this dataset will confirm, so the deeper takeaway is that the radial-exact lineage has reached the point of diminishing returns and future effort is better spent seeking a LARGER-effect estimator change than refining sub-percent ones.",
+  "verdict": "DIAGNOSIS COMPLETE",
+  "full_submission_gate": "NOT_APPLICABLE"
+}

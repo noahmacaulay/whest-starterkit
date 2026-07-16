@@ -15,20 +15,27 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B30** (infra, explore) - CLAIMED claude 2026-07-16T19:00:00Z - Diagnose WHY
-  B25's Mini-split promotion (B29 showed) failed to replicate on the
-  Full split, to inform promotion methodology. Two structural facts to
-  establish and quantify: (1) whether the Mini and Full splits share
-  MLPs (if disjoint, a Mini promotion and a Full evaluation measure
-  different populations); (2) the per-MLP effect-size distribution of
-  B25 vs B0 on the Full split (mean vs per-MLP std -- if the std dwarfs
-  the mean, a 100-MLP gate has enough sampling variance to promote a
-  marginal candidate on a favorable draw). Deliverable: a written
-  characterization plus a concrete recommendation FOR THE LEAD (who owns
-  prioritization) on whether the promotion gate needs strengthening for
-  small-effect candidates. Pure analysis of existing immutable reports
-  (B24 B0-Full, B26 B25-Full) plus dataset metadata -- no harness runs,
-  no estimator change.
+- [x] **B30** (infra, explore) - DONE claude 2026-07-16T19:00:00Z - Diagnosed WHY
+  B25's Mini promotion failed to replicate on Full (B29). Two findings:
+  (1) the Mini and Full splits are NEARLY DISJOINT -- only 2 of 100 Mini
+  MLPs also appear in Full, so the promotion gate and the Full
+  evaluation measure almost entirely different MLP populations. (2)
+  B25's per-MLP paired effect (adjusted_final_layer_score, B25-B0, on
+  Full) has mean -8.67e-09 but per-MLP std 3.20e-07 (~37x the mean) --
+  the true effect is only 0.27 SE from zero at n=100 (Mini scale) and
+  0.86 SE at n=1000 (Full scale); 210 big wins / 181 big losses / 609
+  near-ties. Mechanism: the Mini promotion's -1.434e-07 delta was ~16x
+  more negative than the Full population mean and ~4 SE (at n=100) below
+  it -- a strongly favorable, non-representative draw. B25's true edge is
+  marginal and sub-sigma, so it cannot clear a Full paired gate. B25
+  stays champion (validly promoted, not-worse per B29); submission stays
+  blocked. RECOMMENDATION FOR LEAD (workers can't reorder priorities):
+  require a confirmatory Full paired gate before promoting small-Mini
+  -effect candidates, or a min-effect threshold, or treat them as
+  provisional; and redirect effort from sub-percent radial refinements
+  toward a larger-effect estimator change. Full detail:
+  `experiments/log-claude.md` B30 entry and
+  `experiments/results/claude/B30-claude-20260716T190000Z-summary.json`.
 
 - [x] **B29** (infra, exploit) - DONE claude 2026-07-16T18:30:00Z - Paired Full-split
   gate for the B25 champion vs the B0 champion, computed from two

@@ -1528,3 +1528,62 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   `experiments/results/claude/B29-claude-20260716T183000Z-summary.json`.
 - Full/submission gate: FAIL (paired Full-split gate). No submission
   action taken.
+
+## 2026-07-16T19:00:00Z - B30-claude: Why B25's Mini promotion didn't replicate on Full (methodology diagnosis)
+- Not a new estimator experiment (no candidate, no promotion) -- a
+  pure-analysis follow-up to B29 (B25's Mini-split promotion advantage
+  failed the paired Full-split gate). Goal: find the MECHANISM, to
+  inform promotion methodology. No harness runs; only existing immutable
+  reports (B24 B0-Full, B26 B25-Full) plus dataset metadata.
+- Finding 1 -- the splits are nearly DISJOINT. Enumerated mlp_name for
+  both splits: mini has 100 MLPs, full has 1000, and their intersection
+  is only 2 MLPs. So a Mini-split promotion gate and a Full-split
+  evaluation measure almost entirely different MLP populations -- not one
+  population at two sample sizes. Nothing forces the two populations to
+  share the same mean paired effect for a given candidate. (Also settles
+  a natural question: since estimators are seeded from mlp.seed and
+  deterministic, if Mini were a subset of Full the shared MLPs would have
+  bit-identical per-MLP results -- but they aren't a subset, so the two
+  gates are genuinely independent samples.)
+- Finding 2 -- B25's effect is tiny vs per-MLP noise. Per-MLP paired
+  delta in adjusted_final_layer_score (B25-B0) on the 1000-MLP Full
+  split: population mean -8.668e-09, per-MLP std 3.197e-07 -- the std is
+  ~37x the mean. That implies a standard error of 3.20e-08 at n=100
+  (Mini scale) and 1.01e-08 at n=1000 (Full scale), so the true effect
+  is only 0.27 SE from zero at Mini scale and 0.86 SE at Full scale. The
+  per-MLP MSE delta distribution is broad and near-symmetric: 210 big
+  wins (<-1e-6), 181 big losses (>1e-6), 609 near-ties; median -7.1e-09;
+  only a weak correlation (-0.105) with the MLP's own MSE level (B25
+  helps very slightly more on higher-MSE MLPs). So the per-MLP outcome
+  is a near-coin-flip dominated by which specific samples/MLPs were
+  drawn, with a slight tilt to B25.
+- Mechanism: combining the two, the Mini promotion measured a paired
+  delta of -1.434e-07 -- about 16x more negative than the Full
+  population mean (-8.67e-09), and roughly 4 standard errors (at n=100)
+  below it. Under any reasonable sampling model that is a strongly
+  favorable draw: the specific 100 Mini MLPs were ones where B25's
+  radial variance-reduction realization beat B0's by far more than the
+  population-typical amount. The Mini paired CI correctly excluded zero
+  FOR THAT SAMPLE, but the sample was not representative of the effect
+  on the broader distribution. Not a bug in B25 or in the gate's
+  arithmetic -- it's the expected behavior of a 100-sample significance
+  test on an effect whose true size is a fraction of one SE at that
+  sample size.
+- Implication for the champion: B25 stays champion (validly promoted
+  under the Mini gate; B29 confirmed not-worse on Full). But its real
+  edge over B0 is marginal and sub-sigma on the representative
+  population, so it will not clear a Full paired gate, and submission
+  stays blocked per champion.json's submission_readiness.
+- Recommendation (FOR THE LEAD -- workers may not reorder priorities):
+  for candidates with only a small Mini effect (paired_mean_delta within
+  a few x of the Mini SE), consider requiring a confirmatory Full-split
+  paired gate BEFORE promotion, or a minimum-effect-size threshold on
+  Mini, or treating such promotions as provisional-until-Full-confirmed.
+  Deeper takeaway: B25's effect is fundamentally sub-1-sigma (0.27 SE at
+  n=100, 0.86 SE at n=1000), so the radial-exact lineage has hit
+  diminishing returns; future effort is better spent on a LARGER-effect
+  estimator change than on sub-percent refinements that no realistic
+  paired gate on this dataset can confirm.
+- Full detail and all numbers:
+  `experiments/results/claude/B30-claude-20260716T190000Z-summary.json`.
+- Full/submission gate: NOT_APPLICABLE (no candidate).
