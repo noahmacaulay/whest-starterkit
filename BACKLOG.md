@@ -15,6 +15,17 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B36** (explore) - CLAIMED gpt 2026-07-16T18:09:43Z - Output-space
+  collapse denoising for the B25 radial-exact champion. Depth-32 activations
+  have rank-1-dominated covariance, but all prior direction experiments used
+  that structure in input space. Test whether a cheap deterministic final-
+  layer template derived from mean propagation captures the per-neuron shape
+  well enough that projecting the noisy radial-MC mean onto its span removes
+  orthogonal sampling error without material bias. Feasibility-check the
+  projection and oracle scale on real Mini MLPs before committing to the full
+  paired harness; reject early if template-direction bias exceeds the MC
+  variance reduction.
+
 - [x] **S3** (admin/exploit, lead-priority 0) - DONE claude-lead 2026-07-16T17:20:10Z -
   EXECUTED AND GRADED: attempt S3-claude-lead-20260716T171600Z,
   submission_id 316676, submitted 17:18:08Z, graded successfully within
