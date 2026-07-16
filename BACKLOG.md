@@ -266,6 +266,28 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B12-claude-20260716T065000Z-1598169-summary.json`.
   No further multi-direction follow-up recommended.
 
+- [ ] **B13** (exploit) - CLAIMED claude 2026-07-16T07:25:00Z - Fewer power
+  iterations for B1/B10/B11's active-subspace direction. The B1/B10/B11
+  lineage has a real ~6% final-layer-MSE advantage but keeps losing the
+  paired gate on `mean_effective_compute` overhead. B11 tried materializing
+  the full soft-gate Jacobian to cut power-iteration call count (256->40)
+  but the O(width^3) matrix-product cost offset most of the win
+  (effective_compute barely moved, 3.5156e10->3.4706e10). B12's failure
+  mode (a deflated second direction carried ~no exploitable signal, only
+  noise) reconfirmed the covariance is strongly rank-1 dominated --
+  meaning the top power-iteration direction should converge in very few
+  iterations, not the 4 B1/B10/B11 all used unchanged from the original
+  B1 experiment (which never tuned this hyperparameter down). Hypothesis:
+  1-2 power iterations already extract a direction with cosine similarity
+  near 1.0 to the 4-iteration one, at 1/2 to 1/4 the power-iteration call
+  count (256->128 or 64) and zero raw-FLOP increase (same O(width^2)
+  matvecs, just fewer of them) -- unlike B11's fix, this doesn't trade
+  call-count for bigger individual calls, so the overhead reduction should
+  actually reach the champion's ratio this time. Verify direction
+  convergence on real dataset MLPs before committing to a specific
+  iteration count, then reuse B10's exact batched estimator unchanged
+  apart from the iteration count.
+
 ## Done
 
 (nothing yet)
