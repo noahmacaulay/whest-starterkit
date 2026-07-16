@@ -40,6 +40,21 @@ if (Test-Path -LiteralPath $vscodeExtensionsPath) {
         Select-Object -First 1
     if (-not [string]::IsNullOrWhiteSpace($sandboxHelperDirectory)) {
         $env:PATH = "$sandboxHelperDirectory;$env:PATH"
+
+        # Keep Codex and both of its sandbox helpers from the same release.
+        # The desktop bin currently has codex.exe only, which makes command
+        # execution fail after sandbox setup even when the setup helper is on PATH.
+        $extensionCodexPath = Join-Path $sandboxHelperDirectory "codex.exe"
+        $extensionCommandRunnerPath = Join-Path $sandboxHelperDirectory "codex-command-runner.exe"
+        $resolvedCodexDirectory = Split-Path -Parent $resolvedCodexPath
+        $resolvedCommandRunnerPath = Join-Path $resolvedCodexDirectory "codex-command-runner.exe"
+        if (
+            -not (Test-Path -LiteralPath $resolvedCommandRunnerPath) -and
+            (Test-Path -LiteralPath $extensionCodexPath) -and
+            (Test-Path -LiteralPath $extensionCommandRunnerPath)
+        ) {
+            $resolvedCodexPath = $extensionCodexPath
+        }
     }
 }
 
