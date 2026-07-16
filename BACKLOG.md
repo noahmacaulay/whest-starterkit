@@ -143,7 +143,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   noise. See `experiments/log-claude.md`. No candidate file was needed or
   committed. Follow-up (a *valid* reformation) queued as B8.
 
-- [ ] **B8** (explore) - Exact layer-1 sign/magnitude control variate. From
+- [ ] **B8** (explore) - CLAIMED claude 2026-07-16T05:20:00Z - Exact layer-1 sign/magnitude control variate. From
   B7's invalidation: at layer 1 only (where z and -z are both legitimate
   input draws), h+ = relu(Wz) and h- = relu(-Wz) satisfy the exact, free
   identities h+ - h- = Wz and h+ + h- = |Wz| elementwise -- no derivation
