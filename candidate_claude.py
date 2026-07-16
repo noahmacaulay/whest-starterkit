@@ -34,40 +34,53 @@ _GH_WEIGHTS = (1.4978147231618412e-10, 1.309473216286817e-07,
                0.007266937601184749, 0.0005259849265739087,
                1.530003216248732e-05, 1.309473216286817e-07,
                1.4978147231618412e-10)
-_GH_PAIRS = tuple(max(1, round(w * 2_500)) for w in _GH_WEIGHTS)
+_GH_PAIRS = tuple(max(1, round(w * 3_250)) for w in _GH_WEIGHTS)
 
 
-_POWER_ITERATIONS = 2
+_POWER_ROUNDS = 2
+_BLOCK_SIZE = 4
 
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """B16: calibrated sample budget + elementwise diagonal variance.
+        """B19: block power iteration for the active-subspace direction.
 
-        Combines two independently-verified, complementary fixes to the
-        B1/B10/B11/B13 active-subspace lineage's remaining effective
-        -compute overhead, both applied to the same B13-derived estimator
-        (soft-gate active direction via 2 power iterations, 16-node
-        Gauss-Hermite quadrature along it, antithetic draws in the
-        orthogonal complement, single batched matmul per layer for the
-        main sampling pass):
+        Builds on the B1/B10/B11/B13/B14/B16 active-subspace lineage
+        (soft-gate active direction, 16-node Gauss-Hermite quadrature
+        along it, antithetic draws in the orthogonal complement, single
+        batched matmul per layer). Two prior findings motivate this:
 
-        1. Pair-count scale 2,500 (not B15's blind halving to 1,625, nor
-           B13's full 3,250). Linear fit from B13
-           (scale=3250, mean_effective_compute=3.4803e10) and B15
-           (scale=1625, mean_effective_compute=1.8311e10) put the score
-           floor boundary (2.72e10) at scale~=2500 -- landing the
-           multiplier at its floor-clamped minimum without B15's wasted
-           headroom below the floor.
-        2. gpt's B14 fix (independently reimplemented here, own file):
-           the diagonal soft-gate variance propagation is computed via
-           elementwise multiply+sum instead of a matmul call
-           (`sum((w*w)*variance[:,None], axis=0)` -- exactly equal to
-           `(w*w).T @ variance`; verified by gpt's own B14 result that
-           final_layer_mse was unchanged to full precision). This targets
-           a different overhead source (call fragmentation, not raw
-           main-sample FLOPs) than the pair-count calibration, so
-           stacking both should combine their independent reductions.
+        - B17: full-100-MLP recheck found 2-round power iteration from a
+          single fixed start converges poorly for ~35/100 MLPs (min
+          cosine similarity to a converged reference: 0.443).
+        - B18: no single starting vector (deterministic ones, seeded
+          -random, alternating-sign) reliably fixes this -- each fails on
+          a *different* subset, consistent with some MLPs having a
+          genuinely small top-1/top-2 eigenvalue gap in their soft-gate
+          Jacobian.
+
+        Key insight: batching K starting vectors into one (K, width)
+        block and applying the Jacobian to the whole block costs the
+        *same* number of matmul calls per round as a single vector (still
+        one matmul per layer per traversal, just K rows instead of 1) --
+        unlike gpt's B11 full-Jacobian materialization, this stays
+        O(width^2*K), not O(width^3), so K=4 adds negligible raw FLOPs
+        (power iteration is already <0.1% of total FLOPs). Running 4
+        independent starts (ones, alternating-sign, and 2 seeded-random
+        draws) through the same 2 rounds and picking whichever grew the
+        most (proxy for best alignment with the dominant eigenvalue)
+        recovers nearly all of the accuracy of an oracle that always
+        picks the true best-converged vector: validated across all 100
+        Mini-split MLPs before writing this candidate -- min cosine
+        similarity to a 6-round reference improved from 0.443 (single
+        ones-start) to 0.823 (block+heuristic, vs. 0.823 for the oracle),
+        and MLPs below 0.999 similarity dropped from 35 to 9. The
+        heuristic picked the true best vector in 81/100 cases outright.
+
+        Also keeps B14's elementwise diagonal-variance fix (independently
+        reimplemented, validated safe) and B16's finding that pair-count
+        tuning is a dead end once at/above the compute floor -- so this
+        uses the full 3,250 pair-count scale, not a reduced one.
         """
         _ = budget
         width = mlp.width
@@ -86,17 +99,32 @@ class Estimator(BaseEstimator):
             variance = fnp.maximum(second - mean * mean, 1e-12)
             gains.append(gain)
 
-        # --- dominant direction via POWER_ITERATIONS power iterations ---
-        direction = fnp.ones(width)
-        direction = direction / fnp.sqrt(fnp.sum(direction * direction))
-        for _ in range(_POWER_ITERATIONS):
-            image = direction
+        # --- dominant direction via block power iteration (K starts, batched) ---
+        rng = fnp.random.default_rng(mlp.seed)
+        alt_np = _np.array([1.0 if i % 2 == 0 else -1.0 for i in range(width)], dtype=_np.float32)
+        rand1_np = _np.array(rng.standard_normal(width)).astype(_np.float32)
+        rand2_np = _np.array(rng.standard_normal(width)).astype(_np.float32)
+        starts_np = _np.stack([
+            _np.ones(width, dtype=_np.float32),
+            alt_np,
+            rand1_np,
+            rand2_np,
+        ], axis=0)
+        block = fnp.array(starts_np)
+        block = block / fnp.sqrt(fnp.sum(block * block, axis=1))[:, None]
+
+        growth = None
+        for _ in range(_POWER_ROUNDS):
+            image = block
             for w, gain in zip(mlp.weights, gains):
-                image = gain * (w.T @ image)
-            direction = image
+                image = gain[None, :] * (image @ w)
             for w, gain in zip(reversed(mlp.weights), reversed(gains)):
-                direction = w @ (gain * direction)
-            direction = direction / fnp.sqrt(fnp.sum(direction * direction))
+                image = (gain[None, :] * image) @ w.T
+            growth = fnp.sqrt(fnp.sum(image * image, axis=1))
+            block = image / growth[:, None]
+
+        best = int(_np.argmax(_np.array(growth)))
+        direction = block[best]
 
         # --- build one combined batch for all 16 quadrature nodes ---
         total_pairs = sum(_GH_PAIRS)
