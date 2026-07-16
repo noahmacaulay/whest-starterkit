@@ -1639,3 +1639,67 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   or committed. No harness compute spent -- the cheap pre-validation was
   decisive.
 - Full/submission gate: NOT_RUN (no candidate).
+
+## 2026-07-16T20:00:00Z - B32-claude: Quadratic control variate on dominant direction (feasibility-rejected)
+- Hypothesis (following B31's finding that the output is even/magnitude
+  in the dominant direction, and B30's push for a larger-effect lever):
+  a control variate c(u) = (u.a)^2 with a = dominant input direction.
+  Its mean over the unit sphere is known exactly (E[(u.a)^2] = 1/d for
+  ANY unit a), so f_cv = f - beta(c - 1/d) is unbiased for any fixed
+  (a, beta), and the variance reduction equals corr(f, c)^2. Unlike
+  B21's quadrature (compound-vector restructuring + overhead that sank
+  the paired gate), a control variate is a cheap additive correction
+  (one dot product/sample), so only the pilot to find a and estimate
+  beta costs FLOPs (~5%).
+- Pre-validation (standalone numpy, 5 real Mini-split MLPs, before any
+  harness run): estimated a from a 3000-sample pilot (direction of
+  steepest scalar-output variation), fit per-neuron beta on the pilot,
+  then measured (i) corr(f_j, c)^2 on the pilot and (ii) trial-based
+  variance of plain vs control-variate mean over 40 trials at N=6500,
+  with a and beta held FIXED from the pilot (no data reuse -> estimator
+  stays unbiased).
+- Result: DECISIVELY REJECTED. corr^2 implied reduction only 0.1-0.4%
+  per neuron; measured variance reduction ~0 (MLP 0..4: +2.8%, -1.5%,
+  -0.8%, -0.0%, -0.6% -- noise around zero). The (u.a)^2 control variate
+  captures essentially none of the final-layer variance. max_mean_diff
+  ~1e-6..5e-6, consistent with the CV being exactly unbiased (as it must
+  be, E[c]=1/d).
+- Why this matters -- it resolves an apparent paradox with B31 and
+  conclusively bounds the problem. B31 found corr(f(u), f(u_reflected))
+  ~ 0.61, which I read as "f is substantially even in u.a." B32 shows
+  the truer reading: f barely depends on u.a AT ALL. The reflection
+  u' = u - 2(u.a)a preserves the entire 255-dim orthogonal complement
+  w = u - (u.a)a, and f depends on w, not on u.a -- so flipping u.a's
+  sign barely changes f (hence 0.61 correlation), while (u.a)^2 itself
+  explains ~0% of f's variance (corr^2 ~ 0.003). The directional
+  variance is therefore irreducibly HIGH-DIMENSIONAL and diffuse across
+  the ~255 sphere dimensions; no single input direction or low-dim
+  subspace concentrates it.
+- Unifying conclusion for the whole direction-exploitation thread
+  (B4 antithetic, B7 mid-network reflection, B8 layer-1 control variate,
+  B9 ambient Sobol, B12 second direction, B21 empirical-covariance
+  quadrature, B31 dominant-direction antithetic, B32 quadratic control
+  variate): ALL failed for one root reason -- the input-space dependence
+  of the depth-32 output is diffuse and high-dimensional, with no low-dim
+  structure to exploit for variance reduction. (The rank-1 OUTPUT
+  covariance from B21 -- neurons moving together -- is a statement about
+  output space, and does NOT imply concentrated input dependence; B32
+  directly confirms it doesn't.) The single exception is the input
+  RADIUS: a 1-D global magnitude that scales the whole output
+  multiplicatively via exact ReLU homogeneity, which B25 exploited
+  exactly. Magnitude was the one exploitable low-dim handle, and it is
+  now used up.
+- Implication (recommendation FOR THE LEAD; workers don't reorder
+  priorities): the estimator-ACCURACY direction appears converged for
+  this compute budget -- plain MC over directions (with the radial-exact
+  refinement) is near-optimal because the residual variance is
+  genuinely ~255-dimensional. Remaining score levers are effectively
+  exhausted too (sample count: wash above the 0.1 floor per B15/B16;
+  overhead: mostly inherent per B23). Suggest the lead weigh whether to
+  keep spending ticks on estimator variance-reduction (diminishing to
+  nil) vs. other work (e.g. resolving the B29 submission-gate ruling, or
+  a fundamentally different modeling approach if one exists). This is a
+  recommendation, not a reprioritization.
+- Verdict: REJECTED (feasibility, pre-harness). No candidate committed,
+  no harness compute spent.
+- Full/submission gate: NOT_RUN (no candidate).

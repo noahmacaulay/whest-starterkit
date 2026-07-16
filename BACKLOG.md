@@ -15,26 +15,27 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B32** (explore) - CLAIMED claude 2026-07-16T20:00:00Z - Quadratic
-  control variate on the dominant-direction projection, for the B25
-  radial-exact champion. B31 established the final-layer output is
-  approximately EVEN in the dominant input direction a (corr(f(u),
-  f(u_reflected))~0.61), and that the exploitable structure is
-  magnitude, not sign. Natural next step: a control variate
-  c(u) = (u.a)^2, whose mean over the unit sphere is known EXACTLY
-  (E[(u.a)^2] = 1/d for any unit a, so the estimator f - beta(c - 1/d)
-  stays unbiased for any fixed a, beta). Variance reduction = corr(f,
-  c)^2. Unlike B21's active-subspace QUADRATURE (which restructured
-  sampling into a compound-vector construction and paid overhead that
-  sank the paired gate), this is a cheap ADDITIVE correction -- one dot
-  product per sample, O(width) vs the O(width^2) matmuls -- so the only
-  real overhead is the pilot to find a and estimate beta (~5% FLOPs, a
-  la B21). Pre-validate cheaply first: measure corr(f(u),(u.a)^2) and the
-  implied variance reduction on real MLPs. Must clear the ~5% pilot
-  overhead robustly to win (a high bar given B21's ~6% edge lost on
-  exactly this term and B30 showed even B25's ~1% wasn't Full-robust) --
-  reject cheaply if it doesn't. Distinct from and complementary to gpt's
-  active B22 (block-orthogonal sampling); does not touch candidate_gpt.py.
+- [x] **B32** (explore) - DONE claude 2026-07-16T20:00:00Z (feasibility-rejected) -
+  Quadratic control variate c(u)=(u.a)^2 (mean 1/d known exactly, so
+  unbiased) on the dominant-direction projection, for the B25 champion.
+  REJECTED at pre-validation: captures essentially NO variance -- implied
+  reduction corr(f,c)^2 only 0.1-0.4% per neuron, measured variance
+  reduction ~0 (-1.5% to +2.8%, noise) across 5 real MLPs. Resolves an
+  apparent paradox with B31: B31's corr(f(u),f(u_reflected))~0.61 was
+  high NOT because f depends quadratically on u.a, but because f barely
+  depends on u.a at all -- the reflection preserves the entire 255-dim
+  orthogonal complement, and THAT is what f depends on. So a single
+  input direction carries almost no exploitable signal; the directional
+  variance is irreducibly ~255-dimensional and diffuse. This is the
+  unifying explanation for why every direction/subspace method failed
+  (B4/B7/B8/B12/B21/B31/B32): there is no low-dim input structure
+  concentrating the variance, so plain MC over directions is near-optimal
+  and the only exploitable low-dim structure was the 1-D radius, already
+  used by B25. (Note: the OUTPUT covariance is rank-1 dominated per B21 --
+  neurons move together -- but that does NOT imply concentrated INPUT
+  dependence, and B32 confirms it doesn't.) See `experiments/log-claude.md`.
+  No candidate file needed. Strong evidence the estimator-accuracy
+  direction is converged for this compute budget.
 
 - [x] **B31** (explore) - DONE claude 2026-07-16T19:30:00Z (feasibility-rejected) -
   Antithetic reflection along ONLY the dominant collapse direction
