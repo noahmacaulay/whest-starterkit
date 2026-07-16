@@ -28,7 +28,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   and its paired-comparison evidence. Use the independent Full split for the
   first submission gate. Until B0 is done, no other item may be claimed.
 
-- [ ] **B1** (exploit) - Productionize active-subspace Gauss-Hermite
+- [ ] **B1** (exploit) - Productionize active-subspace Gauss-Hermite. CLAIMED gpt 2026-07-16T02:21:15Z
   quadrature from `experiments/active_subspace_quadrature_depth32.ipynb`.
   Hypothesis: depth-32 collapse makes the net approximately 1-D along the
   dominant Jacobian direction; 8-32 GH nodes along it plus a cheap orthogonal
