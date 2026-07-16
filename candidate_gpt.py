@@ -13,44 +13,70 @@ from pathlib import Path
 
 import flopscope as flops
 import flopscope.numpy as fnp
+import numpy as np
 from whestbench import MLP, BaseEstimator
 
 _COV_RESCALE_THRESHOLD = 1e100
 
 
+def _sobol_directions(width: int) -> np.ndarray:
+    """Return 32-bit Sobol direction numbers for the requested dimensions."""
+    # Primitive-polynomial parameters for the first 32 Sobol dimensions.  The
+    # remaining dimensions use deterministic independent digital scrambles of
+    # those 32 nets; this keeps the generator compact without external scipy.
+    polynomials = [
+        3, 7, 11, 13, 19, 25, 37, 41, 47, 55, 59, 61, 67, 91, 97, 103,
+        109, 115, 131, 137, 143, 145, 157, 167, 171, 185, 191, 193, 203,
+    ]
+    directions = np.empty((width, 32), dtype=np.uint32)
+    for dimension in range(width):
+        if dimension == 0:
+            directions[dimension] = np.array(
+                [1 << (31 - bit) for bit in range(32)], dtype=np.uint32
+            )
+            continue
+        poly = polynomials[(dimension - 1) % len(polynomials)]
+        degree = poly.bit_length() - 1
+        values = [1 << (31 - bit) for bit in range(degree)]
+        coefficients = poly ^ (1 << degree) ^ 1
+        for bit in range(degree, 32):
+            value = values[bit - degree] ^ (values[bit - degree] >> degree)
+            for lag in range(1, degree):
+                if (coefficients >> (degree - 1 - lag)) & 1:
+                    value ^= values[bit - lag]
+            values.append(value)
+        directions[dimension] = np.asarray(values, dtype=np.uint32)
+    return directions
+
+
+def _scrambled_sobol_normals(width: int, n_samples: int, rng) -> fnp.ndarray:
+    """Randomly digital-shifted Sobol points transformed to N(0, I)."""
+    directions = _sobol_directions(width)
+    # The only randomness is sourced from the mandated per-MLP fnp generator.
+    shifts = np.asarray(rng.integers(0, 2**32, size=width), dtype=np.uint32)
+    points = np.empty((n_samples, width), dtype=np.uint32)
+    state = shifts.copy()
+    points[0] = state
+    for index in range(1, n_samples):
+        bit = (index & -index).bit_length() - 1
+        state ^= directions[:, bit]
+        points[index] = state
+    uniforms = (points.astype(np.float64) + 0.5) / 2**32
+    return flops.stats.norm.ppf(fnp.array(uniforms.astype(np.float32)))
+
+
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Monte Carlo prefix with a moment-matched mean-field tail."""
+        """Scrambled Sobol quasi-Monte Carlo post-ReLU mean estimator."""
         _ = budget
         width = mlp.width
-        n_samples = 6_500
-        prefix_depth = 24
+        n_samples = 32_768
         rng = fnp.random.default_rng(mlp.seed)
-        x = fnp.array(rng.standard_normal((n_samples, width)).astype(fnp.float32))
+        x = _scrambled_sobol_normals(width, n_samples, rng)
         rows = []
-        for layer, w in enumerate(mlp.weights):
-            if layer < prefix_depth:
-                x = fnp.maximum(fnp.matmul(x, w), 0.0)
-                rows.append(fnp.mean(x, axis=0))
-                continue
-
-            # The deep tail is approximated as independent Gaussian coordinates,
-            # initialized from the empirical prefix moments.  This is the
-            # mean-field fixed-point recursion rather than a fresh sample draw.
-            if layer == prefix_depth:
-                mean = fnp.mean(x, axis=0)
-                second = fnp.mean(x * x, axis=0)
-                variance = fnp.maximum(second - mean * mean, 1e-12)
-            mean_pre = w.T @ mean
-            variance_pre = (w * w).T @ variance
-            sigma_pre = fnp.sqrt(fnp.maximum(variance_pre, 1e-12))
-            alpha = mean_pre / sigma_pre
-            cdf = flops.stats.norm.cdf(alpha)
-            pdf = flops.stats.norm.pdf(alpha)
-            mean = mean_pre * cdf + sigma_pre * pdf
-            second = (mean_pre * mean_pre + variance_pre) * cdf + mean_pre * sigma_pre * pdf
-            variance = fnp.maximum(second - mean * mean, 1e-12)
-            rows.append(mean)
+        for w in mlp.weights:
+            x = fnp.maximum(fnp.matmul(x, w), 0.0)
+            rows.append(fnp.mean(x, axis=0))
         return fnp.stack(rows, axis=0)
 
         # --- Step 1: initialise the input distribution ---
