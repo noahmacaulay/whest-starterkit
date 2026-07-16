@@ -1419,3 +1419,53 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   lineage remains closed per B21's ceiling finding, now additionally
   surpassed outright by B25 on raw accuracy alone.
 - Full/submission gate: NOT_RUN (no candidate, no evaluation needed).
+
+## 2026-07-16T18:00:00Z - B28-claude: Compute the ground-truth noise floor
+- Not a new estimator experiment (no candidate, no promotion decision) --
+  `champion.json.noise_floor` had been `null` since scaffolding, unclaimed
+  and unexamined. With B22 (gpt) still the only active experiment claim
+  and the estimator design space heavily mined (B1-B27), used this
+  iteration for a genuinely useful diagnostic instead of forcing a
+  low-confidence estimator tweak: does the dataset's own ground-truth
+  generation carry enough of its own sampling noise to put a meaningful
+  floor under how low ANY estimator's final_layer_mse could ever go?
+- Method: `final_means`/`all_layer_means` in the materialized dataset are
+  themselves a Monte Carlo estimate
+  (`whestbench.scoring.sample_layer_statistics`), so they have their own
+  sampling variance. Calibrated FLOPs-per-sample for that function
+  directly via `flopscope.budget()`: measured at n_samples=500/2000/5000
+  first (4.63M/4.32M/4.67M FLOPs/sample -- some variance from chunking
+  effects at small n, per `_pick_chunk_size`), then at n=100,000/1,000,000
+  to reach a stable asymptotic value (4,632,529.741312 FLOPs/sample at
+  n=1M, matching the n=5000 estimate to ~1%, confirming convergence).
+  Backed out the implied ground-truth sample count for every Mini-split
+  row via `n_gt = row.sampling_budget_breakdown.flops_used /
+  flops_per_sample`: identical across all 100 MLPs (909,050,195 samples,
+  ~909 million) -- expected, since Phase 1 uses a fixed width/depth and
+  presumably a fixed target flop_budget (1e15, confirmed in the row's own
+  `sampling_budget_breakdown.flop_budget`) for every MLP's ground-truth
+  generation. Combined with each row's own `avg_variance` field (mean
+  per-neuron single-sample variance at the final layer, already stored
+  per-row -- NOT the same quantity as an estimator's own MC variance) via
+  the standard MC variance-of-mean formula: `Var(ground-truth mean) =
+  avg_variance / n_gt`.
+- Result: across the 100 Mini-split MLPs, avg_variance ranges 0.0153 to
+  0.2024 (mean 0.0495), giving an implied per-MLP noise floor variance of
+  1.683e-11 to 2.226e-10 (mean 5.445e-11). The champion's current
+  final_layer_mse is 7.211e-06 (mini, B25) / 7.693e-06 (full, B26) -- the
+  noise floor is ~5-6 orders of magnitude (100,000x-1,000,000x) smaller.
+- Conclusion: the ground truth is effectively exact at any precision
+  level current or plausible future estimators could reach. No
+  meaningful noise floor limits further estimator improvement -- the gap
+  between any estimator's final_layer_mse and zero is essentially
+  entirely attributable to the estimator's OWN sampling variance, not
+  ground-truth imprecision. This is useful context for judging future
+  candidates: an MSE improvement, however small, is real signal, not
+  noise being chased against an unreachable floor.
+- Persisted: `champion.json`'s `noise_floor` field replaced (null ->
+  full computation, formula, and conclusion). No `estimator.py` or
+  scoring/harness change -- purely a closed-form calculation from
+  already-public dataset fields plus a one-off flopscope calibration, not
+  a harness run, so no raw JSON report to attach beyond this log entry
+  and the champion.json record itself.
+- Full/submission gate: NOT_RUN (not applicable -- no candidate).

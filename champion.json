@@ -90,7 +90,17 @@
       "note": "Full-split score (final_layer_mse=7.6925e-06) is consistent with, and marginally better than, the Mini-split champion numbers (7.2108e-06 mini vs 7.6925e-06 full -- within the expected suite-sampling range, not a large divergence) -- no evidence of Mini-split overfitting. Sanity check: the combined 1000-MLP aggregate's final_layer_mse matches the unweighted mean of the ten chunks' own independently-reported final_layer_mse values to 10 significant figures, confirming correct combination. This satisfies AGENTS.md step 7's Full-split evaluation prerequisite for the current champion. It is a single-estimator Full-split score, not a paired comparison -- any future candidate still needs its own paired Full-split comparison against this champion before a submission attempt. Submission itself remains blocked by S1 regardless (last_submitted_score is null)."
     }
   },
-  "noise_floor": null,
+  "noise_floor": {
+    "measured_at": "2026-07-16T18:00:00Z",
+    "experiment_id": "B28-claude-20260716T180000Z",
+    "method": "The dataset's ground-truth `final_means`/`all_layer_means` are themselves a Monte Carlo estimate (whestbench.scoring.sample_layer_statistics), so they carry their own sampling noise -- a lower bound on how low any estimator's final_layer_mse could ever go. Calibrated FLOPs-per-sample for sample_layer_statistics directly via flopscope.budget() at n_samples=1,000,000 (large enough that chunking/fixed-overhead effects are negligible; measured 4,632,529.741312 FLOPs/sample, converging from smaller-n estimates at n=500/2000/5000 which showed some chunking-related variance). Backed out the implied ground-truth sample count n_gt = row.sampling_budget_breakdown.flops_used / flops_per_sample for all 100 Mini-split MLPs; identical for every row (909,050,195 samples, ~909 million), consistent with a fixed generation policy (same width=256, same target flop_budget=1e15 for every Phase 1 MLP). Combined with each row's own avg_variance (the mean per-neuron single-sample variance at the final layer, already stored per-row, not the same quantity as an estimator's own MC variance) via the standard MC variance-of-mean formula Var(ground-truth mean) = avg_variance / n_gt.",
+    "n_ground_truth_samples_per_mlp": 909050195,
+    "avg_variance_across_mini_split": {"mean": 0.0495, "min": 0.0153, "max": 0.2024},
+    "implied_noise_floor_variance": {"mean": 5.445e-11, "min": 1.683e-11, "max": 2.226e-10},
+    "comparison": "Champion's current final_layer_mse is 7.211e-06 (mini, B25) / 7.693e-06 (full, B26) -- the ground-truth noise floor (~1.7e-11 to 2.2e-10, mean 5.4e-11) is roughly 5-6 orders of magnitude (100,000x to 1,000,000x) smaller. The ground truth is effectively exact at any precision level current or plausible future estimators could reach.",
+    "conclusion": "No meaningful noise floor limits further estimator improvement. The gap between any estimator's final_layer_mse and zero is essentially entirely attributable to the estimator's own sampling variance, not ground-truth imprecision. Further MSE reductions (if a valid mechanism is found) would show up as genuine score improvements, not be swamped by irreducible ground-truth noise.",
+    "raw_computation": "Not persisted as a separate raw report -- this is a closed-form calculation from already-public dataset fields (sampling_budget_breakdown, avg_variance) plus a one-off flopscope calibration measurement, not a harness run. Full derivation and calibration values in experiments/log-claude.md's B28 entry."
+  },
   "bake_command": null,
   "last_submitted_score": null,
   "submissions_board": "https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026/submissions",

@@ -15,23 +15,26 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B28** (infra, explore) - CLAIMED claude 2026-07-16T18:00:00Z - Compute the
-  dataset's ground-truth noise floor. `champion.json.noise_floor` has
-  been `null` since scaffolding; nobody has checked whether the
-  precomputed `final_means`/`all_layer_means` ground truth (itself a
-  Monte Carlo estimate from `whestbench.scoring.sample_layer_statistics`,
-  per each row's own `sampling_budget_breakdown.flops_used`) carries
-  enough of its own sampling noise to put a floor under how low any
-  estimator's `final_layer_mse` could ever go. If that floor is close to
-  current scores, it would mean further estimator refinement has limited
-  remaining headroom; if it's negligible, no. Calibrate FLOPs-per-sample
-  for `sample_layer_statistics` directly (via `flopscope.budget()`), back
-  out the implied ground-truth sample count `n_gt` from each row's
-  recorded `flops_used`, and combine with each row's own `avg_variance`
-  (the mean per-neuron single-sample variance at the final layer,
-  already stored per-row) via the standard MC variance-of-mean formula
-  `avg_variance / n_gt` to get a genuine per-MLP noise floor, not a
-  guess.
+- [x] **B28** (infra, explore) - DONE claude 2026-07-16T18:00:00Z - Computed the
+  dataset's ground-truth noise floor (`champion.json.noise_floor` was
+  `null` since scaffolding). Calibrated FLOPs-per-sample for
+  `whestbench.scoring.sample_layer_statistics` directly via
+  `flopscope.budget()` (converged to 4,632,529.741312 FLOPs/sample at
+  n=1,000,000), backed out the implied ground-truth sample count from
+  each Mini-split row's `sampling_budget_breakdown.flops_used` (identical
+  across all 100 rows: 909,050,195 samples, ~909 million -- fixed
+  generation policy), combined with each row's own `avg_variance` via
+  `Var(ground-truth mean) = avg_variance / n_gt`. Result: implied noise
+  floor variance 1.68e-11 to 2.23e-10 (mean 5.45e-11) across the 100
+  MLPs -- roughly 5-6 orders of magnitude smaller than the champion's
+  current final_layer_mse (7.21e-06 mini / 7.69e-06 full). Conclusion:
+  the ground truth is effectively exact at any precision level current
+  or plausible future estimators could reach; no meaningful noise floor
+  limits further estimator improvement. `champion.json.noise_floor`
+  updated with the full computation. See `experiments/log-claude.md` B28
+  entry. No candidate needed, no harness run -- a closed-form calculation
+  from already-public dataset fields plus a one-off flopscope
+  calibration.
 
 - [x] **B27** (explore) - DONE claude 2026-07-16T17:30:00Z (feasibility-rejected) -
   Checked whether B25's exact-homogeneity radial substitution extends to
