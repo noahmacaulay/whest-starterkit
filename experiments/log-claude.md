@@ -1018,3 +1018,72 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   estimator experiment.
 - Full/submission gate: PARTIAL (500/1000), NOT COMPLETE. No promotion,
   no submission action taken or implied.
+
+## Lead review 2026-07-16T10:05:08Z
+- Role: scheduled lead review on `lead/claude` (no experiment, no estimator
+  edit, no submission). Rebased onto `origin/main` at ade5775 (63 commits
+  ahead of the previous lead-review state).
+- State read: both logs in full, `BACKLOG.md`, `champion.json`, and recent
+  result reports under `experiments/results/{claude,gpt}/`. Since the
+  01:55Z lead review, the workers completed B1-B21 (all REJECTED, several
+  design/feasibility-rejected before any harness run -- correct timeboxing)
+  plus a partial (500/1000) Full-split validation of the champion. gpt has
+  B22 (block-orthogonal Gaussian MC) claimed and active since 12:15Z local
+  ledger time; its claim is valid on origin/main and was left untouched.
+- Submission reconciliation: no active `submitting` reservation; the only
+  ledger entries remain the two 2026-06-11 pre-scaffold manual submissions
+  with `submission_id: null` and no attempt IDs -- nothing exact-ID
+  reconcilable, S1 stands. `last_submitted_score` still null. No ledger
+  changes made.
+- Champion audit (unchanged champion, B0 plain 6,500-sample MC @ 1598169;
+  audit focused on the NEW `full_gate_partial_check` added in ade5775):
+  recomputed the partial-500 raw report
+  (results/claude/champion-full-gate-partial500-20260716T133000Z-1598169.json)
+  per MLP: mean adjusted score, mean final-layer MSE, mean effective
+  compute, and mean multiplier all reproduce champion.json's recorded
+  values to machine precision (8.613256073606e-07 / 7.796336929800e-06 /
+  3.005592e10 / 0.110499705514); per-MLP `adjusted_final_layer_score`
+  fields match an independent `mse*max(0.1, C/B)` recomputation exactly
+  (max diff 0.0); all budget/time/error/traceback flags are zero across
+  all 500 records; `mlp_index` covers exactly 0..499 with 500 unique MLP
+  names (the claimed deterministic first half); max per-MLP effective
+  compute 3.05e10, far under the 2.72e11 budget. The record's own
+  PARTIAL_ONLY framing is correct and clearly not a submission gate.
+  Math is sound.
+- Concrete metadata defect found (queued as S2, not fixed here per lead
+  role): `champion.json` `champion.flops_used` = 30109415000.58 is
+  actually the B0 run's mean per-MLP `effective_compute`; the raw report's
+  mean `flops_used` is 2.734618e10 (verified directly from
+  results/gpt/B0-gpt-20260716T002459Z-a6fca1e-monte-carlo-mini.json). The
+  value is correct but mislabeled. Also reconfirmed the earlier nit that
+  `uv_lock_commit` is a blob hash, not a commit SHA (unchanged, log-only).
+- Research-state assessment driving the backlog changes: (1) the
+  active-subspace lineage (B1/B10/B11/B13/B14/B16/B19/B21) has a real ~6%
+  MSE edge but hit a measured ceiling -- B21 showed the best-possible
+  direction barely beats the cheap one and its pilot cost eats the gain;
+  the lineage keeps losing the paired gate on effective-compute overhead,
+  and sample-count (B16) and power-iteration (B17/B18/B19) levers are
+  exhausted. (2) Directional/sign input structure is conclusively dead at
+  depth 32 (B4/B7/B8/B9/B12, five independent techniques). (3) Nothing has
+  ever attacked the CHAMPION's own overhead, and the champion multiplier
+  (~0.1105) sits ~10% above the 0.1 floor with raw FLOPs already in floor
+  territory -- an overhead-only change keeps predictions bit-identical, so
+  every per-MLP paired delta is <=0 and the gate passes trivially; this is
+  the most promotable shape available. (4) The queue had ZERO unclaimed
+  experiment items -- the next worker tick would have stalled.
+- Backlog changes: moved all 22 DONE items (B0-B21) verbatim from Queue to
+  the Done section (housekeeping; queue signal for workers). Queued three
+  new prioritized items with rationale recorded in each: B23 (exploit,
+  priority 1: reduce the champion's own flopscope overhead toward the 0.1
+  floor, up to ~9.5% score win with bit-identical predictions), B24
+  (infra, priority 2: chunked resumable complete 1000-MLP Full gate via
+  whestbench.scoring/runner APIs, with a mandatory exact-agreement
+  cross-check against the CLI on Mini before trusting Full -- required
+  before any submission and the long pole once S1 resolves), B25 (explore,
+  priority 3: radial chi-quantile stratification of input norms -- the one
+  input scalar no experiment has targeted; complementary to gpt's active
+  B22). Added admin item S2 (the flops_used mislabel above). B22 claim
+  preserved untouched; S1 unchanged.
+- Escalations for the user: S1 (unchanged, still the submission blocker).
+  No inconsistencies or ambiguous reservations found; repository state is
+  clean and self-consistent.

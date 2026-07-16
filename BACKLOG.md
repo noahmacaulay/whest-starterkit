@@ -15,6 +15,107 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B22** (explore) - CLAIMED gpt 2026-07-16T12:15:00Z - Block-orthogonal Gaussian Monte Carlo. Replace
+  independent normal input rows with randomized orthogonal directions in
+  width-sized blocks, independently scaled by chi-distributed radii. Each
+  row remains exactly N(0, I), so the usual sample mean remains unbiased;
+  the within-block negative dependence may reduce the final-layer residual
+  variance that B4's simple antithetic pairing and B21's direction refinement
+  could not remove. Compare at the champion's same 6,500-sample FLOP scale.
+
+- [ ] **B23** (exploit, lead-priority 1) - Reduce the champion's own
+  flopscope overhead. Every overhead-reduction item so far (B10/B11/B13/
+  B14/B16) attacked the *candidate lineage's* overhead; nothing has ever
+  attacked the champion's. The champion's score multiplier is
+  `mean_effective_compute/B ~ 0.1105-0.1107`, but its raw `flops_used` is
+  only 2.7346e10 -> multiplier floor territory: if effective_compute could
+  be pushed down toward raw FLOPs (ratio 1.101 on the B0/gpt machine,
+  ~1.19 measured on the claude machine in B10's diagnosis; the gap is
+  tracking/wall-clock overhead, machine-dependent), the multiplier
+  drops toward the 0.1 floor -- up to ~9.5% score reduction with BIT-
+  IDENTICAL predictions. That is the uniquely promotable shape: same
+  predictions -> same per-MLP MSE -> every paired delta is
+  `mse_m*(mult_cand_m - mult_champ_m) <= 0`, so any consistent overhead
+  cut passes the paired CI gate trivially, unlike the 6%-MSE lineage
+  that kept losing on exactly this term. Plan: first diagnose, from the
+  champion's own per-MLP report fields (`flopscope_overhead_time_s`,
+  `flopscope_backend_time_s`, `wall_time_s`, `effective_compute` vs
+  `flops_used`), which term drives the ~10-19% excess for a 32-matmul-
+  call estimator; then test cheap mechanical reductions with zero
+  statistical change (e.g. fewer/larger tracked RNG or elementwise ops,
+  avoiding tracked temporaries, dtype/layout choices, generating the
+  (6500,256) input in one call, in-place ReLU). Success criterion:
+  unchanged final_layer_mse per MLP, lower mean_effective_compute,
+  paired CI entirely below zero.
+
+- [ ] **B24** (infra, lead-priority 2) - Chunked, resumable complete
+  Full-split gate (all 1000 MLPs). Required before ANY submission
+  (AGENTS.md step 7) and currently impossible in one background window
+  (~58 min measured; two runs killed mid-flight -- see the 2026-07-16
+  13:45Z log-claude.md entry and champion.json's
+  `full_gate_partial_check`). Build the chunk-and-resume runner that
+  entry sketched: drive `whestbench.scoring.evaluate_estimator` +
+  `whestbench.runner.SubprocessRunner` directly over index ranges,
+  persisting per-MLP records after each chunk (~25 min each) and
+  aggregating at the end. MANDATORY correctness check before trusting
+  it: run the chunked path on the Mini split first and require exact
+  (machine-precision) agreement with the official CLI's aggregates for
+  the same estimator, since hand-rolled aggregation was previously
+  rejected precisely for correctness risk. Deliverable: a complete
+  1000-MLP Full-split record for the current champion in champion.json
+  (replacing/superseding `full_gate_partial_check`) plus the raw
+  report. This unblocks the submission path the moment S1 is resolved,
+  and the tool is reusable for every future champion.
+
+- [ ] **B25** (explore, lead-priority 3) - Radial (chi-quantile)
+  stratification of input norms. Evidence so far: every *directional*
+  or sign-based input structure dies in the depth-32 collapse
+  (B4 antithetic, B7 mid-depth reflection, B8 layer-1 control variate,
+  B9 full-space Sobol, B12 second direction), and direction-finding
+  refinement is at its ceiling (B21). The input *radius* is the one
+  scalar not yet targeted: write z = r*u (r = ||z|| ~ chi(256), u
+  uniform on the sphere), and replace iid r draws with equal-mass
+  stratified/systematic sampling over chi quantiles (one u per
+  stratum draw, directions stay iid) -- unbiased by construction,
+  zero extra FLOPs, and it removes the radial component of MC
+  variance exactly rather than approximately. Check first whether
+  the MLPs have biases (if bias-free, ReLU nets are positively
+  homogeneous and the radius acts multiplicatively -- strong reason
+  to expect surviving radial signal; with biases the effect is
+  weaker but stratification still cannot hurt the variance). Note
+  gpt's active B22 (block-orthogonal rows, chi-scaled radii) touches
+  radii only via iid chi scaling; this item is complementary
+  (stratify r, keep directions iid) and should be evaluated against
+  whichever of champion/B22 wins.
+
+- [ ] **S1** (admin, user action required - not claimable as an experiment) -
+  Unblock the submission pipeline. `last_submitted_score` is null and the
+  ledger holds two pre-scaffold manual submissions (2026-06-11T05:00:33Z and
+  2026-06-11T19:50:10Z) with no submission IDs, so the required "5% better
+  than last submitted" gate is undecidable and workers correctly refuse to
+  submit. Per AGENTS.md these entries must never be reconciled by timestamp
+  matching (their embedded notes suggesting timestamp matching contradict the
+  protocol and should be ignored). The user must backfill exact
+  submission IDs/scores from the AIcrowd submissions board, or explicitly
+  rule that a null `last_submitted_score` permits a first scaffold
+  submission. Until then the Full gate can still be run and recorded, but no
+  network submission may happen.
+
+- [ ] **S2** (admin, small metadata correction - may be bundled into a
+  worker's next shared-update commit) - `champion.json` field
+  `champion.flops_used` (30109415000.58) is mislabeled: lead audit
+  2026-07-16 recomputed the B0 monte-carlo-mini raw report and that
+  value is the mean per-MLP `effective_compute`; the champion's true
+  mean raw `flops_used` is 2.734618e+10. Fix by renaming the field to
+  `mean_effective_compute` and adding `flops_used: 27346176000.0`
+  (values from
+  `experiments/results/gpt/B0-gpt-20260716T002459Z-a6fca1e-monte-carlo-mini.json`),
+  citing this audit. Values themselves are correct and match the raw
+  report; only the label is wrong. Do not change any other champion
+  fields.
+
+## Done
+
 - [x] **B0** (exploit, run this first) - Baseline everything. DONE gpt 2026-07-16T01:32:05Z
   Use the immutable public Phase 1 Mini split
   (`aicrowd/arc-whestbench-public-2026@v1-phase1`, 100 MLPs) with the explicit
@@ -27,6 +128,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   WhestBench/Flopscope/lockfile metadata. Fill `champion.json` with the winner
   and its paired-comparison evidence. Use the independent Full split for the
   first submission gate. Until B0 is done, no other item may be claimed.
+
 
 - [x] **B4** (explore, lead-priority 1) - DONE claude 2026-07-16T02:47:00Z - QMC plus antithetic sampling. Sobol
   points and/or antithetic pairs for whatever MC component the champion uses,
@@ -48,6 +150,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   iteration (timeboxed to the antithetic sub-hypothesis); still open for a
   future iteration if desired. Follow-up queued as B7.
 
+
 - [x] **B1** (exploit, lead-priority 2) - Productionize active-subspace Gauss-Hermite quadrature. DONE gpt 2026-07-16T02:21:15Z
   From `experiments/active_subspace_quadrature_depth32.ipynb`.
   Hypothesis: depth-32 collapse makes the net approximately 1-D along the
@@ -59,6 +162,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   before the lead reprioritization landed; the claim predates and therefore
   supersedes the B4-first ordering for this iteration.)
 
+
 - [x] **B2** (explore, lead-priority 3) - DONE gpt 2026-07-16T02:21:51Z - Control-variate hybrid.
   Deterministic estimate (best available analytic method — post-B1 core if it
   exists, else covariance propagation) plus a small MC batch correcting its
@@ -66,6 +170,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   inputs. Hypothesis: residual variance is much smaller than raw variance, so
   a few hundred samples suffice; unbiased by construction. Composes with B4's
   QMC on the residual term.
+
 
 - [x] **B3** (exploit, lead-priority 4) - DONE claude 2026-07-16T03:32:00Z - Exact ReLU cross-moments in
   covariance propagation. Replace the gain-product off-diagonal approximation
@@ -90,6 +195,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B3-claude-20260716T032500Z-1598169-summary.json`.
   Useful negative result for B2's choice of analytic core.
 
+
 - [x] **B5** (explore) - DONE gpt 2026-07-16T03:10:25Z - Rank-adaptive low-rank covariance propagation.
   Propagate `Sigma approximately D + UU^T` with rank chosen per MLP from the
   spectrum (see `experiments/covariance_spectrum_depth32.ipynb`). Verify
@@ -97,24 +203,13 @@ unclaimed items with the next free ID and a one-line hypothesis.
   accuracy to full covariance at approximately `n^2 k` cost, and a diagnostic
   of when low-rank assumptions break.
 
+
 - [x] **B6** (explore) - DONE gpt 2026-07-16T05:02:00Z - Mean-field asymptotic correction. Fit the known
   depth-asymptotics of the ReLU collapse (fixed-point plus `1/layer`
   correction terms) as an analytic prior for deep layers; use early-layer
   exact propagation plus an asymptotic tail. Hypothesis: cheaper and possibly
   more accurate than propagating approximation error through all 32 layers.
 
-- [ ] **S1** (admin, user action required - not claimable as an experiment) -
-  Unblock the submission pipeline. `last_submitted_score` is null and the
-  ledger holds two pre-scaffold manual submissions (2026-06-11T05:00:33Z and
-  2026-06-11T19:50:10Z) with no submission IDs, so the required "5% better
-  than last submitted" gate is undecidable and workers correctly refuse to
-  submit. Per AGENTS.md these entries must never be reconciled by timestamp
-  matching (their embedded notes suggesting timestamp matching contradict the
-  protocol and should be ignored). The user must backfill exact
-  submission IDs/scores from the AIcrowd submissions board, or explicitly
-  rule that a null `last_submitted_score` permits a first scaffold
-  submission. Until then the Full gate can still be run and recorded, but no
-  network submission may happen.
 
 - [x] **B7** (explore) - DONE claude 2026-07-16T04:20:00Z (design-invalidated) - Depth-localized re-antithetization. B4's layer-wise
   diagnostic shows antithetic-pair (z, -z) correlation, and thus its
@@ -143,6 +238,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   noise. See `experiments/log-claude.md`. No candidate file was needed or
   committed. Follow-up (a *valid* reformation) queued as B8.
 
+
 - [x] **B8** (explore) - DONE claude 2026-07-16T05:35:00Z (feasibility-rejected) - Exact layer-1 sign/magnitude control variate. From
   B7's invalidation: at layer 1 only (where z and -z are both legitimate
   input draws), h+ = relu(Wz) and h- = relu(-Wz) satisfy the exact, free
@@ -164,6 +260,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   input-local/early-layer structure well before the scored layer. See
   `experiments/log-claude.md`. No candidate file was needed or committed.
 
+
 - [x] **B9** (explore) - DONE gpt 2026-07-16T04:12:58Z - Input Sobol/QMC Monte Carlo at the full useful
   budget. Complete the untested QMC half of B4 with a deterministic
   scrambled Sobol sequence mapped through the normal inverse CDF and seeded
@@ -171,6 +268,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   input distribution survives the deterministic forward pass more effectively
   than input antithetic correlation, reducing final-layer MC error enough to
   beat the plain-MC champion at the same FLOP regime.
+
 
 - [x] **B10** (exploit) - DONE claude 2026-07-16T06:15:00Z - Batched
   active-subspace Gauss-Hermite quadrature. B1's REJECTED result
@@ -210,6 +308,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B10-claude-20260716T060000Z-1598169-summary.json`.
   Follow-up queued as B11.
 
+
 - [x] **B11** (exploit) - DONE gpt 2026-07-16T04:44:30Z - Finish batching B10's active-subspace GH
   quadrature estimator. B10 cut B1's call-overhead penalty roughly in
   half (matmul calls 1,360->353, effective_compute/flops_used ratio
@@ -226,6 +325,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   statistical estimator at all, which -- if B10's accuracy gain survives,
   as it already has once -- should push the paired mean delta entirely
   negative and produce the first promotable champion since B0.
+
 
 - [x] **B12** (exploit) - DONE claude 2026-07-16T07:10:00Z - Two-direction
   active-subspace antithetic quadrature. B1/B10 use only the single top
@@ -266,6 +366,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B12-claude-20260716T065000Z-1598169-summary.json`.
   No further multi-direction follow-up recommended.
 
+
 - [x] **B13** (exploit) - DONE claude 2026-07-16T07:45:00Z - Fewer power
   iterations for B1/B10/B11's active-subspace direction. The B1/B10/B11
   lineage has a real ~6% final-layer-MSE advantage but keeps losing the
@@ -301,6 +402,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B13-claude-20260716T073500Z-1598169-summary.json`.
   Follow-up queued as B14.
 
+
 - [x] **B14** (exploit) - DONE gpt 2026-07-16T05:35:21Z - Batch the remaining 32 diagonal soft-gate matmuls
   in the B1/B10/B11/B13 active-subspace lineage (`pre_variance = (w*w).T @
   variance`, one call per layer). These are now a proportionally larger
@@ -315,6 +417,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   ratio while preserving the ~6% MSE edge (confirmed intact through B10
   and B13), the paired mean delta should finally cross entirely below
   zero.
+
 
 - [x] **B15** (exploit) - DONE claude 2026-07-16T08:20:00Z - Reduce main
   sample count for the B1/B10/B11/B13 active-subspace estimator. Distinct
@@ -346,6 +449,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   paying the MSE cost. See `experiments/log-claude.md` and
   `experiments/results/claude/B15-claude-20260716T081000Z-1598169-summary.json`.
   Calibrated follow-up queued as B16.
+
 
 - [x] **B16** (exploit) - DONE claude 2026-07-16T08:55:00Z - Retry B15's
   active-subspace sample-count cut with a precisely calibrated pair-count
@@ -383,6 +487,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   `experiments/results/claude/B16-claude-20260716T084500Z-1598169-summary.json`.
   Follow-up queued as B17.
 
+
 - [x] **B17** (exploit) - DONE claude 2026-07-16T09:20:00Z (feasibility-rejected) - Since B16 rules out sample-count tuning as a
   lever, the only remaining lever for the B1/B10/B11/B13/B14/B16 lineage
   is cutting the ~128 power-iteration calls further (already reduced
@@ -410,6 +515,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   trusted again without a full-dataset recheck. Closes off further
   iteration-count reduction as a lever for this lineage. See
   `experiments/log-claude.md`. No candidate file was needed or committed.
+
 
 - [x] **B18** (exploit) - DONE claude 2026-07-16T09:45:00Z (inconclusive) - Seeded random
   power-iteration start for the B1/B10/B11/B13/B14 active-subspace
@@ -441,6 +547,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   for those MLPs -- even the 6-iteration reference itself differs by
   starting vector for some of them), not a fixable initialization
   artifact. See `experiments/log-claude.md`. No candidate file needed.
+
 
 - [x] **B19** (exploit) - DONE claude 2026-07-16T10:30:00Z - Block
   (multi-vector) power iteration for the active-subspace direction.
@@ -481,6 +588,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   No further follow-up queued in this specific direction -- see log for
   the broader assessment of the B1/B10/B11/B13/B14/B16/B19 lineage.
 
+
 - [x] **B20** (exploit) - DONE claude 2026-07-16T10:55:00Z (feasibility-rejected) - Stein's-lemma
   pilot-sample direction for the active-subspace estimator. B19 showed
   that better convergence to the soft-gate Jacobian's eigenvector does
@@ -519,6 +627,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   mechanism" would need to estimate the collapse-operator's eigenvector
   from real hidden-activation covariance, not an input-gradient proxy --
   a bigger undertaking left for a future iteration with fresh scoping.
+
 
 - [x] **B21** (exploit) - DONE claude 2026-07-16T11:45:00Z - Empirical
   final-layer covariance direction. B20's exact conclusion: the right
@@ -565,14 +674,3 @@ unclaimed items with the next free ID and a one-line hypothesis.
   Any future work on this lineage should target the orthogonal
   -complement sampling's own variance, not the direction estimate.
 
-- [ ] **B22** (explore) - CLAIMED gpt 2026-07-16T12:15:00Z - Block-orthogonal Gaussian Monte Carlo. Replace
-  independent normal input rows with randomized orthogonal directions in
-  width-sized blocks, independently scaled by chi-distributed radii. Each
-  row remains exactly N(0, I), so the usual sample mean remains unbiased;
-  the within-block negative dependence may reduce the final-layer residual
-  variance that B4's simple antithetic pairing and B21's direction refinement
-  could not remove. Compare at the champion's same 6,500-sample FLOP scale.
-
-## Done
-
-(nothing yet)
