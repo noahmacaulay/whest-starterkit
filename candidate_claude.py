@@ -46,8 +46,21 @@ class Estimator(BaseEstimator):
            reduction over the same underlying values -- confirmed
            numerically exact (not just close) on real data before use.
 
-        Net: ~32 fewer flopscope-tracked calls (from ~101 down to ~69) for
-        the exact same 27.35e9 raw FLOPs and the exact same predictions.
+        UPDATE after the first version of this change: deferring all 32
+        `mean` calls to one big `fnp.stack` + `fnp.mean(axis=1)` was
+        tested on the real Mini-split harness and REGRESSED
+        mean_effective_compute (3.083e10 vs champion's 3.015e10,
+        REJECTED) despite confirmed bit-identical predictions (MSE
+        matched to 0.0 diff on all 100 MLPs). Root cause, confirmed via
+        the per-op breakdown: stacking all 32 raw (6500,256) layer
+        outputs into one (32,6500,256) array before reducing costs a real
+        ~0.038s of backend compute time (copying ~213MB) -- far more than
+        the ~0.012s saved by cutting 30 `mean` calls down to 1. Fewer
+        tracked calls is not free if it means moving much more data per
+        call. Reverted to per-layer immediate `mean` (small (256,)-sized
+        running results, matching the champion's original memory
+        footprint) and kept only the redundant-wrapper removal, which
+        touches none of the data-volume-heavy operations.
         """
         n_samples = 6_500
         _ = budget
@@ -55,12 +68,11 @@ class Estimator(BaseEstimator):
 
         rng = fnp.random.default_rng(mlp.seed)
         x = rng.standard_normal((n_samples, width)).astype(fnp.float32)
-        layers = []
+        rows = []
         for w in mlp.weights:
             x = fnp.maximum(fnp.matmul(x, w), 0.0)
-            layers.append(x)
-        stacked = fnp.stack(layers, axis=0)
-        return fnp.mean(stacked, axis=1)
+            rows.append(fnp.mean(x, axis=0))
+        return fnp.stack(rows, axis=0)
 
 
 def _load_baseline(name: str) -> type[BaseEstimator]:
