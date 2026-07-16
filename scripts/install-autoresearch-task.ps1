@@ -57,7 +57,7 @@ else {
 }
 New-Item -ItemType Directory -Path $codexHome -Force | Out-Null
 
-foreach ($roleName in @("worker", "lead", "deep")) {
+foreach ($roleName in @("worker", "lead", "deep", "recovery")) {
     $role = $config.roles.PSObject.Properties[$roleName].Value
     $fileName = "$($role.profile).config.toml"
     $source = Join-Path $profilesPath $fileName

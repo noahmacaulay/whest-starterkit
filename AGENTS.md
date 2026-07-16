@@ -282,7 +282,10 @@ The GPT worker can be run unattended on Windows using the single-instance
 scheduler documented in `AUTORESEARCH.md`. Its routine/lead/deep profiles are
 Sol High every 15 minutes, Sol XHigh every 2 hours, and Sol Ultra every 6
 hours. The installed `codex exec` build has been validated with all three
-profile settings; the roles are serialized by one scheduler and named mutex.
+profile settings. A fourth Sol XHigh backup recovery profile automatically
+replaces any tick that finds tracked or untracked worktree changes. It
+diagnoses and preserves interrupted work before ordinary research can resume;
+all roles are serialized by one scheduler and named mutex.
 
 The Claude lead tick runs unattended three times daily (06:00, 14:00, 22:00
 local) via the Windows scheduled task `WHEST Claude Lead Review`, from the

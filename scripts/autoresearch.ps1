@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoPath,
-    [ValidateSet("Auto", "Worker", "Lead", "Deep")]
+    [ValidateSet("Auto", "Worker", "Lead", "Deep", "Recovery")]
     [string]$Role = "Auto",
     [switch]$DryRun,
     [switch]$SkipGitPreflight
@@ -85,6 +85,8 @@ function New-State {
         last_lead_completed_utc = $Now
         last_deep_started_utc = $Now
         last_deep_completed_utc = $Now
+        last_recovery_started_utc = $null
+        last_recovery_completed_utc = $null
         total_estimated_credits = 0.0
     }
 }
@@ -151,7 +153,7 @@ function Select-AutomaticRole {
     return $null
 }
 
-function Assert-GitPreflight {
+function Get-GitPreflightStatus {
     param(
         [Parameter(Mandatory = $true)][string]$Repository,
         [Parameter(Mandatory = $true)][string]$ExpectedBranch
@@ -180,15 +182,7 @@ function Assert-GitPreflight {
     if ($LASTEXITCODE -ne 0) {
         throw "git status failed: $status"
     }
-    if (-not [string]::IsNullOrWhiteSpace($status)) {
-        $statusLines = @($status -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-        $blockingLines = @($statusLines | Where-Object { $_ -notmatch '^\?\? experiments/results/gpt/' })
-        if ($blockingLines.Count -gt 0) {
-            throw "Worktree is not clean. Commit or resolve these paths before automation:`n$($blockingLines -join "`n")"
-        }
-
-        Write-Host "Recovery preflight: allowing interrupted untracked GPT result artifacts:`n$($statusLines -join "`n")"
-    }
+    return $status
 }
 
 function Get-UsageSummary {
@@ -340,7 +334,17 @@ try {
         return
     }
 
-    $roleKey = if ($Role -eq "Auto") {
+    $worktreeStatus = ""
+    if (-not $SkipGitPreflight) {
+        $worktreeStatus = Get-GitPreflightStatus $RepoPath ([string]$config.expected_branch)
+    }
+
+    $requiresRecovery = -not [string]::IsNullOrWhiteSpace($worktreeStatus)
+    $roleKey = if ($requiresRecovery) {
+        Write-RunnerLog "Dirty worktree detected; routing this tick to the backup recovery agent:`n$worktreeStatus" "WARN"
+        "recovery"
+    }
+    elseif ($Role -eq "Auto") {
         Select-AutomaticRole $config $state $now
     }
     else {
@@ -359,10 +363,6 @@ try {
     }
 
     $codexPath = $resolvedCodexPath
-
-    if (-not $SkipGitPreflight) {
-        Assert-GitPreflight $RepoPath ([string]$config.expected_branch)
-    }
 
     $arguments = @(
         "exec",
@@ -405,7 +405,12 @@ try {
         pid = $PID
     }
     $startedProperty = "last_{0}_started_utc" -f $roleKey
-    $state.$startedProperty = $startedUtc
+    if ($null -eq $state.PSObject.Properties[$startedProperty]) {
+        $state | Add-Member -NotePropertyName $startedProperty -NotePropertyValue $startedUtc
+    }
+    else {
+        $state.$startedProperty = $startedUtc
+    }
     Save-State $state $statePath
     Write-RunnerLog "Starting $runId with profile '$($roleConfig.profile)'."
 
@@ -449,8 +454,20 @@ try {
         throw "Codex exited with code $codexExitCode. See $stderrPath"
     }
 
+    if (-not $SkipGitPreflight) {
+        $postflightStatus = Get-GitPreflightStatus $RepoPath ([string]$config.expected_branch)
+        if (-not [string]::IsNullOrWhiteSpace($postflightStatus)) {
+            throw "The $roleKey agent exited with a dirty worktree; ordinary research remains blocked:`n$postflightStatus"
+        }
+    }
+
     $completedProperty = "last_{0}_completed_utc" -f $roleKey
-    $state.$completedProperty = $completedUtc
+    if ($null -eq $state.PSObject.Properties[$completedProperty]) {
+        $state | Add-Member -NotePropertyName $completedProperty -NotePropertyValue $completedUtc
+    }
+    else {
+        $state.$completedProperty = $completedUtc
+    }
     $state.consecutive_failures = 0
     $state.retry_after_utc = $null
     $state.last_error = $null

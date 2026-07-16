@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoPath,
-    [ValidateSet("Status", "Pause", "Resume", "Enable", "Disable", "RunWorker", "RunLead", "RunDeep")]
+    [ValidateSet("Status", "Pause", "Resume", "Enable", "Disable", "RunWorker", "RunLead", "RunDeep", "RunRecovery")]
     [string]$Action = "Status",
     [string]$Reason = "Paused by user"
 )
@@ -84,4 +84,5 @@ switch ($Action) {
     "RunWorker" { & $runnerPath -RepoPath $RepoPath -Role Worker; exit $LASTEXITCODE }
     "RunLead" { & $runnerPath -RepoPath $RepoPath -Role Lead; exit $LASTEXITCODE }
     "RunDeep" { & $runnerPath -RepoPath $RepoPath -Role Deep; exit $LASTEXITCODE }
+    "RunRecovery" { & $runnerPath -RepoPath $RepoPath -Role Recovery; exit $LASTEXITCODE }
 }

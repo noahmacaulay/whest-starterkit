@@ -35,14 +35,10 @@ committed `candidate_gpt.py` and prior result artifacts, preserve useful work,
 and complete or explicitly release that claim through the normal atomic push
 protocol.
 
-The scheduler may admit a recovery turn when the only dirty paths are
-untracked files below `experiments/results/gpt/`. Before fetching or rebasing,
-inspect those files and the matching claimed experiment. If a report is
-complete and valid, persist it normally. If it is partial or invalid, preserve
-it under `.autoresearch-runtime/interrupted/<experiment-and-UTC>/`, restore a
-clean worktree, and rerun the claimed evaluation using the extended timeout
-rules above. Never reinterpret partial output as a score, and never proceed
-past any other tracked or untracked worktree change.
+The dedicated backup recovery role handles dirty worktrees before a worker can
+start. If its handoff or the shared logs identify a recovered interrupted
+experiment, inspect the preserved evidence and resume that existing claim.
+Never reinterpret partial output as a score.
 
 This is unattended execution. If a required credential, permission, dataset,
 or external service is unavailable, preserve useful diagnostics, leave shared
