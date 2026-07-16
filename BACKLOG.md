@@ -15,29 +15,29 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B40** (exploit) - CLAIMED claude 2026-07-16T21:30:00Z - Batched-QR
-  exact-Haar orthogonal directions: capture B22's real -5.5% final-layer
-  MSE reduction WITHOUT its compute penalty. B22's diagnosis (its own
-  report): candidate MSE 6.812e-06 vs champion 7.211e-06 (-5.5%, real),
-  but effective_compute 7.95e10 vs 3.03e10 (2.6x) even though raw FLOPs
-  are nearly IDENTICAL (2.737e10 vs 2.735e10) -- the entire blowup is
-  residual WALL TIME from the QR work, not FLOPs. B39 tried to dodge QR
-  with structured (Hadamard) orthogonality but that changes the direction
-  law and worsens MSE. Untried angle: keep EXACT Haar orthogonality
-  (correct uniform-sphere marginals, so the 5.5% survives) but cut the
-  QR wall-time overhead the same way B10/B13 cut the quadrature lineage's
-  call-fragmentation -- generate all 25 orthogonal blocks in ONE batched
-  `fnp.linalg.qr` on a (25,256,256) stack (or fewest possible tracked
-  calls) instead of 25 separate factorizations, keep everything in
-  float32, avoid tracked temporaries. Scale by B25's closed-form
-  E[r] rather than sampled chi radii (compose with radial-exactness).
-  FIRST feasibility-check (B31/B32 discipline): measure whether batched
-  QR meaningfully reduces the orthogonalization wall time vs a Python
-  loop -- if the QR wall time is inherent (not call-overhead), reject
-  cheaply. If viable, implement in candidate_claude.py (NOT
-  candidate_gpt.py) and run the standard 100-MLP Mini paired gate; then
-  per B30, a Full paired check before any submission since the 5.5% is
-  Mini-measured. Own file, distinct from gpt's B22/B39 candidates.
+- [x] **B40** (exploit) - DONE claude 2026-07-16T21:30:00Z (feasibility-rejected) -
+  Batched-QR exact-Haar orthogonal directions to capture B22's real
+  -5.5% MSE reduction without its 2.6x compute penalty. Premise: B22's
+  penalty is residual WALL TIME from QR (raw FLOPs are nearly identical),
+  so batch the 25 QRs into one call to cut it like B10/B13 cut
+  call-fragmentation. REJECTED at feasibility: the QR wall time is
+  INHERENT arithmetic, not call-overhead. Benchmarked (warmed, min of 10):
+  25 separate 256x256 QRs = 351ms; ONE batched qr((25,256,256)) = 424ms
+  (WORSE -- numpy's batched QR just loops internally in LAPACK); float32
+  vs float64 identical; champion forward pass = 183ms, so QR is ~2.3x the
+  forward. That ~350ms x lambda=1e11 ~ 3.5e10 extra effective compute
+  matches B22's observed doubling exactly, and batching cannot remove it.
+  Generating a dxd Haar-orthogonal matrix is fundamentally O(d^3)
+  (Householder/QR/Gram-Schmidt all equivalent), so exact orthogonality
+  is inherently ~2x the forward-pass wall time on this machine. Together
+  with B22 (Haar, compute-blocked) and B39 (structured, wrong direction
+  law), this CLOSES the orthogonal-directions line for full 256-blocks:
+  the 5.5% gain is real but fundamentally compute-blocked. No candidate
+  built, no harness compute spent. Possible (but likely marginal, per
+  B30) follow-up not claimed: smaller k-row orthogonal blocks trade the
+  5.5% down ~proportionally while QR cost drops ~k^2 -- a sweet spot
+  might exist but would yield <=~2-3% Mini (<=~1% Full). See
+  `experiments/log-claude.md`.
 
 - [x] **B38** (explore) - DONE claude 2026-07-16T21:00:00Z (feasibility-rejected) -
   Last-layer Gaussian-moment Rao-Blackwellization: replace the final

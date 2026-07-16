@@ -1806,3 +1806,46 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   harness compute spent. Validated the "check cheaply before the harness"
   discipline again: 240 numpy forward passes settled it.
 - Full/submission gate: NOT_RUN (no candidate).
+
+## 2026-07-16T21:30:00Z - B40-claude: Batched-QR exact-Haar orthogonal directions (feasibility-rejected)
+- Hypothesis: B22 found a REAL -5.5% final-layer MSE reduction from
+  Haar-orthogonal directions (candidate MSE 6.812e-06 vs champion
+  7.211e-06), but its effective_compute was 2.6x the champion's
+  (7.95e10 vs 3.03e10) despite NEARLY IDENTICAL raw FLOPs (2.737e10 vs
+  2.735e10) -- so the entire penalty is residual WALL TIME from the QR
+  work, not FLOPs. B39's attempt to dodge QR with structured (Hadamard)
+  orthogonality changed the direction law and worsened MSE. Untried
+  angle: keep EXACT Haar orthogonality (correct marginals -> the 5.5%
+  survives) but cut the QR wall-time overhead by batching all 25 blocks
+  into one fnp.linalg.qr call, the same way B10/B13 cut the quadrature
+  lineage's call-fragmentation.
+- Feasibility check (before any candidate, B31/B32 discipline): benchmarked
+  QR wall time on this machine (warmed, min of 10 trials). 25 separate
+  256x256 QRs = 351ms; ONE batched qr on a (25,256,256) stack = 424ms --
+  batching is actually WORSE, because numpy's batched QR just loops over
+  the stack internally in LAPACK. float32 vs float64 made no difference
+  (424 vs 423ms). The champion's 32-matmul forward pass = 183ms, so the
+  QR is ~2.3x the forward-pass time.
+- Result: REJECTED at feasibility. The QR wall time is INHERENT
+  arithmetic, not the call-fragmentation overhead B10/B13 could
+  vectorize away -- so batching cannot remove it (it made it worse). The
+  ~350ms of QR wall time x lambda=1e11 ~ 3.5e10 extra effective compute
+  matches B22's observed doubling almost exactly, confirming the penalty
+  is the genuine cost of the factorization. Generating a dxd
+  Haar-orthogonal matrix is fundamentally O(d^3) work
+  (Householder/QR/Gram-Schmidt are all equivalent and all materialize the
+  rows in O(d^3)), so exact orthogonality is inherently ~2x the
+  forward-pass wall time here -- there is no cheap exact-Haar route.
+- Consequence: together with B22 (exact Haar, compute-blocked) and B39
+  (structured, wrong direction law), this CLOSES the orthogonal-directions
+  line for full 256-row blocks. The 5.5% MSE gain is real but
+  fundamentally compute-blocked on this scoring machine (which charges
+  the QR's real wall time as residual compute). The only remaining wiggle
+  room -- smaller k-row orthogonal blocks (QR cost ~k^2, variance benefit
+  ~proportional to k) -- would trade the 5.5% down toward ~2-3% Mini,
+  which per B30 (Mini effects shrink ~10x to Full) likely nets <=~1% on
+  Full, marginal and probably not promotion-robust; NOT claimed, noted
+  for the lead's judgement.
+- Verdict: REJECTED (feasibility, pre-harness). No candidate file, no
+  harness compute spent. The cheap timing benchmark settled it.
+- Full/submission gate: NOT_RUN (no candidate).
