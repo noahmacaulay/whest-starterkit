@@ -75,3 +75,6 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: REJECTED: the tail approximation's systematic bias emerges immediately at layer 25 and overwhelms its 25% compute saving; the conservative paired interval is wholly positive.
 - Full/submission gate: NOT_RUN; the Mini promotion gate failed.
 - New ideas queued: none.
+
+### B9 metadata correction
+- The normal rebase after result persistence rewrote evaluated candidate commit `da3cb39` to reachable commit `38de845`; candidate contents and all persisted reports are unchanged.
