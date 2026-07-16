@@ -15,25 +15,27 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B31** (explore) - CLAIMED claude 2026-07-16T19:30:00Z - Antithetic
-  reflection along ONLY the dominant collapse direction, for the B25
-  radial-exact champion. B4 showed full-vector antithetic (z,-z) gives
-  -46% variance at layer 0 decaying to ~0 by layer 25 -- because
-  flipping the whole input scrambles the surviving rank-1 mode along
-  with everything else. New idea: the depth-32 collapse makes
-  f(u) ~ g(u.a)*b (rank-1 dominant, a = surviving input direction), so
-  reflect u across a's orthogonal hyperplane (u' = u - 2(u.a)a, keeps
-  ||u'||=1 so it's still a valid uniform-sphere direction and stays
-  unbiased) -- this flips t=u.a -> -t, removing the ODD part of g while
-  leaving the orthogonal complement untouched. Because a is precisely
-  the mode that SURVIVES the collapse (unlike B4's full flip), the
-  cancellation should persist to depth 32. Directly targets my B30
-  recommendation to seek a larger-effect change than sub-percent radial
-  refinement. Pre-validate cheaply first (standalone numpy, measure
-  final-layer variance reduction on real MLPs) before any harness
-  candidate; the pilot needed to find `a` costs ~5% extra FLOPs (like
-  B21), so the MSE variance reduction must clear that to win -- reject
-  cheaply if it doesn't.
+- [x] **B31** (explore) - DONE claude 2026-07-16T19:30:00Z (feasibility-rejected) -
+  Antithetic reflection along ONLY the dominant collapse direction
+  (u' = u - 2(u.a)a), for the B25 radial-exact champion. Hypothesis: if
+  f(u) ~ g(u.a)*b with g monotonic, reflecting a's component flips
+  t=u.a -> -t and cancels the odd part, and since a is the surviving
+  mode the cancellation should persist to depth 32 (unlike B4's full
+  flip). REJECTED at pre-validation before any harness run: the
+  reflection makes variance WORSE, ~2x (reduction -8% to -114% across 5
+  real MLPs, ~1.95-2.14x for 4 of them). Direct measurement shows why:
+  f(u) and f(u_reflected) are strongly POSITIVELY correlated (per-neuron
+  rho ~ 0.61 mean, mean relative |f(u)-f(u')| only ~11%). The
+  final-layer output is approximately EVEN in the dominant input
+  direction, not monotonic -- there is no odd component to cancel, so
+  forcing reflected pairs just makes near-duplicate samples and halves
+  the effective sample count (the ~2x variance). This crisply explains
+  WHY every sign/reflection-based antithetic method fails at depth 32
+  (B4 full-flip, B7 mid-network, now B31 dominant-flip): the signal
+  lives in the even/magnitude part of the collapse, which sign-flips
+  cannot touch. Ties together with the radial-exact win (B25): the
+  radius/magnitude IS the exploitable structure; input SIGN structure is
+  not. See `experiments/log-claude.md`. No candidate file needed.
 
 - [x] **B30** (infra, explore) - DONE claude 2026-07-16T19:00:00Z - Diagnosed WHY
   B25's Mini promotion failed to replicate on Full (B29). Two findings:

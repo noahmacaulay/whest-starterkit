@@ -1587,3 +1587,55 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Full detail and all numbers:
   `experiments/results/claude/B30-claude-20260716T190000Z-summary.json`.
 - Full/submission gate: NOT_APPLICABLE (no candidate).
+
+## 2026-07-16T19:30:00Z - B31-claude: Dominant-direction antithetic reflection (feasibility-rejected)
+- Hypothesis (directly acting on B30's recommendation to seek a
+  larger-effect change than sub-percent radial refinement): B4 showed
+  full-vector antithetic (z,-z) decays from -46% variance at layer 0 to
+  ~0 by layer 25 because flipping the whole input scrambles the
+  surviving rank-1 mode along with everything else. New idea: reflect
+  only the DOMINANT collapse direction -- u' = u - 2(u.a)a where a is the
+  surviving input direction (||u'||=1, still uniform on the sphere by
+  orthogonal-transform invariance, so unbiased). If f(u) ~ g(u.a)*b with
+  g monotonic, this flips t=u.a -> -t and cancels g's odd part; and
+  because a is the mode that SURVIVES the collapse, the cancellation
+  should persist to depth 32. Estimate a from a pilot (direction along
+  which the scalar mean-over-neurons output varies most).
+- Pre-validation (standalone numpy, before any harness run, per the
+  B7/B17/B19/B21 discipline): estimated a from a 2000-sample pilot on 5
+  real Mini-split MLPs, then over 40 independent trials compared
+  final-layer per-neuron variance of (A) plain radial-exact mean over
+  N=6500 iid directions vs (B) v1-antithetic mean over N/2=3250 pairs
+  (u, u') = 6500 total forwards.
+- Result: DECISIVELY REJECTED. The reflection makes variance WORSE, not
+  better: reduction was -7.9%, -95.7%, -91.5%, -114.4%, -98.9% across
+  MLPs 0-4 -- i.e. ~2x HIGHER variance for 4 of the 5 (ratios 1.95-2.14).
+  A direct correlation check (MLP 3, 4000 samples) shows why:
+  corr(f(u), f(u_reflected)) is strongly POSITIVE (per-neuron mean 0.610,
+  median 0.623), and the mean relative difference |f(u)-f(u')|/|.| is
+  only ~11%. So f is approximately EVEN in the dominant input direction,
+  not monotonic -- reflecting a's sign leaves the output nearly
+  unchanged, making the "antithetic" pairs near-duplicates. That halves
+  the effective sample count (N/2 near-identical pairs instead of N iid
+  draws), which exactly explains the ~2x variance increase
+  (anti_var/plain_var = 1+rho, and with rho~0.6-1 the ratio is ~1.6-2).
+- Why this matters beyond the rejection: it gives a crisp mechanistic
+  reason WHY every sign/reflection-based antithetic method has failed at
+  depth 32 -- B4 (full-vector flip), B7 (mid-network reflection, also
+  invalid for other reasons), and now B31 (dominant-direction flip). The
+  final-layer signal lives in the EVEN / magnitude part of the collapse,
+  which no sign-flip can cancel. This is the mirror image of B25's win:
+  the input RADIUS (a magnitude) was exploitable via exact expectation
+  substitution precisely because magnitude is what the collapse
+  preserves; input SIGN/direction structure is not exploitable because
+  the output is insensitive to it (even-symmetric in the dominant axis,
+  decorrelated in the rest). Together, B25 + B31 bound the problem:
+  magnitude structure is used up (radial-exact), sign structure carries
+  no usable signal. Any further variance reduction would need to exploit
+  the EVEN dependence on u.a (e.g. a magnitude-based control variate or
+  quadrature in |u.a|), which is exactly the active-subspace-quadrature
+  territory that B1/B10/B21 already drove to its compute-overhead ceiling.
+- Verdict: REJECTED (feasibility, pre-harness). No candidate file needed
+  or committed. No harness compute spent -- the cheap pre-validation was
+  decisive.
+- Full/submission gate: NOT_RUN (no candidate).
