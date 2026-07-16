@@ -1,0 +1,126 @@
+{
+  "experiment_id": "B36-gpt-20260716T180943Z",
+  "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+  "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+  "split": "mini",
+  "indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "n_samples": 6500,
+  "mean_mc_mse": 4.161590709593946e-06,
+  "mean_projected_mse": 1.6078646717065433e-05,
+  "mean_oracle_projected_mse": 1.3724760675706829e-05,
+  "projected_relative_change": 2.8635819423564257,
+  "oracle_bias_floor_relative_to_mc": 3.297960235269263,
+  "per_mlp": [
+    {
+      "mlp_index": 0,
+      "mlp_name": "daniel-harrison",
+      "mc_mse": 4.948677709027435e-06,
+      "projected_mse": 1.6345876880573226e-05,
+      "oracle_projected_mse": 1.2368634939445331e-05,
+      "template_direction_cosine": 0.9999896544605621,
+      "fitted_scale": 0.9955823358429392,
+      "oracle_scale": 0.9930209002110457
+    },
+    {
+      "mlp_index": 1,
+      "mlp_name": "dustin-robinson",
+      "mc_mse": 8.437383061310622e-06,
+      "projected_mse": 1.6470827455364576e-05,
+      "oracle_projected_mse": 1.3758160957663652e-05,
+      "template_direction_cosine": 0.999993516409556,
+      "fitted_scale": 0.9926036385127655,
+      "oracle_scale": 0.9941933333064424
+    },
+    {
+      "mlp_index": 2,
+      "mlp_name": "cole-martin",
+      "mc_mse": 1.5905750553968363e-05,
+      "projected_mse": 3.12684952298629e-05,
+      "oracle_projected_mse": 1.7878910624735998e-05,
+      "template_direction_cosine": 0.9999947560644045,
+      "fitted_scale": 0.9913302173561716,
+      "oracle_scale": 0.988559697249485
+    },
+    {
+      "mlp_index": 3,
+      "mlp_name": "donna-clarke",
+      "mc_mse": 1.1502341341928643e-06,
+      "projected_mse": 8.15049273681325e-06,
+      "oracle_projected_mse": 8.139113822111747e-06,
+      "template_direction_cosine": 0.9999775355239713,
+      "fitted_scale": 0.988925776459409,
+      "oracle_scale": 0.9891736926439191
+    },
+    {
+      "mlp_index": 4,
+      "mlp_name": "rebecca-walker",
+      "mc_mse": 1.3486650671036128e-06,
+      "projected_mse": 8.729495349128791e-06,
+      "oracle_projected_mse": 8.506730562995712e-06,
+      "template_direction_cosine": 0.9999790693954372,
+      "fitted_scale": 0.9921679847828679,
+      "oracle_scale": 0.9932078924858533
+    },
+    {
+      "mlp_index": 5,
+      "mlp_name": "monique-stevens",
+      "mc_mse": 4.34748344066487e-06,
+      "projected_mse": 1.3445815811979451e-05,
+      "oracle_projected_mse": 1.0438626170019003e-05,
+      "template_direction_cosine": 0.9999884928886371,
+      "fitted_scale": 0.9948184165081689,
+      "oracle_scale": 0.9922634357826824
+    },
+    {
+      "mlp_index": 6,
+      "mlp_name": "keith-brock",
+      "mc_mse": 1.0103692747260432e-06,
+      "projected_mse": 1.4670528839968714e-05,
+      "oracle_projected_mse": 1.4660600177782539e-05,
+      "template_direction_cosine": 0.999986020145877,
+      "fitted_scale": 0.9927358836217697,
+      "oracle_scale": 0.9928725097778557
+    },
+    {
+      "mlp_index": 7,
+      "mlp_name": "robert-huff",
+      "mc_mse": 1.2245295694281935e-06,
+      "projected_mse": 2.7087048115613483e-05,
+      "oracle_projected_mse": 2.6879088130672117e-05,
+      "template_direction_cosine": 0.9999485505536599,
+      "fitted_scale": 0.985367575061737,
+      "oracle_scale": 0.9862475913039208
+    },
+    {
+      "mlp_index": 8,
+      "mlp_name": "kimberly-caldwell",
+      "mc_mse": 2.07754039946593e-06,
+      "projected_mse": 1.4902894601158972e-05,
+      "oracle_projected_mse": 1.4902807906730286e-05,
+      "template_direction_cosine": 0.9999919861456773,
+      "fitted_scale": 0.993196650418429,
+      "oracle_scale": 0.9931870601464192
+    },
+    {
+      "mlp_index": 9,
+      "mlp_name": "annette-hansen",
+      "mc_mse": 1.165273886051523e-06,
+      "projected_mse": 9.714992150190936e-06,
+      "oracle_projected_mse": 9.714933464911913e-06,
+      "template_direction_cosine": 0.9999825182367269,
+      "fitted_scale": 0.9882616275676881,
+      "oracle_scale": 0.9882472652806448
+    }
+  ]
+}

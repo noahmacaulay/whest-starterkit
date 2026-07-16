@@ -1,0 +1,61 @@
+{
+  "experiment_id": "B36-gpt-20260716T180943Z",
+  "agent": "gpt",
+  "status": "REJECTED_FEASIBILITY",
+  "base_champion": {
+    "estimator_commit": "2227ef3",
+    "experiment_id": "B25-claude-20260716T160000Z",
+    "source_result_commit": "1cf928a",
+    "claim_commit": "53ac7ac"
+  },
+  "candidate": {
+    "file": "candidate_gpt.py",
+    "commit": "f685617",
+    "description": "B25 radial-exact Monte Carlo with the scored final mean projected onto a deterministic covariance-propagation template and a nonnegative MC-fitted scalar."
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_last_changed_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "n_samples": 6500,
+    "flop_budget": 272000000000,
+    "runner": "standalone numpy feasibility check",
+    "commands": [
+      "uv sync --frozen",
+      "uv run --frozen whest version",
+      "uv pip show flopscope",
+      "uv run --frozen whest validate --estimator candidate_gpt.py",
+      "uv run --frozen python experiments/b36_feasibility_gpt.py --report experiments/results/gpt/B36-gpt-20260716T180943Z-2227ef3-feasibility.json --n-mlps 10"
+    ],
+    "raw_report": "experiments/results/gpt/B36-gpt-20260716T180943Z-2227ef3-feasibility.json",
+    "validation": "PASS",
+    "paired_100_mlp_run": "NOT_RUN: predeclared feasibility gate failed"
+  },
+  "results": {
+    "mean_mc_mse": 4.161590709593946e-06,
+    "mean_projected_mse": 1.6078646717065433e-05,
+    "projected_relative_change": 2.8635819423564257,
+    "mean_oracle_projected_mse": 1.3724760675706829e-05,
+    "oracle_bias_floor_relative_to_mc": 3.297960235269263,
+    "template_direction_cosine_range": [0.9999485505536599, 0.9999947560644045],
+    "worst_regression": {
+      "mlp_index": 7,
+      "mlp_name": "robert-huff",
+      "mse_delta": 2.586251854618529e-05
+    },
+    "adjusted_scores": "NOT_RUN",
+    "flops_used": "NOT_RUN",
+    "paired_mean_delta": "NOT_RUN",
+    "paired_95pct_ci": "NOT_RUN",
+    "failure_flags": "NOT_APPLICABLE: no harness evaluation was run"
+  },
+  "verdict": "REJECTED: the template span has an oracle bias floor 3.30 times the champion-equivalent MC error, so no fitted scale or 100-MLP run can make this mechanism competitive.",
+  "promotion": "NOT_RUN",
+  "full_submission_gate": "NOT_RUN"
+}

@@ -60,7 +60,11 @@ def main() -> int:
     if args.report.exists():
         raise SystemExit("refusing to overwrite an existing feasibility report")
 
-    ds = whestbench.load_dataset(DATASET, split="mini")
+    ds = whestbench.load_dataset(
+        "aicrowd/arc-whestbench-public-2026",
+        revision="v1-phase1",
+        split="mini",
+    )
     mlps = list(whestbench.iter_mlps(ds))
     per_mlp = []
     for index in range(args.n_mlps):

@@ -15,7 +15,8 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B36** (explore) - CLAIMED gpt 2026-07-16T18:09:43Z - Output-space
+- [x] **B36** (explore) - DONE gpt 2026-07-16T18:15:52Z
+  (feasibility-rejected) - Output-space
   collapse denoising for the B25 radial-exact champion. Depth-32 activations
   have rank-1-dominated covariance, but all prior direction experiments used
   that structure in input space. Test whether a cheap deterministic final-
@@ -25,6 +26,13 @@ unclaimed items with the next free ID and a one-line hypothesis.
   projection and oracle scale on real Mini MLPs before committing to the full
   paired harness; reject early if template-direction bias exceeds the MC
   variance reduction.
+  Result: REJECTED at the predeclared feasibility gate. On the first 10
+  canonical Mini MLPs, projection raised mean MSE from 4.162e-06 to
+  1.608e-05 (+286%). Even the ground-truth oracle scale could only reach
+  1.372e-05 (3.30x the MC MSE), proving the deterministic template's tiny
+  directional mismatch is already too biased to recover through scalar
+  fitting. No 100-MLP paired run was warranted. See `experiments/log-gpt.md`
+  and `experiments/results/gpt/B36-gpt-20260716T180943Z-2227ef3-summary.json`.
 
 - [x] **S3** (admin/exploit, lead-priority 0) - DONE claude-lead 2026-07-16T17:20:10Z -
   EXECUTED AND GRADED: attempt S3-claude-lead-20260716T171600Z,
