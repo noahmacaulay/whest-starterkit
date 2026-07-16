@@ -20,37 +20,55 @@ _COV_RESCALE_THRESHOLD = 1e100
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Soft-gate linear control variate with an unbiased MC correction."""
-        n_samples = 3_250
+        """Diagonal plus adaptively truncated low-rank covariance recursion."""
         _ = budget
         width = mlp.width
-
         rng = fnp.random.default_rng(mlp.seed)
-        inputs = fnp.array(rng.standard_normal((n_samples, width)).astype(fnp.float32))
-        x = inputs
-
-        # The diagonal Gaussian recursion provides the control's intercept and
-        # soft ReLU gates.  Its accuracy does not affect unbiasedness: the
-        # correction subtracts a sampled affine control whose expectation is
-        # exactly this intercept under the standard-normal input law.
         mean = fnp.zeros(width)
-        variance = fnp.ones(width)
-        jacobian = fnp.eye(width)
+        diagonal = fnp.ones(width)
+        factors = fnp.zeros((width, 1))
         rows = []
-        for w in mlp.weights:
-            pre_mean = w.T @ mean
-            pre_variance = fnp.maximum((w * w).T @ variance, 1e-12)
-            sigma = fnp.sqrt(pre_variance)
-            alpha = pre_mean / sigma
+        for layer, w in enumerate(mlp.weights):
+            # Represent the activation covariance as diag(diagonal) + U U^T.
+            # The leading eigendirections of the next covariance are recovered
+            # by deflated power iterations without materializing a dense matrix.
+            diagonal_pre = (w * w).T @ diagonal
+            factors_pre = w.T @ factors
+            variance_pre = diagonal_pre + fnp.sum(factors_pre * factors_pre, axis=1)
+            mean_pre = w.T @ mean
+            sigma_pre = fnp.sqrt(fnp.maximum(variance_pre, 1e-12))
+            alpha = mean_pre / sigma_pre
             gate = flops.stats.norm.cdf(alpha)
-            mean = pre_mean * gate + sigma * flops.stats.norm.pdf(alpha)
-            second = (pre_mean * pre_mean + pre_variance) * gate + pre_mean * sigma * flops.stats.norm.pdf(alpha)
-            variance = fnp.maximum(second - mean * mean, 1e-12)
+            density = flops.stats.norm.pdf(alpha)
+            mean = mean_pre * gate + sigma_pre * density
+            second = (mean_pre * mean_pre + variance_pre) * gate + mean_pre * sigma_pre * density
+            variance_post = fnp.maximum(second - mean * mean, 0.0)
 
-            x = fnp.maximum(fnp.matmul(x, w), 0.0)
-            jacobian = (jacobian @ w) * gate
-            affine_control = mean + inputs @ jacobian
-            rows.append(mean + fnp.mean(x - affine_control, axis=0))
+            # The stored spectrum becomes sharply concentrated in deep layers;
+            # use a larger cap while it is diffuse and an eigenvalue cutoff to
+            # adapt the retained rank to this particular MLP and layer.
+            rank_cap = 16 if layer < 8 else (8 if layer < 16 else 4)
+            trace_pre = fnp.maximum(fnp.sum(variance_pre), 1e-12)
+            selected = []
+            for _ in range(rank_cap):
+                vector = fnp.array(rng.standard_normal(width).astype(fnp.float32))
+                for _ in range(3):
+                    product = w.T @ (diagonal * (w @ vector))
+                    product = product + factors_pre @ (factors_pre.T @ vector)
+                    for direction in selected:
+                        product = product - direction * fnp.sum(direction * product)
+                    vector = product / fnp.sqrt(fnp.maximum(fnp.sum(product * product), 1e-12))
+                product = w.T @ (diagonal * (w @ vector))
+                product = product + factors_pre @ (factors_pre.T @ vector)
+                for direction in selected:
+                    product = product - direction * fnp.sum(direction * product)
+                eigenvalue = fnp.maximum(fnp.sum(vector * product), 0.0)
+                # Components under 0.5% of total variance are discarded.
+                keep = eigenvalue >= 0.005 * trace_pre
+                selected.append(fnp.where(keep, vector * fnp.sqrt(eigenvalue), fnp.zeros(width)))
+            factors = gate[:, None] * fnp.stack(selected, axis=1)
+            diagonal = fnp.maximum(variance_post - fnp.sum(factors * factors, axis=1), 1e-12)
+            rows.append(mean)
         return fnp.stack(rows, axis=0)
 
         # --- Step 1: initialise the input distribution ---
