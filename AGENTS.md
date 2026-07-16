@@ -280,9 +280,9 @@ Claude worker invocation from Claude's worktree: start `claude`, then run
 
 The GPT worker can be run unattended on Windows using the single-instance
 scheduler documented in `AUTORESEARCH.md`. Its routine/lead/deep profiles are
-Terra High every 30 minutes, Sol High every 6 hours, and Sol XHigh every 24
-hours. Max and Ultra remain manual modes because they are not ordinary
-`codex exec` reasoning-effort values.
+Sol High every 15 minutes, Sol XHigh every 2 hours, and Sol Ultra every 6
+hours. The installed `codex exec` build has been validated with all three
+profile settings; the roles are serialized by one scheduler and named mutex.
 
 The Claude lead tick runs unattended three times daily (06:00, 14:00, 22:00
 local) via the Windows scheduled task `WHEST Claude Lead Review`, from the

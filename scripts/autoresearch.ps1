@@ -114,7 +114,7 @@ function Test-RoleDue {
         return $true
     }
 
-    # A small tolerance prevents scheduler jitter from turning 30 minutes into 60.
+    # A small tolerance prevents scheduler jitter from skipping a whole interval.
     $effectiveInterval = [Math]::Max(1.0, $IntervalMinutes - 2.0)
     return (($Now - $lastStarted).TotalMinutes -ge $effectiveInterval)
 }
@@ -181,7 +181,13 @@ function Assert-GitPreflight {
         throw "git status failed: $status"
     }
     if (-not [string]::IsNullOrWhiteSpace($status)) {
-        throw "Worktree is not clean. Commit or resolve these paths before automation:`n$status"
+        $statusLines = @($status -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $blockingLines = @($statusLines | Where-Object { $_ -notmatch '^\?\? experiments/results/gpt/' })
+        if ($blockingLines.Count -gt 0) {
+            throw "Worktree is not clean. Commit or resolve these paths before automation:`n$($blockingLines -join "`n")"
+        }
+
+        Write-Host "Recovery preflight: allowing interrupted untracked GPT result artifacts:`n$($statusLines -join "`n")"
     }
 }
 

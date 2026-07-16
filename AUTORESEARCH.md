@@ -9,13 +9,13 @@ PowerShell runner chooses the due role, while each Codex run follows
 
 | Role | Model | Reasoning | Frequency |
 |---|---|---|---|
-| Worker | GPT-5.6 Terra | High | Every 30 minutes |
-| Lead review | GPT-5.6 Sol | High | Every 6 hours, replacing that worker tick |
-| Deep review | GPT-5.6 Sol | XHigh | Every 24 hours, replacing that worker tick |
+| Worker | GPT-5.6 Sol | High | Every 15 minutes |
+| Lead review | GPT-5.6 Sol | XHigh | Every 2 hours, replacing that worker tick |
+| Deep review | GPT-5.6 Sol | Ultra | Every 6 hours, replacing that worker tick |
 
-Max and Ultra are not scheduled. The public `codex exec` configuration exposes
-reasoning effort through `xhigh`; Ultra is an app-level multi-agent mode and is
-best reserved for deliberate, divisible reviews.
+The installed `codex exec` build was validated with Sol Ultra before enabling
+that profile. The three roles remain serialized: a lead or deep review replaces
+a worker tick, and the mutex prevents overlapping writes to the worktree.
 
 The runner starts a fresh ephemeral Codex session each time. A Windows named
 mutex and Task Scheduler's `IgnoreNew` policy prevent overlap. Three
@@ -60,11 +60,21 @@ The runner refuses to start Codex unless:
 
 - it is at the root of a Git worktree;
 - the checked-out branch is exactly `agent/gpt`; and
-- the worktree is completely clean.
+- the worktree is clean, except that untracked files below
+  `experiments/results/gpt/` may enter one recovery turn.
 
 Each model run must finish on `agent/gpt` with a clean tree. A stale promotion
 branch, merge conflict, uncommitted edit, missing profile, or failed command
 backs off and eventually pauses instead of accumulating damage.
+
+Interrupted WhestBench output is handled specially because Mini and Full runs
+can outlive a shell tool's default timeout. The worker prompt requires a
+30-minute tool timeout and continued polling of yielded commands. If a process
+still ends early, the next tick may inspect only the untracked GPT result
+artifacts, preserve invalid partial output under
+`.autoresearch-runtime/interrupted/`, and resume the already-claimed
+experiment. Tracked changes and untracked files anywhere else remain a hard
+preflight failure.
 
 External submission remains governed by the reservation protocol in
 `AGENTS.md`. If AIcrowd authentication is unavailable, the run must leave an
