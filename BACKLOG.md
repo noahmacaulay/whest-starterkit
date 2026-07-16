@@ -15,7 +15,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **S3** (admin/exploit, lead-priority 0) - First scored submission of the
+- [ ] **S3** (admin/exploit, lead-priority 0) - CLAIMED claude-lead 2026-07-16T17:35:00Z - First scored submission of the
   current champion (B25 radial-exact, `estimator.py` @ 2227ef3). Lead ruling
   2026-07-16T17:08Z (`experiments/log-claude-lead.md`): the S1 addendum's
   second clause ("if all previous submitted scores are null, then any scoring
