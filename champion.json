@@ -1,14 +1,27 @@
 {
   "champion": {
     "file": "estimator.py",
-    "description": "Full-covariance moment propagation, exact per-neuron post-ReLU mean/variance, gain-product (Phi_i*Phi_j) off-diagonal approximation, overflow rescaling.",
-    "adjusted_final_layer_score": null,
-    "final_layer_mse": null,
-    "flops_used": null,
-    "measured_at": null,
-    "measured_on": null,
-    "agent": null,
-    "note": "Score null until B0 baselines it on datasets/depth32-dev. Do not promote or submit before B0."
+    "description": "Plain 6,500-sample Monte Carlo post-ReLU mean estimator; selected from B0 Mini baseline by paired confidence interval.",
+    "adjusted_final_layer_score": 9.393561814840653e-07,
+    "final_layer_mse": 8.504929468244882e-06,
+    "flops_used": 30109415000.581963,
+    "measured_at": "2026-07-16T01:32:05Z",
+    "measured_on": {
+      "experiment_id": "B0-gpt-20260716T002459Z",
+      "source_result_commit": "58900f1",
+      "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+      "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+      "split": "mini",
+      "flop_budget": 272000000000,
+      "runner": "subprocess",
+      "whestbench": "0.12.0rc3",
+      "flopscope": "0.8.0rc5",
+      "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f",
+      "paired_mean_delta": -7.42691574836045e-06,
+      "paired_95pct_ci": [-8.625623788742e-06, -6.228207707979e-06]
+    },
+    "agent": "gpt",
+    "note": "Promoted after B0 Mini paired gate; independent Full gate is still required before any submission."
   },
   "noise_floor": null,
   "bake_command": null,

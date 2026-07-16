@@ -20,13 +20,18 @@ _COV_RESCALE_THRESHOLD = 1e100
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        # TODO: replace this all-zeros baseline with your idea.
-        # Per-MLP RNG seeded from the grader's seed; unused here (deterministic
-        # algorithm) but carried so every example shows the pattern.
-        _rng = fnp.random.default_rng(mlp.seed)
-        _ = _rng  # silences "unused variable" linters
-        _ = budget  # budget is unused by this estimator
+        """Plain 6,500-sample Monte Carlo baseline selected by B0."""
+        n_samples = 6_500
+        _ = budget
         width = mlp.width
+
+        rng = fnp.random.default_rng(mlp.seed)
+        x = fnp.array(rng.standard_normal((n_samples, width)).astype(fnp.float32))
+        rows = []
+        for w in mlp.weights:
+            x = fnp.maximum(fnp.matmul(x, w), 0.0)
+            rows.append(fnp.mean(x, axis=0))
+        return fnp.stack(rows, axis=0)
 
         # --- Step 1: initialise the input distribution ---
         # Input is modelled as standard multivariate normal: mu=0, cov=I.
