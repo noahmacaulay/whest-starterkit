@@ -1,4 +1,4 @@
-# Experiment backlog
+﻿# Experiment backlog
 
 Claim protocol: start from a clean worktree, fetch/rebase the agent branch
 onto `origin/main`, mark the item `CLAIMED <agent> <UTC timestamp>`, commit,
@@ -14,6 +14,75 @@ promotion. Alternate explore/exploit where possible. Add new ideas as
 unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
+
+- [ ] **S3** (admin/exploit, lead-priority 0) - First scored submission of the
+  current champion (B25 radial-exact, `estimator.py` @ 2227ef3). Lead ruling
+  2026-07-16T17:08Z (`experiments/log-claude-lead.md`): the S1 addendum's
+  second clause ("if all previous submitted scores are null, then any scoring
+  solution can be submitted") is a positive permission covering the first
+  scored submission; step 7's paired Full gate protects a previously-submitted
+  baseline that does not exist (B0 was never submitted; both 2026-06-11
+  artifacts are null-scored pre-scaffold history). B29's FAIL shows B25 ~= B0
+  on Full (not-worse, aggregate -1.14%), and B25 has a COMPLETE 1000/1000 Full
+  gate (B26) with zero failure flags. Execute via the unchanged reservation
+  protocol: package artifact, SHA-256, unique-attempt-ID ledger reservation
+  pushed atomically BEFORE any network call, then
+  `whest submit <artifact> --watch --format json`, then exact-ID ledger
+  update only. On success set `last_submitted_score` to the recorded local
+  Full score (8.507033588741e-07) per protocol. Every SUBSEQUENT submission
+  again requires the full step-7 gate (paired Full vs the last submitted
+  champion + 5% rule against the now-non-null score).
+
+- [ ] **B34** (explore, lead-priority 1) - Inverse-error fusion
+  (precision-weighted / James-Stein shrinkage) of the MC champion with the
+  analytic covariance-propagation estimate. B32's post-mortem closes
+  input-structure VARIANCE reduction â€” but bias-variance FUSION is a
+  different, untouched axis: the gain-product covariance propagation (the
+  pre-B0 incumbent, still present as dead code below the champion's
+  `return` in `estimator.py`; B0 measured final_layer_mse=8.366e-06, and
+  B3's exact-cross-moment variant is statistically identical) has error
+  COMPARABLE to the champion's MC noise (7.2-7.7e-06), and the two errors
+  are INDEPENDENT (the analytic path is deterministic; MC error is
+  seed-driven noise). Fuse per MLP at the scored final layer only:
+  fused = w*MC + (1-w)*analytic. Estimate w from the data:
+  ||MC - analytic||^2/d unbiasedly estimates (sigma^2 + b^2) by
+  independence, and sigma^2 (per-neuron variance of the MC mean) comes
+  from the same forward samples (per-neuron sample variance / n, scaled
+  by E[r]^2 under the champion's radial-exact construction â€” derive this
+  carefully: the champion averages f(u) then scales, so
+  Var = E[r]^2 * Var_u(f)/n). Then w = clip(1 - sigma_hat^2/(sigma_hat^2
+  + b_hat^2), 0, 1), SHARED across the 256 neurons (d=256 averaging makes
+  it stable; per-neuron w would overfit). If b^2 ~= sigma^2 this yields
+  MSE -> sigma^2*b^2/(sigma^2+b^2) ~= 0.5*sigma^2 â€” a ~40-50% final-layer
+  MSE cut, dwarfing every post-B25 margin. Cost: cov-prop adds ~2
+  (256,256)x(256,256) matmuls per layer (~2.1e9 raw FLOPs, ~8% of the
+  champion's 2.7e10) plus flopscope overhead â€” B0's cov-prop report has
+  the real numbers; the win survives if the MSE cut (>~40%) beats the
+  multiplier increase (~10%). DISTINCT from B2's failure: B2 needed
+  per-SAMPLE correlation between f and a control on shared inputs (the
+  residual variance grew); fusion needs NO per-sample correlation, only
+  independent errors of comparable size, which are ALREADY MEASURED.
+  Watch worst-case per-MLP regressions at the paired gate: w->1
+  automatically where the analytic is bad, but verify. Validate the w
+  estimator offline on 5-10 real MLPs first (B31/B32 discipline).
+
+- [ ] **B35** (exploit, lead-priority 2) - Optimal sample count under an
+  AFFINE effective-compute model. B16's N-invariance argument assumed
+  multiplier proportional to N; but if effective_compute(N) = a*N + b with
+  a genuinely fixed component b (the champion issues 32 matmul calls
+  regardless of N; measured effective_compute - flops_used ~ 2.6e9, ~9% of
+  C), then above the floor the adjusted score
+  (a*N+b)/B * v/N = a*v/B + b*v/(B*N) strictly DECREASES in N for an
+  unbiased estimator â€” raising N converts the fixed-overhead share into
+  score reduction, up to ~9% asymptotically. First measure
+  effective_compute at N in {3250, 6500, 13000, 26000} on ~10 real MLPs
+  and fit (a, b): if the overhead is mostly wall-time-proportional (B23's
+  diagnosis suggests much of it tracks backend matmul+ReLU time, which IS
+  proportional to N), then b~0 and there is no win â€” record and close. If
+  b_hat/C > ~2-3%, run the harness comparison at the fitted optimal N
+  (N=26000 is still ~10x under the 2.72e11 budget; check per-MLP time
+  limits). Complements B34: fusion shrinks v, this shrinks the overhead
+  share; they stack.
 
 - [x] **B32** (explore) - DONE claude 2026-07-16T20:00:00Z (feasibility-rejected) -
   Quadratic control variate c(u)=(u.a)^2 (mean 1/d known exactly, so
@@ -345,13 +414,13 @@ unclaimed items with the next free ID and a one-line hypothesis.
   points and/or antithetic pairs for whatever MC component the champion uses,
   applied in the active subspace first. Hypothesis: error decays faster than
   `N^(-1/2)`, strictly dominating plain MC at fixed FLOPs. Lead note
-  2026-07-16: the B0 champion is plain MC at C≈3.01e10 > the 2.72e10 floor,
-  so its adjusted score is approximately N-invariant (MSE∝1/N cancels
-  against multiplier∝N). Any variance reduction divides the score directly,
+  2026-07-16: the B0 champion is plain MC at Câ‰ˆ3.01e10 > the 2.72e10 floor,
+  so its adjusted score is approximately N-invariant (MSEâˆ1/N cancels
+  against multiplierâˆN). Any variance reduction divides the score directly,
   and faster-than-`N^(-1/2)` error decay makes the score fall with N all the
-  way up to the full 2.72e11 budget — the largest and cheapest expected win.
+  way up to the full 2.72e11 budget â€” the largest and cheapest expected win.
   Result: input-level antithetic pairing (z, -z) at unchanged FLOPs was
-  REJECTED — mean paired delta negative (-6.3e-08, -6.6% relative) but the
+  REJECTED â€” mean paired delta negative (-6.3e-08, -6.6% relative) but the
   95% CI straddled zero (52/100 MLPs regressed). Layer-wise MSE diagnostic
   showed the variance reduction decaying from -46% at layer 0 to noise level
   by layer ~25, i.e. depth-32 collapse scrambles the antithetic correlation
@@ -375,7 +444,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 
 - [x] **B2** (explore, lead-priority 3) - DONE gpt 2026-07-16T02:21:51Z - Control-variate hybrid.
-  Deterministic estimate (best available analytic method — post-B1 core if it
+  Deterministic estimate (best available analytic method â€” post-B1 core if it
   exists, else covariance propagation) plus a small MC batch correcting its
   bias: `final = analytic + mean(MC_true - MC_analytic_prediction)` on shared
   inputs. Hypothesis: residual variance is much smaller than raw variance, so
@@ -392,11 +461,11 @@ unclaimed items with the next free ID and a one-line hypothesis.
   over 32 layers is a dominant error term. Lead note 2026-07-16: value is
   mainly as a better analytic core for B2, since covariance propagation alone
   trails the MC champion by 9x.
-  Result: REJECTED — implemented and validated the exact correction (Price's
+  Result: REJECTED â€” implemented and validated the exact correction (Price's
   theorem + arccos-substitution quadrature; matched brute-force Monte Carlo
   to ~1e-4 across 13 test cases). Official Mini score (8.4606e-06) is
   statistically indistinguishable from the B0-era gain-product
-  approximation's own score (8.3663e-06) it replaces — confirmed via a
+  approximation's own score (8.3663e-06) it replaces â€” confirmed via a
   direct in-process diagnostic (not a bug: near-identical outputs, exact
   version marginally more accurate against a 2M-sample MC reference on one
   MLP). Both remain ~9x worse than the MC champion. This refutes the
