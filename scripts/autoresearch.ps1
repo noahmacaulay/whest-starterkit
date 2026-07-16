@@ -23,6 +23,26 @@ $utf8NoBom = New-Object Text.UTF8Encoding($false)
 [Console]::OutputEncoding = $utf8NoBom
 $OutputEncoding = $utf8NoBom
 
+# The standalone Codex desktop launcher does not currently bundle the Windows
+# sandbox setup helper. Interactive VS Code sessions add the extension's bin
+# directory to PATH, but Task Scheduler does not inherit that transient PATH.
+$resolvedCodexCommand = Get-Command codex -ErrorAction Stop
+$resolvedCodexPath = $resolvedCodexCommand.Source
+if ([string]::IsNullOrWhiteSpace($resolvedCodexPath)) {
+    $resolvedCodexPath = $resolvedCodexCommand.Name
+}
+$vscodeExtensionsPath = Join-Path $HOME ".vscode\extensions"
+if (Test-Path -LiteralPath $vscodeExtensionsPath) {
+    $sandboxHelperDirectory = Get-ChildItem -LiteralPath $vscodeExtensionsPath -Directory -Filter "openai.chatgpt-*" |
+        Sort-Object LastWriteTime -Descending |
+        ForEach-Object { Join-Path $_.FullName "bin\windows-x86_64" } |
+        Where-Object { Test-Path -LiteralPath (Join-Path $_ "codex-windows-sandbox-setup.exe") } |
+        Select-Object -First 1
+    if (-not [string]::IsNullOrWhiteSpace($sandboxHelperDirectory)) {
+        $env:PATH = "$sandboxHelperDirectory;$env:PATH"
+    }
+}
+
 function Get-UtcTimestamp {
     return [DateTime]::UtcNow.ToString("o")
 }
@@ -333,11 +353,7 @@ try {
         throw "Missing role prompt: $promptPath"
     }
 
-    $codexCommand = Get-Command codex -ErrorAction Stop
-    $codexPath = $codexCommand.Source
-    if ([string]::IsNullOrWhiteSpace($codexPath)) {
-        $codexPath = $codexCommand.Name
-    }
+    $codexPath = $resolvedCodexPath
 
     if (-not $SkipGitPreflight) {
         Assert-GitPreflight $RepoPath ([string]$config.expected_branch)
