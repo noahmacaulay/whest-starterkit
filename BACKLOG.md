@@ -106,26 +106,26 @@ unclaimed items with the next free ID and a one-line hypothesis.
   See `experiments/log-claude.md` for full detail and all raw report
   paths.
 
-- [ ] **B25** (explore, lead-priority 3) - CLAIMED claude 2026-07-16T15:35:00Z - Radial (chi-quantile)
-  stratification of input norms. Evidence so far: every *directional*
-  or sign-based input structure dies in the depth-32 collapse
-  (B4 antithetic, B7 mid-depth reflection, B8 layer-1 control variate,
-  B9 full-space Sobol, B12 second direction), and direction-finding
-  refinement is at its ceiling (B21). The input *radius* is the one
-  scalar not yet targeted: write z = r*u (r = ||z|| ~ chi(256), u
-  uniform on the sphere), and replace iid r draws with equal-mass
-  stratified/systematic sampling over chi quantiles (one u per
-  stratum draw, directions stay iid) -- unbiased by construction,
-  zero extra FLOPs, and it removes the radial component of MC
-  variance exactly rather than approximately. Check first whether
-  the MLPs have biases (if bias-free, ReLU nets are positively
-  homogeneous and the radius acts multiplicatively -- strong reason
-  to expect surviving radial signal; with biases the effect is
-  weaker but stratification still cannot hurt the variance). Note
-  gpt's active B22 (block-orthogonal rows, chi-scaled radii) touches
-  radii only via iid chi scaling; this item is complementary
-  (stratify r, keep directions iid) and should be evaluated against
-  whichever of champion/B22 wins.
+- [x] **B25** (explore, lead-priority 3) - DONE claude 2026-07-16T16:00:00Z -
+  PROMOTED. Confirmed MLPs are bias-free (`whestbench.MLP` has no bias
+  field), so ReLU nets are *exactly* positively homogeneous
+  (f(c*x)=c*f(x), c>0; verified empirically to 2.27e-11 relative error
+  across all 32 layers). For z=r*u (r=||z||~chi(256), u uniform on
+  sphere, r independent of u), this gives E[f(z)]=E[r]*E[f(u)] exactly --
+  stronger than the literal "stratify r" ask, since substituting the
+  closed-form E[r] eliminates radial MC variance entirely rather than
+  reducing it via stratification. Implemented in candidate_claude.py
+  (commit 1cf928a): forward only directions u=z/||z|| through the
+  network, scale final result by closed-form
+  E[r]=sqrt(2)*exp(lgamma((d+1)/2)-lgamma(d/2)). Paired Mini-split
+  harness result (n=100): final_layer_mse 8.5049e-06 -> 7.2108e-06
+  (-15.2%), mean_effective_compute flat-to-slightly-better
+  (3.0067e10->2.9957e10), paired_95pct_CI=[-2.581e-07, -2.868e-08]
+  (entirely negative). Gate passed cleanly; promoted to champion. Full
+  detail: `experiments/log-claude.md` B25 entry and
+  `experiments/results/claude/B25-claude-20260716T160000Z-1cf928a-summary.json`.
+  New champion still needs its own Full-split gate run (B24-style) before
+  a submission attempt; Mini-split promotion only re-validates on Mini.
 
 - [ ] **S1** (admin, user action required - not claimable as an experiment) -
   Unblock the submission pipeline. `last_submitted_score` is null and the

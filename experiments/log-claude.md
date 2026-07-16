@@ -1252,3 +1252,58 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   -comparison burden this item was specifically trying to avoid -- or
   accepting that the champion's overhead is already close to
   algorithmically minimal for this simple architecture.
+
+## 2026-07-16T16:00:00Z - B25-claude-20260716T160000Z: Radial-exact Monte Carlo (PROMOTED)
+- Hypothesis (lead-queued B25): every directional/sign-based input
+  structure tried so far dies in the depth-32 collapse (B4 antithetic, B7
+  mid-depth reflection, B8 layer-1 control variate, B9 full-space Sobol,
+  B12 second direction), and direction-finding refinement is at its
+  ceiling (B21). The input *radius* is the one scalar not yet targeted.
+  For z ~ N(0,I), z = r*u with r=||z||~chi(d), u=z/r~Uniform(sphere), r
+  independent of u. `whestbench.MLP` has no bias field, so these ReLU
+  nets are exactly positively homogeneous: f(c*x)=c*f(x) for c>0. That
+  means E[f(z)] = E[r]*E[f(u)] exactly -- stronger than the backlog's
+  literal "stratify r" ask: substituting the closed-form E[r] eliminates
+  radial MC variance entirely rather than just reducing it via
+  stratification, at the same (zero) extra FLOP cost.
+- Pre-implementation validation (standalone numpy, one real Mini-split
+  MLP, before writing any candidate code): (1) homogeneity check --
+  f(r*u) vs r*f(u) across all 32 layers, r=3.7, random u: max relative
+  error 2.274e-11 (machine precision, confirms exactness not
+  approximation). (2) E[R] formula check -- closed-form
+  sqrt(2)*exp(lgamma((d+1)/2)-lgamma(d/2)) for d=256 gives 15.984383 vs
+  15.984375 empirical (2,000,000 iid chi(256) draws); Var[R] formula
+  0.49951 vs empirical 0.49916. (3) variance-reduction check -- 60
+  trials at n_samples=6,500 (champion's count), final (scored) layer:
+  mean per-neuron variance 4.2062e-06 (standard MC) -> 4.0416e-06
+  (radial-exact), ~3.9% relative reduction, matching unbiased means
+  between both estimators. All three passed before touching
+  candidate_claude.py.
+- Claimed B25 in BACKLOG.md (c92ae32), no race on fetch.
+  Implementation (candidate_claude.py, commit 1cf928a): draw
+  z=rng.standard_normal((6500,width)) exactly as champion, compute
+  norms=fnp.linalg.norm(z,axis=1), u=z/norms[:,None], forward u through
+  all 32 layers (same matmul+maximum+per-layer-mean structure as
+  champion), scale the final fnp.stack(rows) by the closed-form E[r]
+  (plain Python math.lgamma, zero tracked-call cost). `whest validate`
+  passed. Committed, fetched (no race), pushed to origin/main
+  (c92ae32..1cf928a).
+- Harness: fresh champion (estimator.py @ 1598169) and candidate run
+  back-to-back via subprocess runner on the pinned Mini split
+  (v1-phase1, sha256 5b00938b...). Paired on `adjusted_final_layer_score`
+  by mlp_index, n=100. Result: 69/100 MLPs improved, 31/100 regressed;
+  champion final_layer_mse=8.5049e-06 -> candidate=7.2108e-06 (-15.2%
+  relative); champion mean_effective_compute=3.0067e10 -> candidate
+  2.9957e10 (flat to slightly better, not worse); paired_mean_delta=
+  -1.4337e-07, paired_95pct_CI=[-2.5807e-07, -2.8681e-08] -- entirely
+  negative. Gate PASSES cleanly (not borderline). The 15.2% harness MSE
+  improvement exceeds the ~3.9% standalone single-MLP/single-layer
+  variance estimate; consistent, since the standalone check only bounded
+  per-neuron sampling variance for one MLP, not the full paired
+  MSE-vs-ground-truth comparison across 100 MLPs with real ground truth.
+- Verdict: PROMOTE. A real, exact (not approximate) algorithmic
+  improvement -- unlike B23's overhead-only tweaks, this changes what is
+  actually computed (eliminates a real source of estimator variance) and
+  the compute cost is unchanged to slightly improved. Full details,
+  formulas, and raw reports:
+  `experiments/results/claude/B25-claude-20260716T160000Z-1cf928a-summary.json`.

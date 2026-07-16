@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import math
 from pathlib import Path
 
 import flopscope as flops
@@ -20,18 +21,34 @@ _COV_RESCALE_THRESHOLD = 1e100
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Plain 6,500-sample Monte Carlo baseline selected by B0."""
+        """Radial-exact Monte Carlo, selected by B25.
+
+        For z ~ N(0, I_d), z = r*u with r = ||z|| ~ chi(d), u = z/r ~
+        Uniform(sphere), r independent of u. `MLP` has no bias field, so
+        the ReLU forward pass is exactly positively homogeneous:
+        f(c*x) = c*f(x) for c > 0. Hence E[f(z)] = E[r]*E[f(u)] exactly --
+        substitute the closed-form E[r] for the sampled radius and
+        forward only directions, eliminating the radial component of MC
+        variance entirely at negligible extra FLOP cost.
+        """
         n_samples = 6_500
         _ = budget
         width = mlp.width
 
         rng = fnp.random.default_rng(mlp.seed)
-        x = fnp.array(rng.standard_normal((n_samples, width)).astype(fnp.float32))
+        z = rng.standard_normal((n_samples, width)).astype(fnp.float32)
+        norms = fnp.linalg.norm(z, axis=1)
+        u = z / norms[:, None]
+
         rows = []
         for w in mlp.weights:
-            x = fnp.maximum(fnp.matmul(x, w), 0.0)
-            rows.append(fnp.mean(x, axis=0))
-        return fnp.stack(rows, axis=0)
+            u = fnp.maximum(fnp.matmul(u, w), 0.0)
+            rows.append(fnp.mean(u, axis=0))
+
+        e_r = math.sqrt(2.0) * math.exp(
+            math.lgamma((width + 1) / 2.0) - math.lgamma(width / 2.0)
+        )
+        return e_r * fnp.stack(rows, axis=0)
 
         # --- Step 1: initialise the input distribution ---
         # Input is modelled as standard multivariate normal: mu=0, cov=I.

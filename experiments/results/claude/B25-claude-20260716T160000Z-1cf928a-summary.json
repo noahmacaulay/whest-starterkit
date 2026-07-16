@@ -1,0 +1,52 @@
+{
+  "experiment_id": "B25-claude-20260716T160000Z",
+  "agent": "claude",
+  "hypothesis": "For z ~ N(0, I_d), z = r*u with r = ||z|| ~ chi(d), u = z/r ~ Uniform(sphere), and r independent of u (standard multivariate-normal fact). whestbench.MLP has no bias field, so the ReLU forward pass is exactly positively homogeneous: f(c*x) = c*f(x) for c > 0, layer by layer. Therefore E[f(z)] = E[r]*E[f(u)] exactly. Substituting the closed-form E[r] (chi(d) mean) for the sampled radius and forwarding only directions u eliminates the radial component of Monte Carlo variance entirely, unbiased by construction, at essentially zero extra FLOP cost (one norm + one broadcast divide, O(n*width) vs the O(n*width^2) matmuls that dominate).",
+  "base": {
+    "champion_estimator_commit": "1598169",
+    "candidate_commit": "1cf928a",
+    "backlog_claim_commit": "c92ae32"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f",
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "runner": "subprocess"
+  },
+  "pre_implementation_validation": {
+    "method": "Standalone numpy script (not the harness) against a real Mini-split MLP, three checks run before writing any candidate code.",
+    "homogeneity_check": "Compared f(r*u) to r*f(u) across all 32 layers for a random direction u and r=3.7. Max relative error 2.2739290623882512e-11 (machine precision) -- confirms exact positive homogeneity for these bias-free networks, not just an approximation.",
+    "e_r_formula_check": "Closed-form E[R] = sqrt(2)*exp(lgamma((d+1)/2) - lgamma(d/2)) for d=256 gives 15.9843826666083; empirical mean over 2,000,000 iid chi(256) draws gave 15.984375441563913 -- matches to 5 significant figures. Var[R] formula (d - E[R]^2 = 0.49951) also matched empirical variance (0.49916).",
+    "variance_reduction_check": "60 independent trials at n_samples=6,500 (matching the champion's sample count) comparing standard MC (sample z directly) vs radial-exact (sample u, scale mean by E[R]) on the final (scored) layer of one Mini-split MLP: mean per-neuron variance dropped from 4.2062344254258775e-06 to 4.041589570954083e-06, a 3.914305238827109e-02 (~3.9%) relative reduction, with matching (unbiased) per-neuron means between the two estimators -- confirmed this was worth pursuing on the real harness before committing."
+  },
+  "harness_result": {
+    "n_mlps": 100,
+    "n_improved": 69,
+    "n_regressed": 31,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_final_layer_mse": 7.210787749158953e-06,
+    "final_layer_mse_relative_change": -0.15218576929880604,
+    "champion_mean_effective_compute": 30067327599.791473,
+    "candidate_mean_effective_compute": 29956575592.22443,
+    "champion_mean_score_multiplier": 0.11054164558746869,
+    "candidate_mean_score_multiplier": 0.11013446908906038,
+    "champion_adjusted_final_layer_score": 9.382991889756007e-07,
+    "candidate_adjusted_final_layer_score": 7.949243932452441e-07,
+    "paired_metric": "adjusted_final_layer_score (candidate - champion), per-MLP paired on mlp_index",
+    "paired_mean_delta": -1.4337479573035662e-07,
+    "paired_95pct_ci": [-2.5806878728564897e-07, -2.8680804175064248e-08],
+    "t_crit_used": 1.9842,
+    "df": 99,
+    "gate_result": "PASS: mean delta negative AND 95% CI entirely below zero"
+  },
+  "raw_reports": [
+    "experiments/results/claude/B25-claude-20260716T160000Z-1598169-champion-mini.json",
+    "experiments/results/claude/B25-claude-20260716T160000Z-1cf928a-candidate-mini.json"
+  ],
+  "verdict": "PROMOTE",
+  "reason": "The radial-exact substitution is mathematically exact for these bias-free MLPs (homogeneity verified to machine precision), reduces final_layer_mse by ~15.2% on the paired Mini-split comparison (larger than the ~3.9% standalone per-neuron variance estimate, consistent with the standalone check only sampling one MLP and one layer's variance rather than the full paired MSE-vs-ground-truth comparison across 100 MLPs), and does so at effectively zero additional FLOP cost -- mean_effective_compute is flat to slightly improved, not worse. The paired gate passes cleanly (CI entirely negative, not borderline). This is a real algorithmic improvement, not a residual-wall-time/overhead artifact like B23.",
+  "full_submission_gate": "NOT_RUN"
+}

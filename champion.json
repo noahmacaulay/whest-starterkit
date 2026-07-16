@@ -1,16 +1,15 @@
 {
   "champion": {
     "file": "estimator.py",
-    "description": "Plain 6,500-sample Monte Carlo post-ReLU mean estimator; selected from B0 Mini baseline by paired confidence interval.",
-    "adjusted_final_layer_score": 9.393561814840653e-07,
-    "final_layer_mse": 8.504929468244882e-06,
-    "mean_effective_compute": 30109415000.581963,
+    "description": "Radial-exact Monte Carlo post-ReLU mean estimator; substitutes the closed-form E[r] of the chi(width) radius for the sampled radius (exact by ReLU positive homogeneity on bias-free MLPs), forwarding only directions through the network. Selected from B25 Mini paired comparison against the B0 champion.",
+    "adjusted_final_layer_score": 7.949243932452441e-07,
+    "final_layer_mse": 7.210787749158953e-06,
+    "mean_effective_compute": 29956575592.22443,
     "flops_used": 27346176000.0,
-    "flops_used_note": "S2 fix (lead audit 2026-07-16): this field was previously mislabeled `flops_used` while holding the mean per-MLP `effective_compute` value (30109415000.58, now correctly under `mean_effective_compute`). True mean raw flops_used, recomputed from experiments/results/gpt/B0-gpt-20260716T002459Z-a6fca1e-monte-carlo-mini.json, is 27346176000.0. Values were always correct; only the label was wrong.",
-    "measured_at": "2026-07-16T01:32:05Z",
+    "measured_at": "2026-07-16T16:00:00Z",
     "measured_on": {
-      "experiment_id": "B0-gpt-20260716T002459Z",
-      "source_result_commit": "58900f1",
+      "experiment_id": "B25-claude-20260716T160000Z",
+      "source_result_commit": "1cf928a",
       "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
       "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
       "split": "mini",
@@ -19,36 +18,44 @@
       "whestbench": "0.12.0rc3",
       "flopscope": "0.8.0rc5",
       "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f",
-      "paired_mean_delta": -7.42691574836045e-06,
-      "paired_95pct_ci": [-8.625623788742e-06, -6.228207707979e-06]
+      "paired_mean_delta": -1.4337479573035662e-07,
+      "paired_95pct_ci": [-2.5806878728564897e-07, -2.8680804175064248e-08]
     },
-    "agent": "gpt",
-    "note": "Promoted after B0 Mini paired gate. Full gate now complete (see full_gate below, B24); submission remains blocked by S1 (undecided last_submitted_score gate), not by a missing Full gate.",
+    "agent": "claude",
+    "note": "Promoted after B25 Mini paired gate (69/100 MLPs improved, CI entirely negative). Supersedes the B0 champion (1598169). The B0 champion's Full-split gate below is now stale (measured on the prior champion, not this one) -- this champion needs its own Full-split gate run before a submission attempt.",
+    "previous_champion": {
+      "estimator_commit": "1598169",
+      "promoted_by": "B0-gpt-20260716T002459Z",
+      "superseded_by": "B25-claude-20260716T160000Z",
+      "full_gate": {
+        "status": "COMPLETE (stale -- measured on 1598169, not the current champion)",
+        "n_mlps_evaluated": 1000,
+        "n_mlps_total_in_full_split": 1000,
+        "method": "Two independent 500-MLP subprocess-runner slices (indices 0-499 and 500-999 of the immutable Full split, zero overlap, zero duplicates, verified to cover all 1000 unique MLPs) via whestbench.scoring.evaluate_estimator + whestbench.runner.SubprocessRunner driven directly (not the whest CLI), because a single 1000-MLP subprocess CLI run measured ~58 minutes and exceeded the available background-task execution window twice. MANDATORY correctness check before trusting this (per B24's requirement): cross-checked the chunked methodology against the official `whest run` CLI on 20 Full-split MLPs and 30 Mini-split MLPs -- final_layer_mse matched the CLI to the exact last printed digit in both checks (bit-identical predictions, as expected for a deterministic estimator/seed), with only the timing-derived score multiplier differing by an amount consistent with ordinary run-to-run wall-clock jitter (also observed between two separate official CLI runs of the same estimator).",
+        "adjusted_final_layer_score": 8.593710913140127e-07,
+        "final_layer_mse": 7.781365020775866e-06,
+        "mean_effective_compute": 30045397409.863068,
+        "flops_used": 27346176000.0,
+        "mean_score_multiplier": 0.11046101988920246,
+        "n_failed_mlps": 0,
+        "failure_breakdown": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+        "measured_at": "2026-07-16T14:00:00Z",
+        "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+        "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+        "split": "full",
+        "flop_budget": 272000000000,
+        "runner": "subprocess",
+        "whestbench": "0.12.0rc3",
+        "raw_reports": [
+          "experiments/results/claude/champion-full-gate-partial500-20260716T133000Z-1598169.json",
+          "experiments/results/claude/champion-full-gate-slice500-1000-20260716T140000Z-1598169.json",
+          "experiments/results/claude/champion-full-gate-COMPLETE-20260716T140000Z-1598169.json"
+        ]
+      }
+    },
     "full_gate": {
-      "status": "COMPLETE",
-      "n_mlps_evaluated": 1000,
-      "n_mlps_total_in_full_split": 1000,
-      "method": "Two independent 500-MLP subprocess-runner slices (indices 0-499 and 500-999 of the immutable Full split, zero overlap, zero duplicates, verified to cover all 1000 unique MLPs) via whestbench.scoring.evaluate_estimator + whestbench.runner.SubprocessRunner driven directly (not the whest CLI), because a single 1000-MLP subprocess CLI run measured ~58 minutes and exceeded the available background-task execution window twice. MANDATORY correctness check before trusting this (per B24's requirement): cross-checked the chunked methodology against the official `whest run` CLI on 20 Full-split MLPs and 30 Mini-split MLPs -- final_layer_mse matched the CLI to the exact last printed digit in both checks (bit-identical predictions, as expected for a deterministic estimator/seed), with only the timing-derived score multiplier differing by an amount consistent with ordinary run-to-run wall-clock jitter (also observed between two separate official CLI runs of the same estimator).",
-      "adjusted_final_layer_score": 8.593710913140127e-07,
-      "final_layer_mse": 7.781365020775866e-06,
-      "mean_effective_compute": 30045397409.863068,
-      "flops_used": 27346176000.0,
-      "mean_score_multiplier": 0.11046101988920246,
-      "n_failed_mlps": 0,
-      "failure_breakdown": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
-      "measured_at": "2026-07-16T14:00:00Z",
-      "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
-      "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
-      "split": "full",
-      "flop_budget": 272000000000,
-      "runner": "subprocess",
-      "whestbench": "0.12.0rc3",
-      "raw_reports": [
-        "experiments/results/claude/champion-full-gate-partial500-20260716T133000Z-1598169.json",
-        "experiments/results/claude/champion-full-gate-slice500-1000-20260716T140000Z-1598169.json",
-        "experiments/results/claude/champion-full-gate-COMPLETE-20260716T140000Z-1598169.json"
-      ],
-      "note": "Full-split score (8.594e-07) and MSE (7.781e-06) are consistently better than the Mini-split champion numbers (9.39e-07 / 8.505e-06) that selected this champion, with zero failure/budget/time/error flags across all 1000 MLPs -- confirms no Mini-split overfitting. This DOES satisfy the Full-split evaluation prerequisite for submission (AGENTS.md step 7 'passes the same paired gate on the independent full split'). It is a single-estimator Full-split score, not a paired comparison against a candidate -- any future candidate must still be paired-compared against the champion on this same Full split before a submission attempt. Submission itself remains blocked by S1 regardless (last_submitted_score is null, so the required 5%-improvement gate is undecidable)."
+      "status": "NOT_RUN",
+      "note": "The current champion (B25, radial-exact) has not yet had its own Full-split gate run. The full_gate above under `previous_champion` was measured on the superseded B0 champion (1598169) and does not apply here. AGENTS.md step 7 (paired gate on the independent full split) is outstanding for this champion before any submission attempt."
     }
   },
   "noise_floor": null,
