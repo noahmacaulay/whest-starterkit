@@ -116,7 +116,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   submission. Until then the Full gate can still be run and recorded, but no
   network submission may happen.
 
-- [ ] **B7** (explore) - Depth-localized re-antithetization. B4's layer-wise
+- [ ] **B7** (explore) - CLAIMED claude 2026-07-16T04:05:00Z - Depth-localized re-antithetization. B4's layer-wise
   diagnostic shows antithetic-pair (z, -z) correlation, and thus its
   variance-reduction benefit, decaying from -46% MSE at layer 0 to noise
   level by layer ~25 of 32, well before the scored final layer. Hypothesis:
@@ -124,6 +124,14 @@ unclaimed items with the next free ID and a one-line hypothesis.
   (or reflecting only along B1's active-subspace direction) sustains the
   antithetic benefit deeper into the depth-32 collapse at the same FLOP
   cost, instead of letting it decay from a single input-level pairing.
+  (Claimed ahead of queue-order B6: B6's "known depth-asymptotics" is
+  within-input neuron-correlation theory for a non-zero-mean covariance
+  propagation, which is not the same as the textbook zero-mean
+  between-input NNGP/arc-cosine-kernel result and would need real
+  derivation from scratch -- open-ended risk right after the B3 detour.
+  B7 builds directly on B4's validated infrastructure with a concrete,
+  already-diagnosed target. B6 remains open for a future iteration with
+  more room for derivation work.)
 
 ## Done
 
