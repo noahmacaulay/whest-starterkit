@@ -133,6 +133,27 @@
   "team_names": ["noahmacaulay", "DalTeam"],
   "submissions": [
     {
+      "attempt_id": "S3-claude-lead-20260716T171600Z",
+      "timestamp": "2026-07-16T17:16:00Z",
+      "agent": "claude-lead",
+      "backlog_item": "S3",
+      "status": "submitting",
+      "submission_id": null,
+      "champion_experiment_id": "B25-claude-20260716T160000Z",
+      "estimator_file_commit": "2227ef3",
+      "reserved_on_main_commit": "b2c4e3c",
+      "estimator_sha256": "aec3ca5bae55b9d7178aa467c758a1079e22dec9289317d9971148d03c0541fb",
+      "artifact": "submissions/S3-claude-lead-20260716T171600Z-2227ef3.tar.gz",
+      "artifact_sha256": "d6c807381092c244e1936e36b8d1e26e5f95ecc7f4a3547b5a258503b27fa7a5",
+      "artifact_note": "Packaged by `whest package` (manifest created_at_utc 2026-07-16T17:16:13Z); packaged estimator.py sha256 matches the repo champion exactly (manifest cross-check). Artifact retained locally on the claude-lead machine (*.tar.gz is gitignored per repo convention); hash above is authoritative.",
+      "local_full_score": 8.507033588741281e-07,
+      "local_full_report": "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json",
+      "environment": {"whestbench": "0.12.0rc3", "flopscope": "0.8.0rc5", "uv_lock_last_changed": "9b677e2"},
+      "authorized_by": "Lead ruling 2026-07-16T17:08Z (experiments/log-claude-lead.md) under the user's S1 addendum; first scored submission only.",
+      "leaderboard_score": null,
+      "note": "Reservation for the FIRST scored submission. Timestamp correction for the record: the S3 claim edit was labeled 2026-07-16T17:35:00Z but actually pushed ~17:14Z (label written ahead of the clock; commit b2c4e3c is authoritative). If this entry is ever found stuck in status=submitting with a null submission_id, reconcile ONLY via this exact attempt_id in the submission description field -- never by timestamp."
+    },
+    {
       "timestamp": "2026-06-11T05:00:33Z",
       "submission_id": null,
       "artifact": "submission-20260611-050033.tar.gz",
