@@ -1703,3 +1703,56 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: REJECTED (feasibility, pre-harness). No candidate committed,
   no harness compute spent.
 - Full/submission gate: NOT_RUN (no candidate).
+
+## 2026-07-16T20:30:00Z - B34-claude: Inverse-error fusion (REJECTED, premise was a units misread)
+- Hypothesis (lead-queued priority 1): fuse the MC champion with the
+  analytic gain-product covariance-propagation estimate,
+  fused = w*MC + (1-w)*analytic at the final layer. Premise: the two
+  errors are COMPARABLE (lead: analytic final_layer_mse=8.366e-06 vs MC
+  ~7.2e-06) and INDEPENDENT (analytic deterministic, MC seed-noise), so
+  precision-weighted fusion gives MSE -> sigma^2 b^2/(sigma^2+b^2) ~
+  0.5 sigma^2, a ~40-50% cut.
+- Pre-validation (standalone numpy, first 10 Mini MLPs, per the lead's
+  explicit B31/B32-discipline request): reimplemented the analytic
+  (mu/cov propagation, gain-product off-diagonal -- exactly estimator.py's
+  dead code) and the radial-exact MC in numpy; truth = dataset
+  final_means; computed per-MLP MC/analytic/fused MSE with both a
+  data-estimated w (no truth) and an oracle w.
+- REIMPLEMENTATION VALIDATED: my numpy analytic matches the real B0
+  covariance-propagation report per-MLP to 4 sig figs (daniel-harrison
+  4.1895e-05, dustin-robinson 4.9951e-05, cole-martin 2.4619e-04,
+  donna-clarke 2.9839e-05, rebecca-walker 1.8010e-05 -- all matched). So
+  the numbers below are trustworthy.
+- ROOT CAUSE of the premise error: a units confusion in the lead's
+  writeup. B0's cov-propagation report has final_layer_mse = 8.366e-05
+  and adjusted_final_layer_score = 8.366e-06 -- differing by EXACTLY the
+  0.1 floor multiplier (the analytic is cheap, mean_effective_compute
+  2.612e9 << the 2.72e10 floor, so multiplier clamps to 0.1 and adjusted
+  = mse*0.1). The lead read the adjusted score as the MSE. The analytic's
+  TRUE final-layer MSE is 8.366e-05, ~10x WORSE than the MC champion's
+  ~8e-06 -- NOT comparable.
+- Result: with b^2 ~ 10 sigma^2, fusion can at best recover ~MC (w*->~0.9,
+  mostly ignore the analytic). Measured on 10 MLPs: mean MC MSE 4.16e-6;
+  data-estimated-w fused 5.43e-6 (-30.6%, i.e. WORSE); oracle-w fused
+  3.58e-6 (+14.1%, and needs ground truth so unusable). Errors are not
+  even independent (corr(e_mc,e_an)=0.15). The data-w loss happens
+  because w (0.79-0.96) still puts 5-20% weight on an analytic up to 50x
+  worse per-MLP, and ||MC-analytic||^2 misestimates the shrinkage target
+  under the positive error correlation. The oracle +14% comes from a
+  minority of MLPs where the analytic helps (MLP 1: +63%); for ~half,
+  oracle w = 1.0 (analytic useless).
+- Verdict: REJECTED. The mechanism (fuse independent comparable errors)
+  is sound but does not apply: the only cheap analytic available
+  (gain-product cov-prop, and B3's exact-cross-moment variant which is
+  statistically identical, both ~8.4e-05) is ~10x worse than MC, not
+  comparable. Data-estimated fusion is a net LOSS (-30.6%); even the
+  unattainable oracle is only +14%, which the ~8-10% multiplier increase
+  from adding cov-propagation would largely erase, and per B30 a ~14%
+  Mini effect isn't reliably Full-robust. No candidate built, no harness
+  compute spent.
+- Note for the lead: fusion becomes worth revisiting only if some future
+  analytic estimator reaches error <= ~sigma (comparable to MC, i.e.
+  ~1e-5 final-layer MSE or better); B1/B3/B6 did not. Until then this
+  axis is closed. Full numbers:
+  experiments/results/claude/B34-claude-20260716T203000Z-summary.json.
+- Full/submission gate: NOT_RUN (no candidate).

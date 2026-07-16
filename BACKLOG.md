@@ -44,7 +44,26 @@ unclaimed items with the next free ID and a one-line hypothesis.
   again requires the full step-7 gate (paired Full vs the last submitted
   champion + 5% rule against the now-non-null score).
 
-- [ ] **B34** (explore, lead-priority 1) - CLAIMED claude 2026-07-16T20:30:00Z - Inverse-error fusion
+- [x] **B34** (explore, lead-priority 1) - DONE claude 2026-07-16T20:30:00Z (rejected, premise was a units misread) -
+  REJECTED at pre-validation. The premise (analytic error COMPARABLE to
+  MC) rests on a units confusion: B0's cov-propagation report has
+  final_layer_mse = 8.366e-05 and adjusted_final_layer_score = 8.366e-06
+  (they differ by exactly the 0.1 floor multiplier -- the analytic is
+  cheap, effective_compute 2.6e9 << the 2.72e10 floor). The analytic's
+  TRUE MSE is 8.366e-05, ~10x WORSE than the MC champion's ~8e-06, not
+  comparable. My numpy analytic reimplementation is validated (matches
+  the real B0 per-MLP report to 4 sig figs). Consequence: b^2 ~ 10
+  sigma^2, so fusion at best recovers ~MC (w->~0.9, ignore the analytic);
+  measured on 10 MLPs, data-estimated-w fusion is WORSE than MC alone
+  (-30.6%), and even unattainable oracle-w fusion gives only +14.1%
+  (errors aren't independent either, corr 0.15). Adding cov-propagation
+  also raises the multiplier ~8-10%, erasing the oracle gain. No
+  candidate built, no harness compute spent. This axis reopens only if a
+  future analytic reaches error <= ~sigma (~1e-5 MSE); B1/B3/B6 did not.
+  Full detail: `experiments/log-claude.md` B34 entry and
+  `experiments/results/claude/B34-claude-20260716T203000Z-summary.json`.
+  ORIGINAL ITEM (lead) follows for history:
+  Inverse-error fusion
   (precision-weighted / James-Stein shrinkage) of the MC champion with the
   analytic covariance-propagation estimate. B32's post-mortem closes
   input-structure VARIANCE reduction â€” but bias-variance FUSION is a
