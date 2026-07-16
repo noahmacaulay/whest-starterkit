@@ -37,27 +37,31 @@ _GH_WEIGHTS = (1.4978147231618412e-10, 1.309473216286817e-07,
 _GH_PAIRS = tuple(max(1, round(w * 3_250)) for w in _GH_WEIGHTS)
 
 
+_GH_PAIRS_HALF = tuple(max(1, p // 2) for p in _GH_PAIRS)
+
+
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """B10: active-subspace Gauss-Hermite quadrature, single-batch forward pass.
+        """B12: two-direction active-subspace quadrature with 4-way antithetic split.
 
-        Same statistical estimator as the B1 experiment (soft-gate active
-        direction via 4 power iterations, 16-node Gauss-Hermite quadrature
-        along it, antithetic conditional draws in the orthogonal
-        complement): B1 measured a genuine final-layer MSE improvement over
-        the champion (7.995e-06 vs 8.505e-06) but lost the paired promotion
-        gate because its `mean_effective_compute` was 28% higher even
-        though its raw `flops_used` was within 0.4% of the champion's --
-        the gap was call-overhead from 1,360 separate small matmuls (16
-        nodes x pos/neg x 32 layers, plus power-iteration passes) versus
-        the champion's 32 single full-batch matmuls (one per layer).
+        Extends B1/B10's estimator (soft-gate active direction via power
+        iteration, 16-node Gauss-Hermite quadrature along it, antithetic
+        draws in the orthogonal complement) with a second, deflated power
+        -iteration direction. AGENTS.md notes depth-32 covariance is
+        "often rank-1 dominated", not purely rank-1, so a second direction
+        may carry residual signal the first misses.
 
-        This version builds one combined (~6,516, width) sample batch up
-        front -- weighting each row by weight_i/(2*pairs_i) at aggregation
-        time instead of averaging per node separately -- and forwards it
-        through each layer with a single matmul call, matching the
-        champion's call structure, to test whether the accuracy gain
-        survives once the overhead artifact is removed.
+        Rather than a second quadrature (would need new, unverified GH
+        constants under time pressure), the orthogonal-complement noise is
+        split into its component along the second direction and the
+        remaining residual, and both components are independently sign
+        -flipped: (+d2,+resid), (-d2,+resid), (+d2,-resid), (-d2,-resid).
+        All four share the same expectation by the same symmetry argument
+        that makes plain antithetic pairing unbiased (each is a valid
+        alternative draw from the same orthogonal-complement Gaussian), so
+        this stays unbiased -- verified against a synthetic reference
+        before use here. Base draw count is halved so total forward rows
+        stay close to B1/B10's ~6,516.
         """
         _ = budget
         width = mlp.width
@@ -76,36 +80,53 @@ class Estimator(BaseEstimator):
             variance = fnp.maximum(second - mean * mean, 1e-12)
             gains.append(gain)
 
-        # --- dominant direction via 4 power iterations through the soft-gate Jacobian ---
-        direction = fnp.ones(width)
-        direction = direction / fnp.sqrt(fnp.sum(direction * direction))
-        for _ in range(4):
-            image = direction
+        def jacobian_apply(vec):
+            image = vec
             for w, gain in zip(mlp.weights, gains):
                 image = gain * (w.T @ image)
-            direction = image
             for w, gain in zip(reversed(mlp.weights), reversed(gains)):
-                direction = w @ (gain * direction)
-            direction = direction / fnp.sqrt(fnp.sum(direction * direction))
+                image = w @ (gain * image)
+            return image
 
-        # --- build one combined batch for all 16 quadrature nodes ---
-        total_pairs = sum(_GH_PAIRS)
+        # --- dominant direction via 4 power iterations (same as B1/B10) ---
+        d1 = fnp.ones(width)
+        d1 = d1 / fnp.sqrt(fnp.sum(d1 * d1))
+        for _ in range(4):
+            d1 = jacobian_apply(d1)
+            d1 = d1 / fnp.sqrt(fnp.sum(d1 * d1))
+
+        # --- second direction: deflated power iteration, orthogonal to d1 ---
+        d2_init = _np.array([1.0 if i % 2 == 0 else -1.0 for i in range(width)], dtype=_np.float32)
+        d2 = fnp.array(d2_init)
+        d2 = d2 - fnp.sum(d2 * d1) * d1
+        d2 = d2 / fnp.sqrt(fnp.sum(d2 * d2))
+        for _ in range(4):
+            d2 = jacobian_apply(d2)
+            d2 = d2 - fnp.sum(d2 * d1) * d1
+            d2 = d2 / fnp.sqrt(fnp.sum(d2 * d2))
+
+        # --- build one combined batch: 16 GH nodes along d1, 4-way antithetic in (d2, residual) ---
+        total_base = sum(_GH_PAIRS_HALF)
         rng = fnp.random.default_rng(mlp.seed)
-        noise = fnp.array(rng.standard_normal((total_pairs, width)).astype(fnp.float32))
-        noise = noise - fnp.outer(noise @ direction, direction)
+        noise = fnp.array(rng.standard_normal((total_base, width)).astype(fnp.float32))
+        noise = noise - fnp.outer(noise @ d1, d1)
+        comp2 = fnp.outer(noise @ d2, d2)
+        residual = noise - comp2
 
         node_per_pair = fnp.array(
-            _np.repeat(_np.array(_GH_NODES, dtype=_np.float32), _GH_PAIRS)
+            _np.repeat(_np.array(_GH_NODES, dtype=_np.float32), _GH_PAIRS_HALF)
         )
-        offset = fnp.outer(node_per_pair, direction)
-        positive = offset + noise
-        negative = offset - noise
-        x = fnp.concatenate([positive, negative], axis=0)
+        offset = fnp.outer(node_per_pair, d1)
+        v1 = offset + comp2 + residual
+        v2 = offset - comp2 + residual
+        v3 = offset + comp2 - residual
+        v4 = offset - comp2 - residual
+        x = fnp.concatenate([v1, v2, v3, v4], axis=0)
 
         row_weight_per_pair = _np.repeat(
-            _np.array(_GH_WEIGHTS) / (2.0 * _np.array(_GH_PAIRS)), _GH_PAIRS
+            _np.array(_GH_WEIGHTS) / (4.0 * _np.array(_GH_PAIRS_HALF)), _GH_PAIRS_HALF
         ).astype(_np.float32)
-        row_weights = fnp.array(_np.concatenate([row_weight_per_pair, row_weight_per_pair]))
+        row_weights = fnp.array(_np.concatenate([row_weight_per_pair] * 4))
 
         rows = []
         for w in mlp.weights:
