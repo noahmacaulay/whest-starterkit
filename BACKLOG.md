@@ -97,7 +97,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   accuracy to full covariance at approximately `n^2 k` cost, and a diagnostic
   of when low-rank assumptions break.
 
-- [ ] **B6** (explore) - CLAIMED gpt 2026-07-16T05:02:00Z - Mean-field asymptotic correction. Fit the known
+- [x] **B6** (explore) - DONE gpt 2026-07-16T05:02:00Z - Mean-field asymptotic correction. Fit the known
   depth-asymptotics of the ReLU collapse (fixed-point plus `1/layer`
   correction terms) as an analytic prior for deep layers; use early-layer
   exact propagation plus an asymptotic tail. Hypothesis: cheaper and possibly

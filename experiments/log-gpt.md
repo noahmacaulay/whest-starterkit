@@ -53,3 +53,14 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 
 ### B5 metadata correction
 - The normal rebase before result persistence rewrote the evaluated candidate commit from local `b417d79` to reachable commit `990f73d`; the candidate contents and raw reports are unchanged.
+
+## 2026-07-16T05:02:00Z - B6-gpt-20260716T050200Z: Empirical-prefix mean-field tail
+- Hypothesis: at depth 32, retaining the exact 6,500-sample Monte Carlo path through layer 24 and then continuing from its empirical diagonal moments with an 8-layer Gaussian mean-field recursion preserves enough collapse structure to reduce the score at the 0.1 compute floor.
+- Base champion: estimator.py @ c25eff6 (B0-gpt-20260716T002459Z source result 58900f1); candidate_gpt.py @ b96ef2e.
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock@9b677e2b91b0b4791c73c9449b6d5e5491093ddb.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1 (sha256=5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433), split=mini (100 MLPs), budget=272000000000, runner=subprocess. Exact commands and immutable raw reports are in results/gpt/B6-gpt-20260716T050200Z-c25eff6-summary.json.
+- Change: sample normally through layer 24, estimate the activation mean and marginal second moment from that prefix, then propagate the remaining eight layers with independent-Gaussian ReLU moment updates. This tests a deliberately conservative deep-tail mean-field approximation while lowering mean FLOPs below the 2.72e10 score floor.
+- Result: candidate adjusted score=1.243952942605e-04; champion=9.291407001645e-07; relative_change=+13288.208507%; paired_mean_delta=1.234661535603e-04; paired_95pct_CI=[1.040306558238e-04,1.429016512968e-04]; worst_per_MLP_regression=5.261040339943e-04 (100/100). Candidate final-layer MSE=1.243952942605e-03 vs champion=8.504929468245e-06; candidate mean FLOPs=2.052491443200e+10 (multiplier=0.1) vs champion=2.734617600000e+10 (multiplier=0.109273349633). All failure/budget/time/error flags=0.
+- Verdict: REJECTED: the tail approximation's systematic bias emerges immediately at layer 25 and overwhelms its 25% compute saving; the conservative paired interval is wholly positive.
+- Full/submission gate: NOT_RUN; the Mini promotion gate failed.
+- New ideas queued: none.

@@ -1,0 +1,43 @@
+{
+  "experiment_id": "B6-gpt-20260716T050200Z",
+  "agent": "gpt",
+  "verdict": "REJECTED",
+  "hypothesis": "A 24-layer Monte Carlo prefix followed by an 8-layer diagonal Gaussian mean-field tail reduces adjusted score at the compute floor.",
+  "base_champion_commit": "c25eff6",
+  "candidate_commit": "b96ef2e",
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "champion_command": "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "candidate_command": "uv run --frozen whest run --estimator candidate_gpt.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+    "raw_reports": {
+      "champion": "B6-gpt-20260716T050200Z-c25eff6-champion-raw.txt",
+      "candidate": "B6-gpt-20260716T050200Z-c25eff6-candidate-raw.txt"
+    }
+  },
+  "result": {
+    "candidate_adjusted_final_layer_score": 0.00012439529426046646,
+    "champion_adjusted_final_layer_score": 9.291407001645491e-07,
+    "relative_change_pct": 13288.208506896348,
+    "candidate_final_layer_mse": 0.0012439529426046647,
+    "champion_final_layer_mse": 8.504929468244882e-06,
+    "candidate_mean_flops_used": 20524914432.0,
+    "champion_mean_flops_used": 27346176000.0,
+    "paired_mean_delta": 0.00012346615356030193,
+    "paired_95pct_ci": [0.00010403065582377188, 0.00014290165129683197],
+    "worst_per_mlp_regression": 0.0005261040339943434,
+    "regression_count": 100,
+    "failure_breakdown": {
+      "candidate": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+      "champion": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+    }
+  }
+}
