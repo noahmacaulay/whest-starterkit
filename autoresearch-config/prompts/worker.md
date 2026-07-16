@@ -18,6 +18,10 @@ execution constraint:
 - Use `uv run --frozen whest version` and `uv pip show flopscope` for package
   versions; do not guess at optional Python `__version__` attributes.
 - Keep risky operations separate so a failure cannot hide which step failed.
+- A failed `apply_patch` verification also terminates the turn. Immediately
+  before editing, read a small exact excerpt around the target (not a whole
+  long file whose output may be truncated), then apply the smallest patch with
+  exact current context. Do not guess at line contents from an earlier turn.
 
 If the latest shared backlog already has an unfinished item `CLAIMED gpt`,
 resume that interrupted experiment instead of claiming a new one. Inspect any
