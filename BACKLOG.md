@@ -193,8 +193,21 @@ unclaimed items with the next free ID and a one-line hypothesis.
   New champion still needs its own Full-split gate run (B24-style) before
   a submission attempt; Mini-split promotion only re-validates on Mini.
 
-- [ ] **S1** (admin, user action required - not claimable as an experiment) -
-  Unblock the submission pipeline. `last_submitted_score` is null and the
+- [x] **S1** (admin, user action required - not claimable as an experiment) -
+  RESOLVED by user ruling 2026-07-16T15:19Z (AGENTS.md addendum, commit
+  136f247): null submitted scores are disregarded in the 5% improvement
+  rule, and because all previously submitted scores are null, any scoring
+  solution may be submitted. The submission pipeline is therefore
+  unblocked; the two pre-scaffold manual submissions
+  (2026-06-11T05:00:33Z and 2026-06-11T19:50:10Z, no submission IDs)
+  remain in the ledger as `pending` history and must still never be
+  reconciled by timestamp matching. All other AGENTS.md submission
+  prerequisites remain in force unchanged (Full-split gate, reservation
+  protocol, no ambiguous-submission retries); note the current B25
+  champion's B26 full_gate is a single-estimator evaluation, so decide
+  per AGENTS.md whether a paired Full-split comparison is still required
+  before reserving a submission.
+  Original item, for history: `last_submitted_score` is null and the
   ledger holds two pre-scaffold manual submissions (2026-06-11T05:00:33Z and
   2026-06-11T19:50:10Z) with no submission IDs, so the required "5% better
   than last submitted" gate is undecidable and workers correctly refuse to
