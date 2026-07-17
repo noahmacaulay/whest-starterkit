@@ -1,0 +1,27 @@
+{
+  "experiment_id": "B49-claude-20260717T103000Z",
+  "agent": "claude",
+  "purpose": "Salvage the -21% orthogonal-directions win (B43/B46) as a GRADEABLE submission (B48 option c). The B46 champion grades-fail on AICrowd (S4, Evaluation error), prime suspect fnp.linalg.qr (the standout op vs the gradeable S3/B25). Test whether the exact-orthogonal benefit can be reproduced using ONLY the version-stable ops S3 graded successfully (no fnp.linalg.qr / eigh / cholesky).",
+  "method": "Replaced B46's single `fnp.linalg.qr` + sign-correction with a modified Gram-Schmidt COLUMN-orthonormalization of the Gaussian frame, using only fnp.matmul / fnp.stack / fnp.linalg.norm / subtract / divide (fnp.linalg.norm is gradeable -- S3/B25 used it; only qr/eigh/cholesky are suspect). Everything else (Rademacher sign orbits, B42 chunked float32 forward, radial-exact E[r] scaling) unchanged. candidate_claude.py @ f54b23b.",
+  "environment": {"whestbench": "0.12.0rc3", "flopscope": "0.8.0rc5", "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1", "split": "mini", "runner": "subprocess"},
+  "feasibility_checks": {
+    "orthonormality": "GS frame max|QQ^T - I| = 7.5e-13 (machine precision, orthonormal).",
+    "marginals": "aggregated GS rows: unit norm, mean deviation from 0 ~ 9e-4 (approximately uniform on sphere -> unbiased).",
+    "compute_concern_resolved": "the 256-iteration Python-loop Gram-Schmidt does NOT blow up compute: on 10 MLPs, residual_wall_time_s ~0.035 (like B46), multiplier 0.1109. The feared Python-loop residual is negligible (loop control is ~ms; the matmul/stack/norm ops are instrumented backend, which the scoring model charges only as FLOPs).",
+    "note": "an initial ROW-orthonormalized quick test gave only +6.4% MSE reduction (misaligned construction); COLUMN-orthonormalization (matching B46's qr frame role) fixes it."
+  },
+  "result_mini_100": {
+    "gs_final_layer_mse": 5.019532230789991e-06,
+    "b46_champion_final_layer_mse": 5.016990630792862e-06,
+    "mse_ratio_gs_over_b46": 1.0005,
+    "gs_mean_effective_compute": 30409197686.35165,
+    "gs_multiplier": 0.11179852090570465,
+    "b46_multiplier": 0.10757324133306528,
+    "multiplier_rel_vs_b46": 0.039,
+    "gs_adjusted_final_layer_score": 5.608057994631082e-07,
+    "failure_flags_total": 0
+  },
+  "verdict": "FEASIBLE -- option (c) works. A QR-FREE Gram-Schmidt construction reproduces B46's orthogonal MSE benefit essentially EXACTLY (Mini MSE 5.0195e-06 vs B46 5.0170e-06, ratio 1.0005) using only gradeable ops (no fnp.linalg.qr), at a ~4% higher multiplier than B46 (still far below the pre-orthogonal champion's ~30% adjusted-score gap). Since GS matches B46 on Mini MSE and B46's Full gate (B47) already passed at -21% / -5.4 sigma, GS's Full performance is essentially guaranteed to match B46's (same orthogonal construction, statistically identical).",
+  "recommendation_for_lead_user": "This GS candidate (candidate_claude.py @ f54b23b) is the strongest salvage path for the -21% win and a DIRECT TEST of the qr-hypothesis: submitting it either (i) GRADES -> confirms fnp.linalg.qr was the S4 failure cause AND realizes a ~-17% leaderboard improvement over S3 (6.6845e-07), or (ii) also fails -> the grader issue is NOT qr (resource limit / transient / other), redirecting the diagnosis. I did NOT submit it autonomously: this is a FRESH submission decision not covered by the lead's B47/branch-1 authorization (which was B46-specific), and S4 was just consumed -- a new attempt is a lead/user call. Suggested path if approved: (optionally run a confirmatory GS Full gate, ~redundant given the Mini equivalence + B47), then package + reserve + submit per step 7. If it grades, promote GS as champion (gradeable) over the ungradeable B46.",
+  "full_submission_gate": "NOT_RUN (Mini equivalence to the already-Full-gated B46 makes it near-redundant; a submission is the decisive test, pending lead/user)."
+}

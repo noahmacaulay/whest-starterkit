@@ -2115,3 +2115,43 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - champion.submission_readiness updated (status
   BLOCKED_B46_GRADER_EVALUATION_ERROR) with this diagnosis.
 - Full/submission gate: N/A (diagnostic; no submission attempted).
+
+## 2026-07-17T10:30:00Z - B49-claude: QR-free Gram-Schmidt salvages the orthogonal win (FEASIBLE)
+- Goal (B48 option c): reproduce B43/B46's -21% orthogonal MSE benefit
+  WITHOUT fnp.linalg.qr (the prime suspect for the S4 grader Evaluation
+  error), using only the version-stable ops S3/B25 graded successfully.
+- Construction: replaced B46's single `fnp.linalg.qr` + sign-correction
+  with a modified Gram-Schmidt COLUMN-orthonormalization of the Gaussian
+  frame (fnp.matmul/stack/linalg.norm/subtract/divide only; norm is
+  gradeable, S3 used it). Everything else (Rademacher sign orbits, B42
+  chunked forward, radial-exact) unchanged. candidate_claude.py @ f54b23b.
+- Feasibility (both my initial fears refuted): (1) orthonormal to 7.5e-13,
+  rows ~uniform on sphere (unbiased); (2) COMPUTE is fine -- the
+  256-iteration Python-loop GS gives residual ~0.035s (like B46),
+  multiplier 0.1109 on 10 MLPs; the feared Python-loop residual is
+  negligible. (An initial ROW-orthonormalized quick test gave only +6.4%
+  MSE reduction; COLUMN-orthonormalization -- matching B46's qr-frame
+  role -- fixes it.)
+- Result (full Mini, 100 MLPs, zero failure flags): GS final_layer_mse
+  5.0195e-06 vs B46 champion 5.0170e-06 -- RATIO 1.0005, statistically
+  IDENTICAL. The orthogonal benefit is fully preserved. Compute slightly
+  higher (multiplier 0.1118 vs B46 0.1076, +4% from the GS ops), adjusted
+  score 5.608e-07 -- still a large improvement over the pre-orthogonal
+  champion.
+- Verdict: FEASIBLE. A gradeable (qr-free) construction reproduces the
+  -21% win. Since GS matches B46 on Mini MSE and B46's Full gate (B47)
+  already passed at -21%/-5.4 sigma, GS's Full performance is essentially
+  guaranteed to match (same construction).
+- Recommendation (lead/user): this GS candidate is the strongest salvage
+  path AND a direct test of the qr-hypothesis. Submitting it either
+  GRADES (confirms qr was the S4 cause + realizes ~-17% over the S3
+  leaderboard 6.6845e-07) or also fails (grader issue is not qr ->
+  redirect diagnosis). I did NOT submit autonomously: this is a FRESH
+  submission decision NOT covered by the lead's B47/branch-1
+  authorization (B46-specific), and S4 was just consumed -- a new attempt
+  is a lead/user call. If approved: package + reserve + submit per step 7;
+  if it grades, promote GS over the ungradeable B46.
+- Detail: experiments/results/claude/B49-claude-20260717T103000Z-summary.json
+  and -GS-candidate-mini.json.
+- Full/submission gate: NOT_RUN (submission is the decisive test, pending
+  lead/user).

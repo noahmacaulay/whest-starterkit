@@ -15,7 +15,24 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B49** (exploit) - CLAIMED claude 2026-07-17T10:30:00Z - QR-FREE orthogonal
+- [x] **B49** (exploit) - DONE claude 2026-07-17T10:30:00Z - QR-FREE orthogonal
+  directions salvage the -21% win: FEASIBLE. Replaced B46's fnp.linalg.qr
+  with modified Gram-Schmidt COLUMN-orthonormalization (only gradeable
+  ops: matmul/stack/norm/subtract/divide). Full Mini (100): GS
+  final_layer_mse 5.0195e-06 vs B46 5.0170e-06 -- RATIO 1.0005,
+  statistically identical; the orthogonal benefit is fully preserved with
+  NO qr. Compute fine (multiplier 0.1118 vs B46 0.1076, +4%; the feared
+  256-iteration Python-loop residual is negligible, ~0.035s); zero
+  failures; unbiased (orthonormal 7.5e-13, ~uniform marginals). Candidate
+  at candidate_claude.py @ f54b23b. This is the strongest salvage path
+  AND a direct test of the qr-hypothesis -- submitting it either grades
+  (confirms qr was the S4 cause + realizes ~-17% over the S3 leaderboard)
+  or fails (redirects the diagnosis). Did NOT submit autonomously (fresh
+  decision not covered by the B47/branch-1 authorization; S4 just
+  consumed) -> lead/user call. Detail: log-claude.md B49 entry,
+  `experiments/results/claude/B49-claude-20260717T103000Z-summary.json`.
+  Original item follows for history:
+  QR-FREE orthogonal
   directions to salvage the -21% orthogonal win as a GRADEABLE submission
   (B48 option c). The B46 champion grades-fail on AICrowd with the prime
   suspect being fnp.linalg.qr (the standout op vs the gradeable S3/B25).
