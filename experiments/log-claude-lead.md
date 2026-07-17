@@ -173,3 +173,96 @@ Phase 2 of this tick: claim and execute S3.
   was written ahead of the true clock (~17:14Z) — the exact defect
   flagged in this tick's Phase 1 audit. Commit b2c4e3c is
   authoritative; timestamps in this entry are from the real clock.
+
+## Lead review 2026-07-17T01:14:19Z
+
+Second scheduled tick under the `claude-lead` identity. Rebased
+`lead/claude` onto `origin/main` (15fd88c) from a clean worktree.
+Environment: `uv sync --frozen` clean; whestbench=0.12.0rc3,
+flopscope=0.8.0rc5+np2.2.6, uv.lock last changed @ 9b677e2 — matches
+both workers; scores comparable.
+
+### State reconciliation
+- Read all three logs, `champion.json`, `BACKLOG.md`, and the recent
+  result reports (B34–B41). Shared state is coherent: no claim races,
+  no duplicate IDs, logs append-only, no items stuck CLAIMED.
+- Submission ledger: S3 (attempt S3-claude-lead-20260716T171600Z) is
+  `graded` with exact submission_id 316676; `last_submitted_score` =
+  8.507033588741281e-07 (local Full) recorded per protocol. NO active
+  `submitting` reservation. The two 2026-06-11 pre-scaffold null-ID
+  entries remain untouched manual-recovery history.
+- gpt's B41 interruption was recovered correctly (recovery addendum
+  23:40:45Z, commit 15fd88c): feasibility verdict pushed before the
+  supplemental official pair; append-only record intact; verdicts
+  consistent.
+- Champion audit: `estimator.py` bit-identical to promotion commit
+  2227ef3 (`git diff 2227ef3 HEAD -- estimator.py` empty). B25 math
+  re-audited last tick; unchanged. B26 Full gate and B29/B30 records
+  consistent with `champion.json`.
+
+### Main finding: the backlog is empty and two of its recent
+### rejections rest on an instrumentation artifact
+
+All items B0–B41 are DONE. Since B25, every axis was closed by
+converging negatives: directions/subspaces (B31/B32), analytic
+denoising (B34/B36/B38), sample count (B16/B35), orthogonal blocks
+(B22/B39/B40/B41). With nothing claimable, this review audited the
+SCORING MODEL ITSELF from the installed harness source (read-only —
+no harness modification):
+
+1. `whestbench/budget.py` is the single source of truth:
+   `C = flops_used + 1e11 * residual_wall_time_s`, multiplier
+   `max(0.1, C/B)`. `flopscope/_budget.py`:
+   `residual = wall − backend_time − overhead_time`. Wall-clock of
+   INSTRUMENTED fnp ops (backend) is never charged — only their
+   symbolic FLOPs. flopscope's own dispatch overhead is not charged
+   either. The ONLY charged time is un-instrumented work: user Python
+   between ops, allocation/GC, and PLAIN-numpy calls flopscope cannot
+   see. Subprocess runner uses the worker's own stats (scoring.py:742),
+   so this holds for our official numbers.
+2. Champion decomposition (B25 candidate raw report, mean/MLP): wall
+   245.5ms = backend 177.3ms (free) + overhead 42.1ms (free) +
+   residual 26.1ms → 2.61e9 charged = 9.5% of raw FLOPs. Driving the
+   residual toward 0 is worth up to −8.7% adjusted score with
+   essentially unchanged predictions (the trivially-promotable B23
+   shape). B23 attacked this blind (call counts) and closed the item
+   without ever measuring WHERE the 26ms lives; the decomposition
+   fields were in every raw report all along. Reopened as **B42**.
+3. B22's candidate (b0f209d) generated its Haar blocks with PLAIN
+   numpy (`_np.linalg.qr`, `_np` RNG) — so its ~0.5s/MLP of QR +
+   radius-sampling wall was charged as residual at 1e11 FLOPs/s
+   (the whole +149% penalty), and the QR FLOPs (~1.1e9 for 25 blocks,
+   +4.1%) never appeared in flops_used. B22's officially-paired −5.5%
+   MSE gain is real; its compute penalty was an artifact of bypassing
+   the instrumented namespace. B39 (structured orthogonality, wrong
+   direction law) stands on its own merits, but B40's benchmark-based
+   "QR wall time is inherent, orthogonal-directions line CLOSED" and
+   B41's wall-time-derived 2.60x compute estimates rest on the false
+   premise that QR wall is charged. Lead ruling: B40's line-closing
+   verdict is WITHDRAWN; the corrected design (fnp.linalg.qr +
+   radial-exact, expected net ~−1.5%) is queued as **B43**.
+4. Guardrail note for both workers, from the same source audit: NEVER
+   call plain `numpy` inside `predict()` for anything nontrivial —
+   flopscope cannot see it, and its wall time is charged at 1e11
+   FLOPs/s (1ms ≈ 1e8 FLOPs ≈ 0.37% of the champion's C). Everything
+   must go through `fnp`/`flops.stats`. Conversely, instrumented ops'
+   wall time is free, so wall-clock benchmarks of fnp code are NOT a
+   proxy for charged compute — per-MLP report fields
+   (`flops_used`/`residual_wall_time_s`) are.
+
+### Backlog changes (lead-only reordering)
+- Queued **B42** (lead-priority 1): attribute and reduce the
+  champion's 26ms charged residual (−8.7% ceiling, gate-trivial
+  shape). CLAIMED claude-lead as this tick's Phase 2.
+- Queued **B43** (lead-priority 2): B22's exact-Haar blocks via
+  instrumented `fnp.linalg.qr` + radial-exact scaling (−5.5% MSE for
+  ~+4% FLOPs, expected net ~−1.5%; submission-relevant only stacked
+  with B42). Left unclaimed for a worker.
+- No pruning: B0–B41 all DONE with persisted results.
+
+### Metadata notes
+- Worker "UTC" log labels continue to run slightly ahead of commit
+  times (e.g. claude's B40 labeled 21:30Z, committed 21:39Z-equivalent)
+  — ordering still consistent; commit times remain authoritative.
+- No coordination problems requiring escalation. Phase 2 proceeds.
+

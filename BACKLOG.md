@@ -15,6 +15,68 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B42** (exploit, lead-priority 1) - CLAIMED claude-lead 2026-07-17T01:14:19Z -
+  Attribute and reduce the champion's charged residual wall time. Lead
+  review 2026-07-17 read the actual scoring source
+  (`whestbench/budget.py`, `flopscope/_budget.py`): effective compute is
+  EXACTLY `C = flops_used + 1e11 * residual_wall_time_s`, where
+  `residual = wall - flopscope_backend_time - flopscope_overhead_time`.
+  Backend wall time of INSTRUMENTED fnp ops is NOT charged at all (only
+  their symbolic FLOPs are), and flopscope's own dispatch overhead is
+  also uncharged; the ONLY charged time is what runs outside instrumented
+  ops (user Python between ops, allocations/GC, and any PLAIN-numpy call,
+  which flopscope cannot see). The champion's per-MLP decomposition (B25
+  candidate raw report, means over 100 MLPs): wall 245.5ms = backend
+  177.3ms (free) + overhead 42.1ms (free) + residual 26.1ms -> 2.61e9
+  charged, i.e. 9.5% of its 2.735e10 raw FLOPs. Ceiling: driving
+  residual to ~0 gives multiplier 0.1102 -> 0.1006, a -8.7% adjusted
+  score with unchanged-or-negligibly-changed predictions - the
+  trivially-promotable B23 shape (every per-MLP delta <= 0), and B23's
+  two attempts were flying blind without this decomposition (it never
+  identified WHERE the 26ms lives). Plan: (1) reproduce the
+  decomposition locally on 2-3 real Mini MLPs via a BudgetContext probe;
+  (2) ablate to attribute the 26ms (candidates: allocation/GC of the
+  ~13MB per-layer float64 temporaries, the `astype(float32)` copy,
+  between-op Python in the 32-layer loop, the final stack, RNG-adjacent
+  gaps); (3) apply targeted fixes - e.g. run the entire chain in float32
+  (cast weights per layer: halves memory traffic in every un-instrumented
+  gap; prediction change ~1e-7 relative, MSE impact ~1e-12 vs the 7.2e-6
+  champion MSE, negligible), avoid the separate astype copy, fuse/reduce
+  temporaries; (4) validate MSE unchanged on 10 MLPs offline, then run
+  the standard paired Mini harness. Success: mean_effective_compute
+  meaningfully below 2.996e10 with per-MLP MSE unchanged within noise;
+  promote via CAS if the paired CI clears zero. Stacks with B43 and with
+  any future MSE win.
+
+- [ ] **B43** (exploit, lead-priority 2) - Exact-Haar orthogonal blocks via
+  INSTRUMENTED ops - B22 done right. Lead review 2026-07-17 found B22's
+  candidate generated its orthogonal blocks with PLAIN numpy
+  (`_np.linalg.qr`, `_np` RNG, commit b0f209d) - invisible to flopscope,
+  so its entire QR + radius-sampling wall time (~0.5s/MLP) was charged
+  as residual at lambda=1e11 (the +149% adjusted-score penalty), and the
+  QR FLOPs never even appeared in flops_used. The instrumented
+  `fnp.linalg.qr` (registry category counted_custom) charges
+  2*(2mnk - 2/3 k^3) ~= 4.5e7 FLOPs per 256x256 block (~1.1e9 for 25
+  blocks, +4.1% on raw FLOPs) and its backend wall time is FREE. So
+  B22's real, officially-paired -5.5% final-layer MSE gain costs ~+4%
+  multiplier, not +149%: expected net ~-1.5% adjusted score, more if
+  stacked on B42's residual cut (which lowers the baseline C). This also
+  corrects the shared premise of B39/B40/B41 (that QR wall time is
+  inherently charged): B40's "closes the orthogonal-directions line"
+  verdict is WITHDRAWN by the lead - the line was closed on an
+  instrumentation artifact. Design: B22's construction + B25's
+  radial-exact scaling, all in fnp - 25 blocks of
+  `fnp.linalg.qr(rng.standard_normal((256,256)))`, sign-correct via
+  `q * fnp.sign(fnp.diagonal(r))` for exact Haar, rows are unit
+  directions (no radii needed under radial-exact; B22's chi radii are
+  obsolete), plus 100 iid normalized rows to reach 6500; multiply layer
+  means by closed-form E[r]. Feasibility first (B31/B32 discipline):
+  verify on 5-10 MLPs that fnp.linalg.qr's charged FLOPs and residual
+  match the model above and MSE tracks B22's gain; run the paired Mini
+  harness only if predicted net is clearly negative. Caution per B30:
+  a ~-1.5% net Mini effect will NOT clear a Full paired gate on its own;
+  value is in stacking with B42 toward the >=5% submission bar.
+
 - [x] **B40** (exploit) - DONE claude 2026-07-16T21:30:00Z (feasibility-rejected) -
   Batched-QR exact-Haar orthogonal directions to capture B22's real
   -5.5% MSE reduction without its 2.6x compute penalty. Premise: B22's
