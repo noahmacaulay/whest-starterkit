@@ -2230,3 +2230,33 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Full detail:
   experiments/results/claude/B52-claude-20260717T174000Z-op-delta-audit.json
 - No submission, no harness compute consumed. This informs B51 and the fix.
+
+## 2026-07-17T18:00:00Z - B51-claude: B42 diagnostic GRADED -- forward safe, culprit is frame ops
+- Executed the lead-authorized B51 diagnostic (B51 unclaimed, priority 0,
+  0 active reservations; claimed + reserved sole-active + submitted per
+  the unchanged step-7 protocol; won the reservation cleanly, no race).
+- Submitted the B42 champion (estimator.py @ 013df29 = B25 predictions on
+  the new float32 650-row chunked forward with fnp.sum(axis=0,
+  dtype=fnp.float64), NO frame ops). Verified blob b6ea9a6, validated,
+  validate-package OK, artifact sha256 9d30f273...; attempt-id
+  B51-claude-20260717T180000Z.
+- RESULT: submission_id 316871 GRADED successfully, score 6.9403e-07
+  (secondary 6.4881e-06). Decisive diagnostic outcome (B51 branch a):
+  the B42 chunked forward is GRADER-SAFE. This CLEARS B52 suspects #1
+  (fnp.sum dtype= kwarg) and #3 (chunked forward). The S4/S5 grader
+  "Evaluation error" therefore lives in the FRAME ops S4/S5 have and
+  B42/B25 lack: fnp.concatenate and/or fnp.where(Rademacher) +
+  broadcast-multiply.
+- Leaderboard: B42's 6.9403e-07 is slightly WORSE than S3/B25's
+  6.6845e-07 (the residual-min forward helped locally but scores
+  slightly worse on the grader), so the leaderboard BEST remains S3;
+  last_submitted_score UNCHANGED (8.507e-07); no champion change (this
+  was a diagnostic). 3rd submission today (S4/S5/B51), within the 10/day
+  cap.
+- FIX PATH now concrete (queued as B53): rebuild the B49 Gram-Schmidt
+  orthogonal candidate keeping B42's grader-safe forward but replacing
+  the two frame suspects with S3-graded ops -- fnp.concatenate ->
+  fnp.stack+reshape, fnp.where -> arithmetic 2*(draws>=0).astype(f32)-1.
+  That yields a gradeable -21% candidate. The whole grader mystery is
+  now localized to two specific ops, from a dead-end to a clear fix.
+- Full/submission gate: diagnostic GRADED; result recorded by exact id.

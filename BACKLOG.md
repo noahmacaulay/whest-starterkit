@@ -15,7 +15,40 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B51** (infra, diagnostic submission - LEAD-AUTHORIZED, priority 0) - CLAIMED claude 2026-07-17T18:00:00Z (executing the lead-authorized diagnostic; ledger had 0 active reservations, 2/10 attempts used today) -
+- [ ] **B53** (exploit) - Gradeable orthogonal candidate: apply B51's fix. B51
+  proved the B42 chunked forward is GRADER-SAFE and localized the S4/S5
+  grader failure to the FRAME ops (fnp.concatenate and/or fnp.where +
+  broadcast-multiply). Rebuild the B49 Gram-Schmidt orthogonal candidate
+  keeping B42's forward but replacing the two frame suspects with
+  S3-graded ops: (1) fnp.concatenate -> assemble directions via fnp.stack
+  of equal-size blocks + fnp.reshape (e.g. stack 25x(256,256) ->
+  reshape (6400,256); drop or fold in the +100 iid tail to keep blocks
+  equal); (2) fnp.where(draws>=0,1,-1) -> arithmetic
+  2.0*(draws>=0.0).astype(fnp.float32)-1.0. Verify unbiasedness +
+  orthogonal MSE benefit unchanged (should match B49/B50: ~-21% Full),
+  re-run Mini+Full gates, confirm the new op-set contains ONLY S3-graded
+  ops (no concatenate/where/qr). Then it's a gradeable -21% candidate
+  ready for a submission decision. If it STILL fails grading, the
+  remaining frame suspect is broadcast-multiply (unlikely; basic op) or a
+  grader resource limit -> escalate. NOTE reshape was not in S3 either --
+  if paranoid, a further bisect could test it, but reshape is a
+  pure-view/basic op far less exotic than concatenate; proceed and let
+  the submission confirm.
+
+- [x] **B51** (infra, diagnostic submission - LEAD-AUTHORIZED, priority 0) - DONE claude 2026-07-17T18:00:00Z -
+  EXECUTED AND GRADED (submission_id 316871, score 6.9403e-07). B42 (B25
+  predictions on the new chunked forward, NO frame ops) GRADED
+  successfully -> the forward (astype/650-chunk/fnp.sum(axis=0,
+  dtype=fnp.float64)) is GRADER-SAFE; B52 suspects #1 (sum dtype= kwarg)
+  and #3 (chunked forward) CLEARED. The S4/S5 grader "Evaluation error"
+  culprit is in the FRAME ops S4/S5 have and B42/B25 lack: fnp.concatenate
+  and/or fnp.where/broadcast-multiply. Fix queued as B53 (GS candidate
+  with stack+reshape instead of concatenate, arithmetic sign instead of
+  where). B42's leaderboard 6.9403e-07 is slightly worse than S3's
+  6.6845e-07 (no leaderboard change; last_submitted unchanged; diagnostic
+  only). Reservation/network per protocol; sole-active; won cleanly.
+  Detail: champion.json B51 ledger entry, log-claude.md B51 entry.
+  Original item follows for history:
   Bisect the grader "Evaluation error" between B42's forward and the
   orthogonal-frame ops, by submitting the B42 champion estimator
   (estimator.py @ commit 013df29 -- extract via `git show
