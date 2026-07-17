@@ -143,7 +143,8 @@
     }
   },
   "submission_readiness": {
-    "status": "READY_B46_FULL_GATE_PASSED",
+    "status": "BLOCKED_B46_GRADER_EVALUATION_ERROR",
+    "grader_failure": "S4 (attempt S4-claude-20260717T094500Z, submission_id 316800) submitted the B46 champion 2026-07-17T11:08:31Z; AICrowd ACCEPTED it but grading FAILED with 'Error : Evaluation error' (score null). B46 passed all LOCAL gates (B47 Full: -6.0 sigma, -23.2%, zero failures) but does not grade on AICrowd. Prior submission S3 (B25 radial-exact) graded fine and used NO orthogonal ops -- B46 adds fnp.linalg.qr/sign/diagonal/concatenate, the likely culprit. last_submitted_score UNCHANGED (8.507033588741281e-07). NOT auto-retried. Needs lead/user decision: verify whether fnp.linalg.qr is gradeable; if not, the orthogonal-directions line (B43/B46) is locally-superior but unsubmittable, and either a QR-free construction achieving the same benefit is required, or the SUBMITTED artifact stays B25/B42 (gradeable) while B46 remains the local champion for record.",
     "current_state": "B47 (2026-07-17T09:30:00Z) ran the required 1000-MLP Full gate for B46 and it PASSED decisively: paired vs the submitted B25 baseline, adjusted-score CI [-2.616e-07,-1.332e-07] entirely below zero at -6.0 sigma (MSE -5.4 sigma), B46 Full adjusted 6.533e-07 improves last_submitted_score 8.507e-07 by -23.2% (>> the 5% bar), zero failure flags. All AGENTS.md step 7 GATE prerequisites are satisfied. Remaining action: create a submission reservation (atomic push, sole active) then network-submit per the unchanged protocol -- NOT done by B47 (a worker Full-gate infra tick); flagged for the lead/next submission tick. See champion.full_gate for the complete record.",
     "lead_ruling": {
       "ruled_at": "2026-07-16T17:08:00Z",
@@ -216,10 +217,13 @@
     {
       "attempt_id": "S4-claude-20260717T094500Z",
       "timestamp": "2026-07-17T09:45:00Z",
+      "submitted_at": "2026-07-17T11:08:31Z",
       "agent": "claude",
       "backlog_item": "B47 / lead B47-decision-tree branch 1",
-      "status": "submitting",
-      "submission_id": null,
+      "status": "failed",
+      "submission_id": 316800,
+      "grading_status": "failed",
+      "grading_message": "Error : Evaluation error (score null). The submission was ACCEPTED (id 316800) but the AICrowd grader errored during evaluation. NOT auto-retried per AGENTS.md. last_submitted_score UNCHANGED (still 8.507033588741281e-07 from S3). LIKELY CAUSE: B46 uses fnp.linalg.qr / fnp.sign / fnp.diagonal / fnp.concatenate (the orthogonal-block construction); the prior successful submission S3 (B25 radial-exact) used NONE of these -- only standard_normal/matmul/maximum/mean/norm/stack. The grader's evaluation environment may not support fnp.linalg.qr (or a related op) even though it runs cleanly locally on 1000 MLPs. NEEDS INVESTIGATION before any resubmission: (1) check whether fnp.linalg.qr is a supported/gradeable op (whest doctor / validate-package / the harness's supported-op registry), (2) if not, the orthogonal-directions champions (B43/B46) are locally-superior but UNGRADEABLE, and a QR-free equivalent (or reverting the submitted artifact to the gradeable B25/B42 while keeping the local champion) must be decided by the lead/user.",
       "champion_experiment_id": "B46-gpt-20260717T085533Z",
       "estimator_file_commit": "b42e05c",
       "estimator_sha256": "2fb3b7a062396613261f11b666836d7bdae1d89e59b1cb05781cf527c40b4411",
