@@ -2191,3 +2191,42 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   and -GS-full-COMPLETE.json.
 - Full/submission gate: PASS (prerequisites met; network submission
   pending lead/user).
+
+## 2026-07-17T17:40:00Z - B52-claude: Op-delta audit to design the grader bisect (desk analysis)
+- Context: S4 (B46, qr) and S5 (QR-free GS) BOTH failed grading with the
+  identical "Evaluation error"; S3 (B25) graded. qr-hypothesis refuted.
+  Enumerated the exact fnp/flopscope ops in all three active predict()
+  bodies (the identical dead analytic code below `return` cancels) and
+  computed the failing-minus-graded delta.
+- Shared delta (in BOTH S4/S5, absent in graded S3) = the culprit set:
+  * frame: fnp.concatenate; fnp.where(draws>=0,1,-1) (Rademacher);
+    broadcast-multiply q*signs.
+  * B42 chunked forward (both inherit): fnp.sum(axis=0, dtype=fnp.float64)
+    -- note the dtype= kwarg S3's fnp.mean lacks -- plus .astype(float32)
+    + 650-row chunking + float64 accumulation.
+  * REFUTED: fnp.linalg.qr/sign/diagonal are S4-ONLY (S5 failed without
+    them), confirming qr is not the cause.
+- Local cross-check: every delta op runs cleanly in the installed
+  flopscope 0.8.0rc5 and none are in remote_unsupported_ops (B48). The
+  artifact bundles no requirements pin, so the grader uses its own
+  flopscope/whestbench build -- the break is a grader-environment
+  difference on one of these delta ops/structures, not locally
+  reproducible.
+- Ranked suspects: (1) fnp.sum(axis=0, dtype=fnp.float64) -- the dtype=
+  kwarg is the standout API surface vs S3's fnp.mean; (2) fnp.concatenate
+  -- S3 never concatenates; (3) the B42 chunked-forward structure;
+  (4) fnp.where + broadcast-multiply (frame-only).
+- B51 is exactly the right first bisect: B42 = B25 predictions on the new
+  forward WITH forward ops but WITHOUT frame ops -> splits forward vs
+  frame in one submission. GRADES -> culprit is frame ops
+  (concatenate/where); FAILS -> culprit is the forward ops (sum(dtype=)/
+  astype/chunking).
+- Minimal sequence + ULTIMATE FIX designed: a minimal-op gradeable
+  orthogonal candidate using only S3-graded ops -- Gram-Schmidt frame
+  (B49, qr-free) + replace sum(dtype=)+chunking with fnp.mean + replace
+  concatenate with stack+reshape + replace where with
+  2*(draws>=0).astype(f32)-1. Apply ONLY the replacements B51 implicates.
+  This is a ready worker follow-up once B51 localizes the culprit.
+- Full detail:
+  experiments/results/claude/B52-claude-20260717T174000Z-op-delta-audit.json
+- No submission, no harness compute consumed. This informs B51 and the fix.

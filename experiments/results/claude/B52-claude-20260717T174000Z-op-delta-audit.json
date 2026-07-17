@@ -1,0 +1,38 @@
+{
+  "experiment_id": "B52-claude-20260717T174000Z",
+  "agent": "claude",
+  "purpose": "Op-delta desk audit to design the minimal grader-bisect after S4 (B46, qr) and S5 (QR-free GS) both failed grading with the identical 'Evaluation error' while S3 (B25) graded fine. Pure source analysis; no submission, no harness compute.",
+  "sources_compared": {
+    "S3_B25_GRADED": "estimator.py @ 2227ef3 (plain radial-exact MC)",
+    "S4_B46_FAILED": "estimator.py @ b42e05c (shared-Haar signed-orbit, B42 chunked forward)",
+    "S5_GS_FAILED": "candidate_claude.py @ f54b23b (QR-free Gram-Schmidt, B42 chunked forward)"
+  },
+  "note_on_method": "All three files carry the SAME dead analytic-estimator code below predict()'s active `return` (einsum/diag/eye/fill_diagonal/outer/multiply/log/exp/asarray...) -- it never executes and is identical across all three, so it cancels in the delta. Only ACTIVE-code ops matter.",
+  "refuted": "fnp.linalg.qr / fnp.sign / fnp.diagonal are present ONLY in S4, absent in S5 -- since S5 failed identically WITHOUT them, the qr-hypothesis is REFUTED. The culprit is in the ops S4 and S5 SHARE and S3 lacks.",
+  "shared_delta_ops_S4_and_S5_not_S3": {
+    "frame_construction": [
+      "fnp.concatenate  (assemble 25 blocks + iid rows into (6500,256); S3 builds one array, never concatenates)",
+      "fnp.where(draws>=0.0, 1.0, -1.0)  (Rademacher sign generation; S3 has no active where)",
+      "broadcast multiply  q * signs  (Rademacher orbit; S3 has no such per-column broadcast)"
+    ],
+    "b42_chunked_forward_both_inherit": [
+      "fnp.sum(axis=0, dtype=fnp.float64)  (per-layer accumulation; S3 uses fnp.mean(axis=0) with NO dtype= kwarg)",
+      ".astype(fnp.float32) on the direction batch + 650-row chunking loop + float64 accumulation (S3 forwards one float32 batch and takes fnp.mean directly, no chunking)"
+    ]
+  },
+  "local_cross_check": "Every shared-delta op (sum with dtype= kwarg, concatenate, where, broadcast-multiply) runs cleanly in the INSTALLED flopscope 0.8.0rc5 under a budget context (tested). They are NOT in flopscope.remote_unsupported_ops (B48 cleared that; it is only {apply_along_axis, apply_over_axes, fromfunction, fromiter, piecewise}). The submission artifact bundles NO requirements pin (B48), so the AICrowd grader uses its OWN flopscope/whestbench build -- the failure is a grader-environment difference on one of these delta ops/structures, not locally reproducible (consistent with B48: clean under subprocess AND server runners locally).",
+  "ranked_suspects": [
+    {"rank": 1, "suspect": "fnp.sum(axis=0, dtype=fnp.float64)", "why": "the dtype= kwarg is a distinguishing reduction-API surface S3's fnp.mean never uses; if the grader's flopscope doesn't support/serialize the dtype= kwarg on reductions, BOTH fail. B51's B42 forward USES this -> B51 tests it directly."},
+    {"rank": 2, "suspect": "fnp.concatenate", "why": "S3 never concatenates; both failed do. If the grader's flopscope lacks/rejects concatenate, both fail. B51's B42 does NOT concatenate -> B51 isolates it (frame side)."},
+    {"rank": 3, "suspect": "B42 chunked-forward structure (astype float32 + 650-chunk + float64 accumulation)", "why": "structural/resource/serialization difference from S3's single-batch fnp.mean. B51's B42 uses this forward."},
+    {"rank": 4, "suspect": "fnp.where (Rademacher) + broadcast-multiply", "why": "frame-only ops; B51's B42 does NOT use them -> isolated to the frame side if B51 grades."}
+  ],
+  "b51_is_the_right_first_bisect": "B51 submits B42 = B25 predictions on the NEW chunked forward WITH forward ops (astype/chunking/sum(dtype=)) but WITHOUT frame ops (no concatenate/where/qr/sign). It cleanly splits FORWARD vs FRAME: (a) B42 GRADES -> forward ops are grader-safe, culprit is FRAME ops (concatenate/where/multiply); (b) B42 FAILS -> culprit is in the FORWARD ops (sum(dtype=)/astype/chunking are prime suspects) and both orthogonal candidates inherit it.",
+  "minimal_diagnostic_sequence": [
+    "1. B51 (queued/authorized): B42 forward, no frames -> splits forward vs frame in ONE submission.",
+    "2a. If B51 GRADES (forward safe): submit B25-predictions assembled via fnp.concatenate of plain iid direction blocks (NO orthogonality, NO where) -> tests concatenate alone. Fails -> concatenate is the culprit; grades -> the culprit is where/broadcast-multiply/frame-resource.",
+    "2b. If B51 FAILS (forward broken): no submission needed to design the fix -- rebuild the orthogonal candidate's forward with ONLY S3-graded ops (fnp.mean(axis=0), no dtype= kwarg, single float32/float64 batch, no chunking), re-gate, then submit."
+  ],
+  "ultimate_gradeable_fix_design": "A 'minimal-op' gradeable orthogonal candidate using ONLY the ops S3 graded (standard_normal, astype, matmul, maximum, MEAN, stack, linalg.norm, arithmetic): (i) frame via Gram-Schmidt (B49, already qr-free); (ii) replace fnp.sum(axis=0,dtype=float64)+chunking with S3's fnp.mean(axis=0); (iii) replace fnp.concatenate with fnp.stack of equal-size blocks + fnp.reshape (e.g. 25x(256,256) -> (6400,256), drop the +100 iid tail to keep blocks equal), OR whatever B51 shows is safe; (iv) replace fnp.where(draws>=0,1,-1) with arithmetic 2.0*(draws>=0.0).astype(float32)-1.0. Apply ONLY the replacements B51's result implicates, to avoid unnecessary divergence from the -21% construction. This is a concrete worker follow-up once B51 localizes the culprit.",
+  "verdict": "DELIVERED. qr refuted; shared-delta culprit set = {sum(dtype= kwarg), concatenate, B42 chunked forward, where/broadcast}; ranked; B51 confirmed as the correct forward-vs-frame splitter; minimal bisect + ultimate minimal-op fix designed. No submission consumed."
+}

@@ -44,7 +44,23 @@ unclaimed items with the next free ID and a one-line hypothesis.
   frames. Either branch converts a dead-end into a concrete fix path.
   Do NOT submit anything else before B51's result is recorded.
 
-- [ ] **B52** (explore, desk analysis, priority 1) - CLAIMED claude 2026-07-17T17:40:00Z - Exact op-delta audit
+- [x] **B52** (explore, desk analysis, priority 1) - DONE claude 2026-07-17T17:40:00Z - Op-delta
+  audit DELIVERED. qr REFUTED (S4-only; S5 failed without it). The
+  shared-delta culprit set (in both failed S4/S5, absent in graded S3):
+  FRAME ops [fnp.concatenate, fnp.where Rademacher, broadcast-multiply]
+  + B42 chunked forward [fnp.sum(axis=0, dtype=fnp.float64) -- the dtype=
+  kwarg S3's fnp.mean lacks -- astype(f32), 650-chunk, f64 accumulation].
+  All run cleanly locally + none in remote_unsupported_ops, so it's a
+  grader-env difference on one of these (artifact has no requirements
+  pin). Ranked suspects: (1) sum(dtype=) (2) concatenate (3) chunked
+  forward (4) where/multiply. B51 confirmed as the right forward-vs-frame
+  splitter. ULTIMATE FIX designed: minimal-op gradeable orthogonal
+  candidate (GS frame + fnp.mean instead of sum(dtype=) + stack/reshape
+  instead of concatenate + arithmetic sign instead of where), applying
+  ONLY the replacements B51 implicates. Detail: log-claude.md B52 entry,
+  `experiments/results/claude/B52-claude-20260717T174000Z-op-delta-audit.json`.
+  Original item follows:
+  Exact op-delta audit
   to design the minimal grader bisect. From the three artifacts'
   estimator sources (S3/B25 blob in commit 2227ef3; S4/B46 blob in
   commit b42e05c; S5/GS blob f54b23b), enumerate the precise sets of
