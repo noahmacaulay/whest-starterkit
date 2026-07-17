@@ -2021,3 +2021,48 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   Full-gate infra tick's scope. Flagged for the lead / next submission
   tick in champion.submission_readiness.
 - Full/submission gate: PASS. No submission performed.
+
+## 2026-07-17T09:45:00Z - S4-claude: B46 submission FAILED grading (AICrowd Evaluation error)
+- Authorization: the lead's binding B47 decision-tree (branch 1) directed
+  "B46 stands as champion and SHOULD BE SUBMITTED" once B47 confirmed
+  robustness AND B46 not-worse than B45. Both held: B47 Full gate PASS
+  (-6.0 sigma adj vs submitted B25, -23.2% vs last_submitted, zero
+  failures); B46-vs-B45 paired Full (adjusted mean delta -2.13e-08, B46
+  -3.2% better aggregate, 511/1000) -> B46 not-worse. So I executed the
+  step-7 submission.
+- Step-7 execution (careful, protocol-exact): champion current on
+  origin/main + validated; packaged estimator.py via `whest package` ->
+  submissions/S4-...-B46.tar.gz (sha256 6886547753b0...); confirmed 0
+  active reservations; added an S4 ledger reservation (status submitting)
+  and atomic-pushed it as the SOLE active reservation BEFORE any network
+  call; re-verified sole-active; then ran
+  `whest submit <artifact> --watch --format json --description "S4-... B46-..."`.
+- RESULT: the submission was ACCEPTED (submission_id 316800) but grading
+  FAILED: grading_status_cd "failed", grading_message "Error : Evaluation
+  error", score null. Per AGENTS.md I did NOT auto-retry; set the ledger
+  entry status=failed with submission_id 316800; left last_submitted_score
+  UNCHANGED (8.507e-07 from S3); cleared the reservation (submitting ->
+  failed) and pushed.
+- Investigation (inconclusive on exact cause): package validates
+  (`whest validate-package` OK); B46's ops (fnp.linalg.qr/sign/diagonal/
+  concatenate) are NOT in flopscope.remote_unsupported_ops (only
+  {apply_along_axis, apply_over_axes, fromfunction, fromiter, piecewise});
+  B46 ran cleanly on all 1000 Full MLPs locally. So no local repro. PRIME
+  SUSPECT is still the orthogonal-block construction: the only prior
+  successful submission S3 (B25 radial-exact) used NONE of qr/sign/
+  diagonal/concatenate, so the grader may reject fnp.linalg.qr via a path
+  other than remote_unsupported_ops (UnsupportedFunctionError, a
+  version/env difference, or a resource limit the QR wall time trips) --
+  or the error is transient.
+- IMPACT: the locally-superior orthogonal-directions champion (B46, and
+  by extension B43) currently does NOT grade on AICrowd. The graded
+  leaderboard entry remains S3 (B25, 6.6845e-07). This is a critical
+  blocker for realizing the -23% improvement and NEEDS a lead/user
+  decision (champion.submission_readiness status
+  BLOCKED_B46_GRADER_EVALUATION_ERROR): confirm whether fnp.linalg.qr is
+  gradeable (a minimal QR-only probe submission, or asking maintainers);
+  if not, either find a QR-FREE construction achieving the orthogonal
+  variance reduction, or keep the submitted artifact as the gradeable
+  B25/B42 while B46 stays the local champion of record. Did NOT spend
+  further submission attempts on diagnostics without direction.
+- Full/submission gate: submission ATTEMPTED, grading FAILED (id 316800).
