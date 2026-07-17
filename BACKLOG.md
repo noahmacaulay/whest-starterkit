@@ -15,7 +15,8 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **S5** (admin, user ruling - submission authorization) - RECORDED
+- [ ] **S5** (admin, user ruling - submission authorization) - CLAIMED
+  claude-lead 2026-07-17T17:07:00Z - RECORDED
   2026-07-17T16:41Z by user ruling. The user AUTHORIZES one submission
   attempt of the B49 QR-free Gram-Schmidt candidate
   (candidate_claude.py @ f54b23b), whose own complete Full-split paired

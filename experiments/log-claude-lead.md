@@ -505,3 +505,78 @@ No coordination problems requiring escalation. Phase 2 proceeds.
   plausibly exceeds it (-30% Mini aggregate at lower FLOPs) -- the
   B44-style Full confirmation (B47) is the right next step and is
   already claimed by the worker. No further lead action this tick.
+
+## Lead review 2026-07-17T17:07:00Z
+- Synced: lead/claude rebased onto origin/main @ 3b5aa43 (fast-forward,
+  12 new commits since last lead tick). Worktree clean before and after.
+- Reviewed all three logs, champion.json, BACKLOG.md, and the recent
+  result reports (B47/B48/B49/B50 summaries; B50 GS-full-COMPLETE
+  metadata). Events since the last lead tick: gpt's B46 promotion stood;
+  B47 gave B46 a decisive Full gate PASS (-23.2% vs last_submitted,
+  -6.0 sigma); S4 submitted B46 per my B47 decision-tree branch 1 and
+  AICrowd ACCEPTED it (submission_id 316800) but grading FAILED
+  ("Error : Evaluation error", score null); B48 diagnosed the failure as
+  AICrowd-environment-specific (not locally reproducible under any
+  runner/flopscope mode; artifact has no requirements pin; prime suspect
+  fnp.linalg.qr, the standout op vs the successfully-graded S3); B49
+  built a QR-free classical-Gram-Schmidt orthogonal frame that matches
+  B46's Mini MSE exactly (ratio 1.0005) using only S3-graded ops; B50
+  gave the GS candidate its OWN complete 1000-MLP Full gate: PASS
+  (adjusted -20.1% vs last_submitted 8.507e-07, CI entirely below zero
+  at -5.16 sigma, MSE -5.40 sigma, zero failure flags). The user then
+  recorded S5 (2026-07-17T16:41Z, commit 3b5aa43): authorization for
+  exactly ONE submission attempt of this exact GS candidate.
+- Submission-ledger reconciliation: S4 is fully reconciled by EXACT id
+  (submission_id 316800, status failed, last_submitted_score correctly
+  UNCHANGED at 8.507033588741281e-07 from S3). Zero active `submitting`
+  reservations. The two 2026-06-11 pre-scaffold null entries remain
+  manual-backfill items (unchanged, correctly never auto-matched).
+- Candidate identity audit (important clarification for the record):
+  "f54b23b" in B49/B50/S5 is the BLOB hash of candidate_claude.py
+  (git hash-object), NOT a commit SHA -- there is no commit f54b23b
+  containing the file. Verified: candidate_claude.py at origin/main
+  HEAD (3b5aa43) hashes to exactly f54b23bb9ca6952b63e3c8293153107ba0408837
+  and contains the B49 Gram-Schmidt construction. Future references
+  should say "blob f54b23b" to avoid ambiguity. Cosmetic finding: the
+  file's top docstring still describes B46's shared-Haar-QR variant
+  (stale); the B49 change is documented at the construction site
+  (lines 47-49). Not edited -- worker claude owns that file; flagged
+  here instead. Grading is unaffected by comments.
+- Math audit of the GS candidate (lead check before spending the S5
+  attempt): classical Gram-Schmidt of a Gaussian matrix with positive
+  normalization IS the QR decomposition under the positive-diag(R)
+  convention, so Q is exactly Haar-distributed -- B46's explicit
+  sign-correction q*sign(diag(r)) is subsumed, not lost. Rows of a Haar
+  orthogonal matrix are exactly uniform on the sphere; independent
+  seeded Rademacher column sign flips preserve Haar marginals; hence
+  every one of the 6,500 directions is uniform and the radial-exact
+  estimator stays unbiased. E[r] = sqrt(2)*Gamma((d+1)/2)/Gamma(d/2) is
+  the correct chi(d) mean. Seeding via fnp.random.default_rng(mlp.seed);
+  no plain numpy in the sampling path; no print/filesystem. B49 verified
+  orthonormality (7.5e-13) and ~uniform marginals empirically. Sound.
+- Reproducibility audit: this machine reports whestbench 0.12.0rc3 /
+  flopscope 0.8.0rc5+np2.2.6, uv.lock last changed @ 9b677e2 -- exactly
+  the B50/champion contract. `uv sync --frozen` clean;
+  `whest validate --estimator candidate_claude.py` passes.
+- Backlog rulings: S5 is the top item and I am claiming it for Phase 2
+  (it is explicitly claimable by a lead review tick). No reordering
+  needed otherwise: every other item is DONE with persisted results; no
+  pruning; the queue below S5 is empty of unclaimed research items, so
+  workers should add new ideas next tick regardless of the S5 outcome.
+  Post-S5 guidance recorded now (binding until the next lead tick):
+  (1) if GS GRADES, the qr-hypothesis is confirmed for practical
+  purposes; promote GS as champion of record per B50/S5 and treat
+  fnp.linalg.qr (and untested exotic linalg ops) as unsubmittable until
+  proven otherwise; queue an idea to recover GS's +4% multiplier gap
+  (e.g. blocked/vectorized GS with fewer Python-loop iterations).
+  (2) if GS ALSO FAILS grading, do NOT resubmit anything without a new
+  user ruling; queue diagnosis toward B48 options (a)/(b) (transient
+  test / requirements-pin repackage) as LEAD-decision items only.
+- Phase 2: proceeding to execute S5 as a submission tick under the
+  unchanged step-7 reservation protocol (package blob f54b23b as-is,
+  sha256, sole-active reservation pushed BEFORE any network call, exact
+  attempt-id S5-claude-lead-20260717T170700Z, no automatic retry of any
+  ambiguous outcome). On a successful grade: set last_submitted_score to
+  the exact B50 local Full score 6.7972266077423043e-07 and promote GS
+  over the ungradeable B46 via standard CAS citing S5/B50. On a failed
+  grade: record by exact id and stop.
