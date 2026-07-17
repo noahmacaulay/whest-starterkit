@@ -15,7 +15,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B53** (exploit) - Gradeable orthogonal candidate: apply B51's fix. B51
+- [ ] **B53** (exploit) - CLAIMED claude 2026-07-17T18:20:00Z - Gradeable orthogonal candidate: apply B51's fix. B51
   proved the B42 chunked forward is GRADER-SAFE and localized the S4/S5
   grader failure to the FRAME ops (fnp.concatenate and/or fnp.where +
   broadcast-multiply). Rebuild the B49 Gram-Schmidt orthogonal candidate
