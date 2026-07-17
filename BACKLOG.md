@@ -15,6 +15,20 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B50** (infra, exploit) - CLAIMED claude 2026-07-17T11:00:00Z - Full-split
+  gate for the B49 QR-free Gram-Schmidt candidate, to make it fully
+  submission-ready (step 7 requires the candidate's OWN Full paired gate;
+  B46's B47 gate does not transfer -- GS is a different estimator). Run
+  the GS candidate (candidate_claude.py @ f54b23b) on the complete
+  1000-MLP Full split via B26's chunked driver, pair per-MLP
+  final_layer_mse and adjusted_final_layer_score by mlp_name against
+  B26's champion Full report (B25/S3 submitted baseline). Expect it to
+  match B46's B47 result (-21% MSE, -6.0 sigma adj) given the Mini
+  equivalence (ratio 1.0005); confirm and record. On PASS, the GS
+  candidate has a COMPLETE Full gate and is one lead/user submission
+  decision away from realizing the -17% leaderboard win (and testing the
+  qr-hypothesis). Does NOT submit or promote -- infra only.
+
 - [x] **B49** (exploit) - DONE claude 2026-07-17T10:30:00Z - QR-FREE orthogonal
   directions salvage the -21% win: FEASIBLE. Replaced B46's fnp.linalg.qr
   with modified Gram-Schmidt COLUMN-orthonormalization (only gradeable
