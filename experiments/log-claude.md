@@ -2155,3 +2155,39 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   and -GS-candidate-mini.json.
 - Full/submission gate: NOT_RUN (submission is the decisive test, pending
   lead/user).
+
+## 2026-07-17T11:00:00Z - B50-claude: Full-split gate for the GS candidate (PASS, submission-ready)
+- Goal: give the B49 QR-free Gram-Schmidt candidate its OWN Full paired
+  gate (step 7 needs the candidate's own gate; B46's B47 does not
+  transfer since GS is a different estimator), making it fully
+  submission-ready and rigorously confirming GS matches B46 on Full.
+- Method: ran the GS candidate (candidate_claude.py @ f54b23b) on the
+  complete 1000-MLP Full split via B26's chunked driver (ten 100-MLP
+  subprocess chunks), paired by mlp_name vs B26's champion Full report
+  (B25/S3 submitted baseline).
+- Result -- PASS decisively (n=1000, zero failure flags): MSE base
+  7.6925e-06 -> GS 6.0794e-06 (-21.0%), paired 95%CI=[-2.199e-06,
+  -1.027e-06] entirely below zero at -5.40 sigma, 548/1000 improved.
+  Adjusted 8.5070e-07 -> 6.7972e-07 (-20.1%), 95%CI=[-2.360e-07,
+  -1.060e-07] entirely below zero at -5.16 sigma, 543/1000 improved. GS
+  is -20.1% over last_submitted_score 8.507e-07 (>> 5% bar).
+- GS vs B46: GS Full MSE (6.0794e-06) is essentially IDENTICAL to B46's
+  B47 (6.0785e-06); GS is +4% higher on ADJUSTED (its extra Gram-Schmidt
+  ops cost ~+4% multiplier). B46 is locally slightly better but
+  UNGRADEABLE (fnp.linalg.qr); GS is the best GRADEABLE option and its
+  own Full gate now confirms the orthogonal win survives the qr-free
+  construction on 1000 MLPs.
+- Verdict: PASS. GS satisfies ALL step-7 gate prerequisites (paired Full
+  CI entirely negative + -20.1% over last_submitted). It is fully
+  submission-ready.
+- Next action (lead/user): submit GS -- a FRESH decision (not covered by
+  B47/branch-1; S4 just consumed) that doubles as the decisive
+  qr-hypothesis test. If it grades: realizes ~-20% over last_submitted /
+  ~-17% over the S3 leaderboard AND confirms qr was the S4 cause; promote
+  GS over the ungradeable B46 as the submittable champion. If it also
+  fails: the grader issue is not qr. I did NOT submit or promote (infra/
+  gate only). Detail:
+  experiments/results/claude/B50-claude-20260717T110000Z-summary.json
+  and -GS-full-COMPLETE.json.
+- Full/submission gate: PASS (prerequisites met; network submission
+  pending lead/user).

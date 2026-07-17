@@ -15,7 +15,23 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B50** (infra, exploit) - CLAIMED claude 2026-07-17T11:00:00Z - Full-split
+- [x] **B50** (infra, exploit) - DONE claude 2026-07-17T11:00:00Z - Full-split gate for
+  the B49 QR-free Gram-Schmidt candidate: PASS, submission-ready. Ran GS
+  (candidate_claude.py @ f54b23b) on the complete 1000-MLP Full split,
+  paired vs the submitted B25 baseline: MSE -21.0% (95%CI=[-2.199e-06,
+  -1.027e-06], -5.40 sigma, 548/1000); adjusted -20.1% (95%CI=[-2.360e-07,
+  -1.060e-07], -5.16 sigma, 543/1000); both CIs entirely below zero; zero
+  failure flags. GS is -20.1% over last_submitted (>> 5% bar). GS Full MSE
+  (6.0794e-06) matches B46 (6.0785e-06); GS is +4% higher adjusted (GS ops
+  cost) but GRADEABLE (no qr) whereas B46 is not. All step-7 gate
+  prerequisites met -> GS is fully submission-ready. NEXT (lead/user):
+  submit GS (fresh decision; also the decisive qr-hypothesis test; on
+  grade, realizes ~-17% over the S3 leaderboard and confirms qr was the
+  S4 cause; promote GS over the ungradeable B46). Did NOT submit/promote
+  (infra only). Detail: log-claude.md B50 entry,
+  `experiments/results/claude/B50-claude-20260717T110000Z-summary.json`.
+  Original item follows for history:
+  Full-split
   gate for the B49 QR-free Gram-Schmidt candidate, to make it fully
   submission-ready (step 7 requires the candidate's OWN Full paired gate;
   B46's B47 gate does not transfer -- GS is a different estimator). Run

@@ -1,0 +1,32 @@
+{
+  "experiment_id": "B50-claude-20260717T110000Z",
+  "agent": "claude",
+  "purpose": "Full-split gate for the B49 QR-free Gram-Schmidt candidate (candidate_claude.py @ f54b23b), to make it fully submission-ready. Step 7 requires the candidate's OWN Full paired gate; B46's B47 gate does not transfer since GS is a different estimator (Gram-Schmidt frame vs qr frame). Also rigorously confirms GS matches B46 on the Full split.",
+  "method": "Ran the GS candidate on the complete 1000-MLP Full split via B26's chunked driver (ten 100-MLP subprocess chunks). Paired per-MLP final_layer_mse and adjusted_final_layer_score by mlp_name against B26's champion Full report (B25/S3 submitted baseline).",
+  "environment": {"whestbench": "0.12.0rc3", "flopscope": "0.8.0rc5", "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1", "split": "full", "runner": "subprocess"},
+  "raw_report": "experiments/results/claude/B50-claude-20260717T110000Z-GS-full-COMPLETE.json",
+  "result_full_1000": {
+    "gs_single_estimator": {
+      "adjusted_final_layer_score": 6.797226607742304e-07,
+      "final_layer_mse": 6.079351692790169e-06,
+      "mean_score_multiplier": 0.11176000755202078,
+      "failure_flags_total": 0
+    },
+    "paired_vs_submitted_B25": {
+      "mse_rel_change": -0.2097,
+      "mse_paired_95pct_ci": [-2.199e-06, -1.027e-06],
+      "mse_sigmas": -5.40,
+      "mse_n_improved": 548,
+      "adjusted_rel_change": -0.2010,
+      "adjusted_paired_95pct_ci": [-2.360e-07, -1.060e-07],
+      "adjusted_sigmas": -5.16,
+      "adjusted_n_improved": 543,
+      "ci_entirely_below_zero": true
+    },
+    "vs_last_submitted": {"last_submitted_score": 8.507033588741281e-07, "gs_full_adjusted": 6.797226607742304e-07, "improvement": -0.2010, "exceeds_5pct_bar": true},
+    "vs_b46_champion": {"b46_full_adjusted": 6.532836741386116e-07, "gs_full_adjusted": 6.797226607742304e-07, "gs_over_b46": 1.0405, "note": "GS Full MSE (6.0794e-06) is essentially identical to B46 (6.0785e-06); GS is +4% higher on ADJUSTED score (its extra Gram-Schmidt ops cost ~+4% multiplier). B46 is locally slightly better but UNGRADEABLE (fnp.linalg.qr); GS is the best GRADEABLE option."}
+  },
+  "verdict": "PASS. The GS candidate has a COMPLETE Full gate and satisfies all AGENTS.md step-7 GATE prerequisites: paired Full CI entirely below zero (MSE -5.40 sigma, adjusted -5.16 sigma) and -20.1% over last_submitted_score (>> 5% bar), zero failure flags. It matches B46's Full MSE exactly, at +4% multiplier, using ONLY gradeable ops (no fnp.linalg.qr).",
+  "next_action": "GS is fully submission-ready. Submitting it is a FRESH lead/user decision (not covered by the B47/branch-1 B46 authorization; S4 was just consumed) and doubles as the decisive qr-hypothesis test: if it GRADES, it realizes a ~-20% improvement over last_submitted / ~-17% over the S3 leaderboard 6.6845e-07 and confirms qr was the S4 cause; if it also fails, the grader issue is not qr. Suggested: promote GS over the ungradeable B46 (GS is the submittable champion) and submit per step 7. I did NOT submit or promote -- infra/gate only.",
+  "full_submission_gate": "PASS (gate prerequisites met; actual network submission pending lead/user)."
+}
