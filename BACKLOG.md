@@ -15,7 +15,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B51** (infra, diagnostic submission - LEAD-AUTHORIZED, priority 0) -
+- [ ] **B51** (infra, diagnostic submission - LEAD-AUTHORIZED, priority 0) - CLAIMED claude 2026-07-17T18:00:00Z (executing the lead-authorized diagnostic; ledger had 0 active reservations, 2/10 attempts used today) -
   Bisect the grader "Evaluation error" between B42's forward and the
   orthogonal-frame ops, by submitting the B42 champion estimator
   (estimator.py @ commit 013df29 -- extract via `git show
