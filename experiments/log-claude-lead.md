@@ -580,3 +580,56 @@ No coordination problems requiring escalation. Phase 2 proceeds.
   the exact B50 local Full score 6.7972266077423043e-07 and promote GS
   over the ungradeable B46 via standard CAS citing S5/B50. On a failed
   grade: record by exact id and stop.
+
+## 2026-07-17T17:20:00Z - S5-claude-lead-20260717T170700Z: GS submission attempt -- grading FAILED identically; qr-hypothesis REFUTED
+- Hypothesis (S5 user ruling + B49/B50): the B49 QR-free Gram-Schmidt
+  candidate reproduces the orthogonal -21% win with only S3-graded ops;
+  submitting it either grades (realizes ~-17% leaderboard, confirms qr
+  caused S4) or fails (qr was not the cause).
+- Base: candidate_claude.py = git blob f54b23bb9ca6952b63e3c8293153107ba0408837
+  (verified by hash-object at origin/main 3b5aa43; packaged estimator.py
+  bit-identical). NOT the estimator.py champion (B46, ungradeable-in-practice).
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6,
+  uv.lock@9b677e2; `uv sync --frozen` clean; validate + validate-package OK.
+- Evaluation: no new local runs needed -- B50's COMPLETE 1000-MLP Full
+  gate (adjusted -20.1% vs last_submitted, CI [-2.360e-07,-1.060e-07]
+  entirely below zero, -5.16 sigma, zero flags) satisfies step 7 under
+  BOTH the old 5% rule and the newly relaxed significance-only rule
+  (user ruling commit 6c81bd2, landed mid-tick and re-checked).
+- Execution (protocol-exact): packaged via `whest package --estimator
+  candidate_claude.py` -> submissions/S5-claude-lead-20260717T170700Z-
+  GS-f54b23b.tar.gz (sha256 cda55d67c44fb86b1257178f456a0780f5f53528b9
+  cc8d2d90b909771d1726bf); ledger reservation pushed atomically as the
+  SOLE active submitting entry (commit 6d0f46b) BEFORE any network call;
+  then `whest submit <artifact> --watch --format json --description
+  "S5-claude-lead-20260717T170700Z B49-claude-20260717T103000Z"`.
+- Result: ACCEPTED, submission_id 316855 (server created_at
+  2026-07-17T17:05:15Z; local clock ~5-7 min ahead of server, same drift
+  S3 noted). Grading FAILED: "Error : Evaluation error", score null --
+  the IDENTICAL signature as S4 (B46, 316800). Ledger updated by exact
+  id (submitting -> failed); NOT retried; S5 authorization consumed;
+  last_submitted_score UNCHANGED (8.507033588741281e-07, S3).
+- KEY INFERENCE: the failing candidate contains NO fnp.linalg.qr, so the
+  S4 qr-hypothesis is REFUTED. Remaining suspects = what S4/S5 share
+  that graded S3/B25 lacks: (a) B42's float32 chunked forward
+  (astype(float32), 650-row chunks, per-layer fnp.sum(axis=0,
+  dtype=fnp.float64)); (b) frame-construction ops (fnp.where signs,
+  broadcast multiply, fnp.concatenate, per-iteration fnp.stack in the
+  256-step GS loop); (c) a grader-side resource/time limit both frame
+  builds trip. Note: `whest package --requirements` is documented
+  deprecated/ignored ("the grader installs no third-party packages"),
+  so B48 option (b) (version pinning) is INFEASIBLE -- bisection by
+  minimal diagnostic submissions is the only direct probe available.
+- Verdict: submission FAILED grading; conditional GS promotion (S5) NOT
+  executed; B46 remains local champion of record; leaderboard remains
+  S3/B25 (6.6845e-07).
+- Full/submission gate: Full PASS (B50, pre-existing); submission
+  attempt 2/10 of the UTC day; reservation opened and closed by exact
+  id within this tick.
+- New ideas queued: B51 (lead-authorized diagnostic submission of the
+  B42 estimator @ 013df29 -- bisects forward-vs-frame-ops; hypothesis
+  and both outcome branches recorded in the item per the new diagnostic
+  provision) and B52 (desk audit of exact fnp op-set deltas between the
+  graded and failing artifacts, cross-checked against the installed
+  flopscope/whestbench grader-relevant registries, to rank suspects and
+  minimize further diagnostic attempts).

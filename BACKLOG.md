@@ -15,8 +15,66 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **S5** (admin, user ruling - submission authorization) - CLAIMED
-  claude-lead 2026-07-17T17:07:00Z - RECORDED
+- [ ] **B51** (infra, diagnostic submission - LEAD-AUTHORIZED, priority 0) -
+  Bisect the grader "Evaluation error" between B42's forward and the
+  orthogonal-frame ops, by submitting the B42 champion estimator
+  (estimator.py @ commit 013df29 -- extract via `git show
+  013df29:estimator.py`, verify the blob hash matches that commit's
+  tree, package, validate-package, hash). AUTHORIZATION (per the
+  relaxed AGENTS.md step-7 diagnostic provision, recorded by claude-lead
+  2026-07-17T17:20Z BEFORE the attempt): exactly ONE diagnostic attempt,
+  counts against the 10/day cap (S4+S5 used 2 today), full reservation
+  protocol + exact-ID reconciliation + no automatic retry. HYPOTHESIS
+  under test: S4 (B46, qr) and S5 (QR-free GS) both failed grading with
+  the identical "Evaluation error" while S3 (B25) graded fine, so the
+  breaking element is in what S4/S5 share and B25 lacks: EITHER B42's
+  float32 chunked forward (astype(float32) casts, 650-row chunking,
+  per-layer fnp.sum(axis=0, dtype=fnp.float64)) OR the frame-construction
+  ops (fnp.where signs, broadcast multiply, fnp.concatenate,
+  per-iteration fnp.stack) OR a grader resource limit the frame builds
+  trip. B42 = B25's predictions (graded, leaderboard 6.6845e-07) on the
+  new forward, with NO frame ops. OUTCOMES: (a) B42 GRADES -> the
+  forward is grader-safe; the culprit is in the frame ops / their
+  resource cost; next bisect adds frame ops one at a time to B42
+  (queue follow-up); score ~= S3's so no leaderboard downside. (b) B42
+  FAILS identically -> the culprit is in the B42 forward's ops
+  (astype / chunked sum(dtype=) are then prime suspects) and BOTH
+  orthogonal candidates inherit it; the fix is rebuilding the forward
+  with only S3-graded ops (float64, no dtype kwargs), then re-adding
+  frames. Either branch converts a dead-end into a concrete fix path.
+  Do NOT submit anything else before B51's result is recorded.
+
+- [ ] **B52** (explore, desk analysis, priority 1) - Exact op-delta audit
+  to design the minimal grader bisect. From the three artifacts'
+  estimator sources (S3/B25 blob in commit 2227ef3; S4/B46 blob in
+  commit b42e05c; S5/GS blob f54b23b), enumerate the precise sets of
+  fnp/flopscope API calls (op name + kwargs, e.g. sum(dtype=...),
+  astype targets, where, concatenate, stack-in-loop, rng call
+  signatures) present in each, and compute the failing-minus-graded
+  delta set. Cross-check each delta op against the grader-relevant
+  code paths in the INSTALLED flopscope/whestbench (remote/serialization
+  /instrumentation registries, not just remote_unsupported_ops, which
+  B48 already cleared). Output: a ranked suspect list and the smallest
+  sequence of diagnostic submissions that identifies the culprit
+  (combine with B51's result). No submission, no harness compute; pure
+  source/desk work a worker tick can do immediately.
+
+- [x] **S5** (admin, user ruling - submission authorization) - DONE
+  claude-lead 2026-07-17T17:20:00Z - EXECUTED AND FAILED GRADING:
+  attempt S5-claude-lead-20260717T170700Z, submission_id 316855
+  (server created_at 2026-07-17T17:05:15Z). The GS artifact (blob
+  f54b23b verified bit-identical inside the package, sha256 cda55d67...)
+  was ACCEPTED but the grader returned the IDENTICAL "Error : Evaluation
+  error" (score null) as S4 -- despite containing NO fnp.linalg.qr.
+  QR-HYPOTHESIS REFUTED; the S5 authorization is consumed; NOT retried;
+  last_submitted_score unchanged (8.507e-07, S3); the conditional GS
+  promotion did NOT execute (grade failed); B46 remains local champion
+  of record. Leaderboard remains S3/B25 (6.6845e-07). Follow-up bisect
+  queued as B51 (lead-authorized diagnostic: B42 forward without
+  frames) + B52 (op-delta desk audit). Detail: champion.json S5 ledger
+  entry + submission_readiness; experiments/log-claude-lead.md
+  2026-07-17T17:20Z entry. Original item follows for history:
+  RECORDED
   2026-07-17T16:41Z by user ruling. The user AUTHORIZES one submission
   attempt of the B49 QR-free Gram-Schmidt candidate
   (candidate_claude.py @ f54b23b), whose own complete Full-split paired
