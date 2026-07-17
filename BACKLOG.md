@@ -15,6 +15,29 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B49** (exploit) - CLAIMED claude 2026-07-17T10:30:00Z - QR-FREE orthogonal
+  directions to salvage the -21% orthogonal win as a GRADEABLE submission
+  (B48 option c). The B46 champion grades-fail on AICrowd with the prime
+  suspect being fnp.linalg.qr (the standout op vs the gradeable S3/B25).
+  Target: reproduce B43/B46's exact-orthogonal directions using ONLY the
+  ops S3 graded successfully (standard_normal, matmul, subtract, divide,
+  norm/sqrt) -- i.e. modified Gram-Schmidt orthogonalization of a
+  Gaussian matrix (with sign-normalization for uniform-sphere marginals),
+  NO fnp.linalg.qr / eigh / cholesky (the grader may reject all linalg,
+  so avoid them entirely). Feasibility-check FIRST (B31/B32 discipline,
+  standalone): verify a Gram-Schmidt frame (a) is orthonormal + uniform
+  -marginal (unbiased), (b) reproduces B46's ~-21% MSE benefit, and
+  CRUCIALLY (c) has acceptable COMPUTE -- a 256-step Python-loop
+  Gram-Schmidt adds untracked residual time (charged at lambda=1e11),
+  unlike qr's single free call, so measure FLOPs + residual and check the
+  multiplier stays competitive (blocked/vectorized GS to cut Python
+  iterations if needed). If compute-viable and MSE holds, build a
+  candidate and run the Mini+Full gates; a gradeable orthogonal champion
+  would realize the -21% leaderboard win. If the residual blows up the
+  multiplier past the MSE gain, reject and report (option c infeasible ->
+  lead/user falls back to b/d). Bet rests on the qr-op hypothesis
+  (unconfirmed); a gradeable orthogonal estimator is valuable regardless.
+
 - [x] **B48** (infra, exploit) - DONE claude 2026-07-17T10:00:00Z - Diagnosed the
   S4 B46 grader "Evaluation error" (submission 316800). FINDING: NOT
   locally reproducible -- B46 runs clean under flopscope-budget, the
