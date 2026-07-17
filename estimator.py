@@ -1,12 +1,8 @@
-"""B42 candidate (claude-lead): champion with the charged residual minimized.
+"""B46 candidate: radial-exact Monte Carlo with shared-Haar sign orbits.
 
-Identical estimator to the B25 radial-exact champion (same seeded draw, same
-directions, same statistics); only the arithmetic is restructured so that the
-un-instrumented wall time flopscope charges as residual (at 1e11 FLOPs/s)
-nearly vanishes: float32 forward chain (halves memory traffic) computed in
-650-row chunks (keeps every temporary small enough for allocator arena reuse
-instead of OS-level churn), with per-layer sums accumulated in float64 so the
-final layer means match the champion's to ~7e-8 absolute.
+One exact-Haar frame supplies 25 independently column-signed orbit blocks.
+Each block remains Haar-marginal, but the construction pays for only one QR.
+The B42 float32 chunked forward minimizes charged residual wall time.
 """
 
 from __future__ import annotations
@@ -16,16 +12,15 @@ import importlib.util
 import math
 from pathlib import Path
 
+import numpy as _np
 import flopscope as flops
 import flopscope.numpy as fnp
 from whestbench import MLP, BaseEstimator
 
 _COV_RESCALE_THRESHOLD = 1e100
-
-
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Radial-exact Monte Carlo (B25) with minimized charged residual (B42).
+        """Radial-exact MC with shared-Haar signed-orbit blocks (B46).
 
         For z ~ N(0, I_d), z = r*u with r = ||z|| ~ chi(d), u = z/r ~
         Uniform(sphere), r independent of u. `MLP` has no bias field, so
@@ -34,28 +29,36 @@ class Estimator(BaseEstimator):
         substitute the closed-form E[r] for the sampled radius and
         forward only directions.
 
-        B42 restructuring (statistically identical, near-bit-identical
-        predictions): the scorer charges effective compute
-        C = flops_used + 1e11 * (wall - backend - overhead), so only
-        un-instrumented time (allocator/OS churn between fnp ops) costs
-        score. Forwarding the same 6,500 directions in float32 and in
-        650-row chunks keeps every temporary ~650KB, which the process
-        allocator recycles without OS-level alloc/free churn; per-layer
-        sums accumulate in float64 so the returned means match the
-        float64 champion to ~1e-7 absolute (MSE change < 1e-15).
+        A sign-corrected QR produces one exact-Haar orthogonal frame Q.
+        Each Q*diag(d_b), for an independent Rademacher vector d_b, is
+        also exactly Haar-marginal. Its rows are therefore exactly uniform
+        sphere directions and the estimator remains unbiased, while the
+        25 dependent sign-orbit frames need only one QR instead of B43's 25.
         """
         n_samples = 6_500
+        n_blocks = 25
+        n_extra = 100
         chunk = 650
         _ = budget
         width = mlp.width
 
         rng = fnp.random.default_rng(mlp.seed)
-        z = rng.standard_normal((n_samples, width)).astype(fnp.float32)
-        norms = fnp.linalg.norm(z, axis=1)
-        u_all = z / norms[:, None]
+
+        g = rng.standard_normal((width, width)).astype(fnp.float32)
+        q, r = fnp.linalg.qr(g)
+        q = q * fnp.sign(fnp.diagonal(r))
+
+        orbit_draws = rng.standard_normal((n_blocks - 1, width))
+        orbit_signs = fnp.where(orbit_draws >= 0.0, 1.0, -1.0).astype(fnp.float32)
+        blocks = [q]
+        blocks.extend(q * orbit_signs[b] for b in range(n_blocks - 1))
+
+        z = rng.standard_normal((n_extra, width)).astype(fnp.float32)
+        z = z / fnp.linalg.norm(z, axis=1)[:, None]
+        blocks.append(z)
+        u_all = fnp.concatenate(blocks, axis=0)
 
         w32 = [w.astype(fnp.float32) for w in mlp.weights]
-
         acc = None
         for start in range(0, n_samples, chunk):
             u = u_all[start : start + chunk]
@@ -69,6 +72,79 @@ class Estimator(BaseEstimator):
             math.lgamma((width + 1) / 2.0) - math.lgamma(width / 2.0)
         )
         return (e_r / n_samples) * fnp.stack(acc, axis=0)
+
+        # --- Step 1: initialise the input distribution ---
+        # Input is modelled as standard multivariate normal: mu=0, cov=I.
+        mu = fnp.zeros(width)  # shape (width,)
+        cov = fnp.eye(width)  # shape (width, width)
+        log_scale = 0.0  # tracks accumulated log of rescaling factor
+
+        rows = []
+        for w in mlp.weights:  # w has shape (width, width)
+            # --- Step 2: overflow prevention ---
+            # If the covariance has grown very large, rescale (mu, cov) by the
+            # square root of the largest variance so that downstream matmuls
+            # stay in a safe range.  We compensate in the recorded mean later.
+            cov_diag = fnp.diag(cov)
+            max_var_np = float(fnp.max(cov_diag))
+            if max_var_np > _COV_RESCALE_THRESHOLD:
+                s = float(fnp.sqrt(max_var_np))
+                mu = mu / s
+                cov = cov / (s * s)
+                log_scale += float(fnp.log(s))
+
+            # --- Step 3: propagate through the linear layer ---
+            # Pre-activation mean:         mu_pre  = W^T mu
+            # Pre-activation covariance:   cov_pre = W^T cov W
+            #
+            # Use einsum (not the chained matmul `w.T @ cov @ w`) so flopscope
+            # detects that the two `w` operands are the same tensor and tags
+            # cov_pre as symmetric. Symmetry then flows through the post-ReLU
+            # outer-product update below (line ~140), so the resulting `cov`
+            # is also tagged symmetric — no SymmetryLossWarning to suppress.
+            # See https://github.com/AIcrowd/whestbench/issues/27 for the
+            # background.
+            mu_pre = w.T @ mu
+            cov_pre = fnp.einsum("ij,ia,jb->ab", cov, w, w)
+
+            # Extract per-neuron pre-activation standard deviations from the
+            # diagonal of cov_pre.
+            var_pre = fnp.maximum(fnp.diag(cov_pre), 1e-12)
+            sigma_pre = fnp.sqrt(var_pre)
+
+            # --- Step 4: compute alpha = mu / sigma for each neuron ---
+            alpha = mu_pre / sigma_pre
+            phi_alpha = flops.stats.norm.pdf(alpha)
+            Phi_alpha = flops.stats.norm.cdf(alpha)
+
+            # --- Step 5: post-ReLU mean (exact per neuron) ---
+            # E[ReLU(pre)] = mu_pre * Phi(alpha) + sigma_pre * phi(alpha)
+            mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
+
+            # --- Step 6: post-ReLU diagonal variance (exact per neuron) ---
+            # E[z^2] = (mu_pre^2 + var_pre) * Phi(alpha) + mu_pre * sigma_pre * phi(alpha)
+            ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
+            var_post = fnp.maximum(ez2 - mu * mu, 0.0)
+
+            # --- Step 7: approximate post-ReLU covariance ---
+            # gain[i] = Phi(alpha[i])  when sigma_pre[i] > 0, else 0
+            sigma_np = fnp.asarray(sigma_pre, dtype=fnp.float64)
+            Phi_np = fnp.asarray(Phi_alpha, dtype=fnp.float64)
+            gain_np = fnp.where(sigma_np > 1e-12, Phi_np, 0.0)
+            gain = fnp.array(gain_np.astype(fnp.float32))
+
+            # Off-diagonal approximation:  cov_post[i,j] ≈ gain[i]*gain[j]*cov_pre[i,j]
+            cov = fnp.multiply(fnp.outer(gain, gain), cov_pre)
+
+            # Replace the diagonal with the exact marginal variances.
+            fnp.fill_diagonal(cov, var_post)
+
+            # --- Step 8: record mean in original (unscaled) coordinates ---
+            scale_factor = float(fnp.exp(log_scale))
+            rows.append(mu * scale_factor)
+
+        # Stack all layer means into a single (depth, width) array
+        return fnp.stack(rows, axis=0)
 
 
 def _load_baseline(name: str) -> type[BaseEstimator]:

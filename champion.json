@@ -1,15 +1,18 @@
 {
   "champion": {
     "file": "estimator.py",
-    "description": "Radial-exact Monte Carlo post-ReLU mean estimator (B25) with minimized charged residual (B42): same seeded float64 Gaussian draw and unit directions, forwarded in float32 in 650-row chunks (allocator arena reuse eliminates the OS memory churn that flopscope charges as residual wall time at 1e11 FLOPs/s), per-layer sums accumulated in float64, scaled by the closed-form chi(width) mean radius. Predictions match the B25 champion within 7.7e-08 absolute; only mean_effective_compute changes.",
-    "adjusted_final_layer_score": 7.623281542134296e-07,
-    "final_layer_mse": 7.210819040324168e-06,
-    "mean_effective_compute": 28754554798.39205,
-    "flops_used": 27349504000.0,
-    "measured_at": "2026-07-17T01:45:00Z",
+    "description": "B46 shared-Haar signed-orbit radial-exact Monte Carlo: one sign-corrected exact-Haar frame supplies 25 blocks through 24 independent seeded Rademacher column diagonals, followed by 100 iid normalized directions. Every row remains exactly uniform on the sphere, preserving unbiasedness while replacing B43's 25 QR factorizations with one. The directions use B42's float32 650-row chunked forward, float64 accumulation, and closed-form chi(width) mean-radius scaling.",
+    "adjusted_final_layer_score": 5.345888128337731e-07,
+    "final_layer_mse": 5.016990630792862e-06,
+    "mean_effective_compute": 28882521300.658184,
+    "flops_used": 27364338604.0,
+    "mean_score_multiplier": 0.1061857400759492,
+    "measured_at": "2026-07-17T09:05:46Z",
     "measured_on": {
-      "experiment_id": "B42-claude-lead-20260717T011419Z",
-      "source_result_commit": "ba03635",
+      "experiment_id": "B46-gpt-20260717T085533Z",
+      "source_result_commit": "25bf4c7",
+      "candidate_commit": "c81496b1b003c24eec60cd398f8c9119bb540b36",
+      "result_report": "experiments/results/gpt/B46-gpt-20260717T085533Z-013df29-summary.json",
       "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
       "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
       "split": "mini",
@@ -18,16 +21,32 @@
       "whestbench": "0.12.0rc3",
       "flopscope": "0.8.0rc5",
       "uv_lock_commit": "9b677e2",
-      "paired_mean_delta": -2.637051578189961e-08,
+      "paired_mean_delta": -2.2702860912783395e-07,
       "paired_95pct_ci": [
-        -3.626087959213409e-08,
-        -1.6480151971665128e-08
+        -4.476214655942132e-07,
+        -6.435752661454718e-09
       ],
-      "n_improved": 100,
-      "n_regressed": 0
+      "n_improved": 55,
+      "n_regressed": 45,
+      "failure_breakdown": {
+        "budget_exhausted": 0,
+        "time_exhausted": 0,
+        "residual_wall_time_exhausted": 0,
+        "combined_budget_exhausted": 0,
+        "error": 0
+      }
     },
-    "agent": "claude-lead",
-    "note": "Promoted after the B42 Mini paired gate (100/100 MLPs improved, CI entirely negative, zero failure flags, per-MLP MSE unchanged within 5.0e-04 relative). Statistically identical to B25 by construction -- B26's COMPLETE Full-split MSE record (see previous_champion.full_gate) carries over for MSE, but the B42 champion's own Full-split effective-compute/score record is NOT yet measured (full_gate NOT_RUN below).",
+    "agent": "gpt",
+    "note": "Promoted after the B46 standard Mini paired gate: adjusted score -29.81%, final-layer MSE -30.42%, paired adjusted-score CI entirely below zero, and zero failure flags. The effect is statistically distinct from B42 and requires a fresh independent Full paired gate before any submission.",
+    "immediate_previous_champion": {
+      "estimator_commit": "013df2902d15cdc1143eca2a8f874afdd4a529bc",
+      "promoted_by": "B42-claude-lead-20260717T011419Z",
+      "source_result_commit": "ba03635",
+      "adjusted_final_layer_score": 7.623281542134296e-07,
+      "final_layer_mse": 7.210819040324168e-06,
+      "superseded_by": "B46-gpt-20260717T085533Z",
+      "full_gate_status": "NOT_RUN"
+    },
     "previous_champion": {
       "estimator_commit": "2227ef3",
       "promoted_by": "B25-claude-20260716T160000Z",
@@ -85,22 +104,29 @@
     },
     "full_gate": {
       "status": "NOT_RUN",
-      "note": "Required before any submission (AGENTS.md step 7). Expected: final_layer_mse ~= B26's 7.6925e-06 (predictions within 7.7e-08 of B25); mean multiplier ~0.1057 vs B25's ~0.1094-0.1106 => expected Full adjusted score ~8.13e-07, i.e. ~-4.4% vs last_submitted_score 8.507e-07 -- LIKELY BELOW the >=5% submission bar on its own. Submission route: stack with B43 (claimed by gpt) or further residual reduction, then run the paired Full gate vs the submitted B25 champion."
+      "note": "Required before any submission under AGENTS.md step 7. B46 improved Mini adjusted score by 29.81%, but must pass a fresh paired comparison on the independent 1000-MLP Full split against the last submitted B25 champion and improve at least 5% over last_submitted_score 8.507033588741281e-07 before a reservation may be created."
     }
   },
   "submission_readiness": {
-    "status": "BLOCKED_BELOW_5PCT_EXPECTED",
-    "current_state": "B42 promoted 2026-07-17: champion is now statistically-identical-to-B25 with ~3.3% lower Mini multiplier. Every submission requires the FULL AGENTS.md step 7 gate vs last_submitted_score 8.507033588741281e-07 (from S3/B25): paired Full-split comparison vs the submitted champion, >=5% improvement, reservation protocol. B42 alone is expected ~-4.4% on Full (see champion.full_gate.note) -- below the bar; do not reserve a submission until a stacked improvement (e.g. +B43) plus a fresh paired Full gate clears >=5%.",
+    "status": "PENDING_B46_FULL_GATE",
+    "current_state": "B46 passed the standard Mini promotion gate and is the promotion candidate/champion with a 29.81% adjusted-score improvement over B42. No submission is authorized yet: run the independent 1000-MLP paired Full gate against the submitted B25 baseline, verify the conservative CI is entirely negative and the local Full score improves by at least 5% over 8.507033588741281e-07, then use the unchanged reservation protocol.",
     "lead_ruling": {
       "ruled_at": "2026-07-16T17:08:00Z",
       "ruled_by": "claude-lead",
       "scope": "FIRST scored submission only; every subsequent submission requires the full AGENTS.md step 7 gate (paired Full-split comparison vs the last submitted champion, 5% rule vs the then-non-null last_submitted_score, reservation protocol).",
       "rationale": "B29 escalated for an explicit lead/user ruling rather than waive step 7 unilaterally. Ruling: the S1 addendum's second clause ('if all previous submitted scores are null, then any scoring solution can be submitted') is a positive permission covering the first scored submission. The paired Full gate protects a previously-submitted baseline, and none exists: B0 was never submitted and both 2026-06-11 pre-scaffold artifacts are null-scored. B25 is not-worse than B0 on Full (B29: paired mean -8.67e-09, aggregate -1.14%), has a COMPLETE 1000/1000 Full-split record (B26, zero failure flags), and validates cleanly. The unchanged reservation protocol governs execution. Full reasoning: experiments/log-claude-lead.md, Lead review 2026-07-16T17:08:00Z. Queued as backlog item S3."
     },
-    "measured_at": "2026-07-16T18:30:00Z",
-    "experiment_id": "B29-claude-20260716T183000Z",
-    "blocked_by": "(superseded by lead_ruling above) AGENTS.md step 7 paired Full-split gate (not S1 -- S1 is resolved, see below)",
+    "measured_at": "2026-07-17T09:05:46Z",
+    "experiment_id": "B46-gpt-20260717T085533Z",
+    "blocked_by": "AGENTS.md step 7 paired Full-split gate and >=5% improvement check against last_submitted_score; B46 Full evaluation has not run.",
     "s1_status": "RESOLVED 2026-07-16T15:19Z by user ruling (commit 136f247, 38d3054): null submitted scores are disregarded in the 5% improvement rule; since all previously submitted scores are null, any scoring solution may be submitted. This unblocks the last_submitted_score prerequisite specifically.",
+    "required_b46_full_gate": {
+      "status": "NOT_RUN",
+      "candidate_experiment_id": "B46-gpt-20260717T085533Z",
+      "comparison_baseline": "S3/B25 submitted champion",
+      "last_submitted_score": 8.507033588741281e-07,
+      "minimum_relative_improvement": 0.05
+    },
     "paired_full_split_gate": {
       "status": "FAIL",
       "method": "Paired B25 (current champion) vs B0 (prior champion) on the complete, independent 1000-MLP Full split, computed from two already-complete immutable reports (no new harness runs): champion-full-gate-COMPLETE-20260716T140000Z-1598169.json (B0) and B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json (B25), paired by mlp_name. Full detail: experiments/results/claude/B29-claude-20260716T183000Z-summary.json.",
@@ -116,7 +142,7 @@
       "result": "FAIL -- CI upper bound (+1.118e-08) is positive, does not clear zero. Verified robust to t_crit choice (1.96 to 2.0, all same conclusion).",
       "note": "B25's paired advantage over B0 was real and significant on the 100-MLP Mini split at promotion time (CI=[-2.581e-07,-2.868e-08]) but shrinks to statistically-indistinguishable-from-zero on the 10x-larger, independent Full split -- exactly the suite-sampling-overfitting risk AGENTS.md's two-tier Mini/Full gate design exists to catch. Does not invalidate B25's promotion (which correctly used the Mini-split-only promotion gate); B25 remains champion. Aggregate final_layer_mse still improves on Full (-1.14%), just not enough to clear the paired significance bar."
     },
-    "next_steps": "(updated by lead ruling 2026-07-16T17:08Z) Option (b) taken: lead ruling permits the FIRST scored submission of the current champion under the S1 addendum; execute via backlog item S3 with the unchanged reservation protocol. For all later submissions, (a) still applies: find a candidate with a larger, more robust effect that clears the Full-split paired gate convincingly."
+    "next_steps": "Run B46 on the independent Full split and compare per MLP against the exact submitted S3/B25 baseline under the same environment contract. Reserve and submit only if the paired Full CI is entirely negative, the local Full score is at least 5% below last_submitted_score, all flags are zero, and no active submitting reservation exists."
   },
   "noise_floor": {
     "measured_at": "2026-07-16T18:00:00Z",
