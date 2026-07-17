@@ -15,6 +15,28 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B44** (exploit) - CLAIMED claude 2026-07-17T02:00:00Z - Full-split
+  paired MSE robustness test of B43's orthogonal directions. B43's Mini
+  paired gate failed (CI straddles zero) but its -24% aggregate MSE is
+  informative: the free-data post-mortem shows the headline is ~entirely
+  2 outlier MLPs (excl top-2 -> mean +3.9e-09), YET the 10%-trimmed mean
+  is -3.69e-08 (~-4.6% of champion adj score) -- a modest REAL broad
+  component masked by outlier noise on only 100 MLPs. The Full split
+  (1000 MLPs) is the definitive test: outliers dilute 10x while the
+  broad component accumulates with sqrt(10)-tighter SE, so a Full paired
+  MSE gate can resolve whether B43 is a robust improvement or a Mini
+  artifact. Efficient: B26 already has the champion's (B25/B42 -- IDENTICAL
+  predictions, residual-min changed compute not predictions) complete
+  1000-MLP Full per-MLP MSE; only B43 needs a Full run. Reuse B26's
+  chunked driver (with the seed_protocol_version fix) on candidate_claude.py
+  @ 56c3f41, 10x100-MLP chunks, pair per-MLP final_layer_mse by mlp_name
+  vs B26's champion report. MSE-only gate (adjusted-score is unfair until
+  B43 is rebuilt on B42's residual-min structure -- that's the follow-up
+  IF this passes). If the Full MSE paired CI is entirely below zero ->
+  B43's variance reduction is robust, green-light rebuilding on B42 for
+  a fair adjusted-score gate (potential large promotable+submittable win);
+  if it straddles zero -> B43 is a Mini outlier artifact, close the line.
+
 - [x] **B42** (exploit, lead-priority 1) - DONE claude-lead 2026-07-17T01:55:00Z
   (PROMOTED) - Paired Mini gate PASSED decisively: 100/100 MLPs improved,
   paired_mean_delta=-2.637e-08, conservative 95% CI=[-3.626e-08,-1.648e-08]
