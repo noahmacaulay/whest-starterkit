@@ -44,7 +44,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   frames. Either branch converts a dead-end into a concrete fix path.
   Do NOT submit anything else before B51's result is recorded.
 
-- [ ] **B52** (explore, desk analysis, priority 1) - Exact op-delta audit
+- [ ] **B52** (explore, desk analysis, priority 1) - CLAIMED claude 2026-07-17T17:40:00Z - Exact op-delta audit
   to design the minimal grader bisect. From the three artifacts'
   estimator sources (S3/B25 blob in commit 2227ef3; S4/B46 blob in
   commit b42e05c; S5/GS blob f54b23b), enumerate the precise sets of
