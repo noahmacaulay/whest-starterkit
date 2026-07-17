@@ -15,6 +15,24 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B48** (infra, exploit) - CLAIMED claude 2026-07-17T10:00:00Z - Diagnose the
+  S4 B46 grader "Evaluation error" (submission 316800 failed on AICrowd,
+  score null) so the lead/user can decide the path forward. B46 passes
+  all local gates and runs cleanly on 1000 MLPs via the subprocess
+  runner, so the failure is grader-environment-specific. Prime suspect:
+  the orthogonal-block ops (fnp.linalg.qr/sign/diagonal/concatenate) --
+  the only prior SUCCESSFUL submission S3 (B25 radial-exact) used none of
+  them. Local diagnostics that do NOT consume submission attempts:
+  (1) run B46 under the `server` runner (closest to grading isolation;
+  only subprocess was tested) and the `inprocess`/`local` runners on a
+  handful of MLPs; (2) check whether fnp.linalg.qr raises under any
+  stricter flopscope budget/remote mode; (3) `whest doctor`. If any
+  reproduces a qr-related error, the orthogonal champions (B43/B46) are
+  confirmed UNGRADEABLE and the fix is a QR-free construction (or keep
+  B25/B42 submitted); if nothing reproduces, the grader error is likely
+  transient/environment and a single careful resubmission is the
+  lead/user call. Record findings for the lead; do NOT resubmit.
+
 - [x] **B47** (infra, exploit) - DONE claude 2026-07-17T09:30:00Z - Full-split gate for the
   B46 champion: PASS, submission-ready. Ran B46 on the complete 1000-MLP
   Full split, paired vs the submitted B25 baseline (B26 report). MSE
