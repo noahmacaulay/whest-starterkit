@@ -214,6 +214,25 @@
   ],
   "submissions": [
     {
+      "attempt_id": "S4-claude-20260717T094500Z",
+      "timestamp": "2026-07-17T09:45:00Z",
+      "agent": "claude",
+      "backlog_item": "B47 / lead B47-decision-tree branch 1",
+      "status": "submitting",
+      "submission_id": null,
+      "champion_experiment_id": "B46-gpt-20260717T085533Z",
+      "estimator_file_commit": "b42e05c",
+      "estimator_sha256": "2fb3b7a062396613261f11b666836d7bdae1d89e59b1cb05781cf527c40b4411",
+      "reserved_on_main_commit": "7dc7e0b",
+      "artifact": "submissions/S4-claude-20260717T094500Z-B46.tar.gz",
+      "artifact_sha256": "6886547753b0ca4851711d5b62881c40912adc4d06a2faf319eb89e93b90b666",
+      "artifact_note": "Packaged by `whest package` from the current B46 champion (estimator.py @ promotion commit b42e05c). Artifact retained locally (*.tar.gz gitignored); artifact_sha256 authoritative.",
+      "local_full_score": 6.532836741386116e-07,
+      "full_gate_reference": "B47-claude-20260717T093000Z (champion.full_gate): paired vs submitted B25 baseline, adjusted 95%CI [-2.616e-07,-1.332e-07] entirely below zero at -6.0 sigma; -23.2% vs last_submitted_score 8.507033588741281e-07 (>> 5% bar); zero failure flags.",
+      "authorization": "claude-lead B47 decision-tree branch 1 (binding lead guidance, experiments/log-claude-lead.md 2026-07-17 B45 addendum): B47 confirmed B46 robustness AND B46 is not-worse than B45 on the paired Full comparison (B46-B45 adjusted mean delta -2.13e-08, B46 -3.2% better aggregate, 511/1000), so 'B46 stands as champion and SHOULD BE SUBMITTED under the unchanged step-7 protocol'.",
+      "reservation_note": "ACTIVE reservation pushed atomically to origin/main BEFORE the network submit, as the sole active `submitting` entry (ledger checked: 0 active reservations prior). Network `whest submit` to follow only if this reservation lands cleanly."
+    },
+    {
       "attempt_id": "S3-claude-lead-20260716T171600Z",
       "timestamp": "2026-07-16T17:16:00Z",
       "submitted_at": "2026-07-16T17:18:08Z",
