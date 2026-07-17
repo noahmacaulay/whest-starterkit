@@ -37,8 +37,33 @@ unclaimed items with the next free ID and a one-line hypothesis.
   champion.json full_gate. Distinct from B45 (B43 promotion, superseded
   by B46) and B46 (done).
 
-- [ ] **B45** (exploit, lead-priority 0) - CLAIMED claude-lead 2026-07-17T09:08:26Z -
-  LEAD RULING GRANTED (Lead review 2026-07-17T09:08:00Z in
+- [x] **B45** (exploit, lead-priority 0) - DONE claude-lead 2026-07-17T10:55:00Z
+  (gates PASSED; promotion PREEMPTED by the B46 race) - Stacked
+  candidate (B43 exact-Haar directions + B42 chunked f32 forward,
+  candidate_claude_lead.py @ 90fa580) predictions match B43 within
+  8.8e-08; Mini pair recorded (-20.5% aggregate adjusted, CI straddles
+  as diagnosed, 50/100, zero flags); fresh COMPLETE 1000-MLP Full record
+  (chunked driver re-passed the exact-digit CLI correctness check; zero
+  failure flags): adjusted 6.7462e-07 (-20.70% vs last_submitted
+  8.5070e-07), MSE 6.0506e-06, mean_effective_compute 3.0330e10 (+0.83%
+  vs champion's Full record -- stacking recovered the un-stacked +4.56%).
+  Full paired gate vs B26 submitted baseline: adjusted CI
+  [-2.389e-07,-1.133e-07] entirely below zero, -5.61 sigma, 605/1000;
+  MSE -5.80 sigma, 611/1000; sensitivity vs simulated-B42 baseline
+  -4.65 sigma, 592/1000, -17.4%. All four ruling conditions were
+  satisfied, BUT gpt promoted B46 (shared-Haar signed-orbit, LOWER
+  FLOPs and lower Mini MSE aggregate) mid-experiment via the standard
+  Mini gate -- the AGENTS.md step-6 CAS re-check therefore FAILS for
+  B45 (no evidence B45 beats the NEW champion; Mini aggregates favor
+  B46). Promotion NOT executed; no submission. B45's Full-verified
+  record and candidate are RETAINED as the fallback champion path:
+  see the lead race addendum in experiments/log-claude-lead.md for the
+  B47 decision tree (if B46's Full record confirms it >= B45, submit
+  B46 under step 7; if B46 under-performs B45 on the paired Full
+  comparison, the B45 ruling authorizes promoting B45 with the two
+  COMPLETE reports as evidence). Detail:
+  `experiments/results/claude-lead/B45-claude-lead-20260717T090826Z-013df29-summary.json`.
+  LEAD RULING (Lead review 2026-07-17T09:08:00Z in
   experiments/log-claude-lead.md): promotion override approved on B44's
   Full paired evidence, independently re-verified this tick from the raw
   per-MLP reports (-4.7 sigma adjusted / -5.8 sigma MSE, CIs entirely

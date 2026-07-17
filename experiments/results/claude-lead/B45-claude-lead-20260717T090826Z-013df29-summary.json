@@ -1,0 +1,105 @@
+{
+  "experiment_id": "B45-claude-lead-20260717T090826Z",
+  "agent": "claude-lead",
+  "purpose": "Execute the B45 lead ruling (Lead review 2026-07-17T09:08:00Z): rebuild B43's exact-Haar orthogonal directions on B42's residual-minimized forward structure, evaluate fresh on Mini and on the complete 1000-MLP Full split, and promote/submit on the Full paired evidence that the underpowered Mini gate false-negatives (B44's finding, independently re-verified this tick from raw per-MLP reports).",
+  "base_champion": {
+    "experiment_id": "B42-claude-lead-20260717T011419Z",
+    "estimator_commit": "013df29",
+    "verified": "git diff 013df29 HEAD -- estimator.py empty at review start; whest validate passed"
+  },
+  "candidate": {
+    "file": "candidate_claude_lead.py",
+    "commit": "90fa580",
+    "design": "Directions generated exactly as B43's candidate (candidate_claude.py @ 56c3f41): 25 blocks of exact-Haar orthonormal directions via fnp.linalg.qr of seeded float32 Gaussian (256,256) matrices, sign-corrected by sign(diag(R)), plus 100 iid normalized rows = 6500 unit directions, same rng consumption order. Forward pass uses B42's structure: float32 weights, 650-row chunks, per-layer sums accumulated in float64, scaled once by the closed-form chi(256) mean radius (radial-exact)."
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_last_changed": "9b677e2",
+    "uv_sync_frozen": "clean",
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "flop_budget": 272000000000,
+    "runner": "subprocess"
+  },
+  "pre_validation_probe": {
+    "script": "experiments/results/claude-lead/B45-probe1.py",
+    "prediction_agreement": "max |B45-B43| over all 32 layers on 3 real Mini MLPs: 5.0e-08 / 8.8e-08 / 6.6e-08 (float32 forward rounding, matching the B42 precedent)",
+    "in_process_residual_ms": {"B43": [43.91, 45.02, 44.9], "B45": [14.65, 16.84, 16.57], "champion_B42": [13.07, 14.43, 13.49]}
+  },
+  "mini_paired": {
+    "champion_report": "experiments/results/claude-lead/B45-claude-lead-20260717T090826Z-013df29-champion-mini.json",
+    "candidate_report": "experiments/results/claude-lead/B45-claude-lead-20260717T090826Z-013df29-candidate-mini.json",
+    "champion_adjusted_score": 7.612797853e-07,
+    "candidate_adjusted_score": 6.053454522e-07,
+    "adjusted_rel_change": -0.204832,
+    "champion_final_layer_mse": 7.21081904e-06,
+    "candidate_final_layer_mse": 5.463278404e-06,
+    "mse_rel_change": -0.24235,
+    "mean_flops_used_champion": 27349504000.0,
+    "mean_flops_used_candidate": 28464714700.0,
+    "mean_effective_compute_champion": 28736327600.0,
+    "mean_effective_compute_candidate": 30125200700.0,
+    "adjusted_paired_mean_delta": -1.559343e-07,
+    "adjusted_paired_95pct_ci": [-4.131099e-07, 1.012413e-07],
+    "adjusted_n_improved": 50,
+    "verdict": "CI straddles zero (50/100) exactly as the B44 fat-tail diagnosis predicts -- recorded per ruling condition 2; promotion gates on the Full paired evidence per the B45 lead ruling. Zero failure flags both sides."
+  },
+  "full_gate": {
+    "status": "COMPLETE",
+    "method": "B26's validated chunked driver (whestbench.cli._run_estimator_with_runner over explicit index ranges, ground truth from dataset fields, seed_protocol_version read from the unsliced dataset -- the B26 weakref fix), ten sequential foreground 100-MLP subprocess chunks. MANDATORY correctness check re-run for this new estimator BEFORE any real chunk: chunked full[0:20] and mini[0:30] aggregate final_layer_mse matched the official CLI to the exact last printed digit (1.0013784913098788e-05 and 5.166219021172462e-06); effective compute differed only by wall-clock jitter.",
+    "driver": "experiments/results/claude-lead/B45-full-driver.py",
+    "report": "experiments/results/claude-lead/B45-claude-lead-20260717T090826Z-013df29-full-COMPLETE.json",
+    "n_mlps": 1000,
+    "adjusted_final_layer_score": 6.746212708916259e-07,
+    "final_layer_mse": 6.050641874367102e-06,
+    "mean_effective_compute": 30330189351.73935,
+    "flops_used": 28464714700.0,
+    "mean_score_multiplier": 0.11150804908727702,
+    "n_failed_mlps": 0,
+    "failure_breakdown": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
+    "prediction_carryover_check": "per-MLP final_layer_mse vs B44's B43 Full record: max rel diff 5.2e-04, mean 9.3e-05 (float32 forward rounding; same magnitude as B42's 5.0e-04 precedent)"
+  },
+  "full_paired_gates": {
+    "baseline_exact": {
+      "baseline": "B26 complete Full report (submitted champion B25 predictions = current B42 champion predictions)",
+      "mse_paired_mean_delta": -1.641878e-06,
+      "mse_paired_95pct_ci": [-2.208023e-06, -1.075734e-06],
+      "mse_sigmas": -5.8,
+      "mse_n_improved": 611,
+      "adjusted_paired_mean_delta": -1.760821e-07,
+      "adjusted_paired_95pct_ci": [-2.388855e-07, -1.132787e-07],
+      "adjusted_sigmas": -5.61,
+      "adjusted_n_improved": 605,
+      "adjusted_median_delta": -7.694e-08,
+      "adjusted_10pct_trimmed_mean": -1.126e-07,
+      "adjusted_excl_best2_mean": -1.632e-07,
+      "result": "PASS -- both CIs entirely below zero, broad not outlier-driven"
+    },
+    "baseline_simulated_b42_sensitivity": {
+      "method": "champion per-MLP effective_compute rescaled by the B42/B25 Mini ratio 0.95987, re-floored at 0.1, adjusted = mse * multiplier",
+      "adjusted_paired_mean_delta": -1.419472e-07,
+      "adjusted_paired_95pct_ci": [-2.030256e-07, -8.086891e-08],
+      "adjusted_sigmas": -4.65,
+      "adjusted_n_improved": 592,
+      "aggregate_rel_change": -0.173834,
+      "result": "PASS -- gate robust to the champion-baseline multiplier assumption"
+    },
+    "worst_5_adjusted_regressions": [
+      ["dominic-nelson", 7.156e-06],
+      ["david-davis", 4.655e-06],
+      ["elizabeth-sanders", 4.244e-06],
+      ["shawn-mcmillan", 3.381e-06],
+      ["robert-lewis", 3.105e-06]
+    ]
+  },
+  "submission_rule": {
+    "last_submitted_score": 8.507033588741281e-07,
+    "candidate_full_adjusted": 6.746212708916259e-07,
+    "rel_change": -0.206984,
+    "bar": "-5%",
+    "result": "PASS by 4x margin"
+  },
+  "authorized_by": "Lead ruling 2026-07-17T09:08:00Z (experiments/log-claude-lead.md): promotion override on Full paired evidence for the Mini fat-tail false-negative case; all four ruling conditions satisfied (fresh Full record, Mini pair recorded, CAS promotion, step-7 submission protocol).",
+  "verdict": "PROMOTE (per lead ruling; Full paired CIs entirely below zero at -5.6 sigma adjusted / -5.8 sigma MSE vs the submitted baseline, -4.65 sigma vs the conservative simulated-B42 baseline) and SUBMIT (Full gate complete, -20.7% vs last_submitted_score, zero failure flags)."
+}

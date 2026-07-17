@@ -410,3 +410,57 @@ Mini improvements that fail only on CI width.
 - No pruning: all other items DONE with persisted results.
 
 No coordination problems requiring escalation. Phase 2 proceeds.
+
+## 2026-07-17T10:40:00Z - B45-claude-lead-20260717T090826Z: B43-on-B42 stacked rebuild, Full-gated per lead ruling (result persisted pre-promotion)
+- Hypothesis: rebuilding B43's exact-Haar orthogonal directions on B42's
+  residual-minimized forward keeps B44's robust Full-split variance
+  reduction (predictions carry over up to f32 rounding) while recovering
+  most of the un-stacked candidate's residual penalty; per the B45 lead
+  ruling (this tick's Phase 1), promotion gates on fresh Full paired
+  evidence because the Mini gate false-negatives this fat-tailed effect.
+- Base champion: B42 residual-minimized radial-exact MC, estimator.py @
+  013df29 (bit-identical since promotion; validates).
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock last
+  changed @ 9b677e2; `uv sync --frozen` clean; `whest validate` passed
+  on candidate_claude_lead.py @ 90fa580.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256 5b00938b...c433), budget=272000000000, runner=subprocess.
+  Mini: both sides fresh via official CLI, exit 0, zero failure flags.
+  Full: B26's validated chunked driver (B45-full-driver.py; the
+  seed_protocol_version weakref fix), ten sequential foreground 100-MLP
+  chunks; MANDATORY correctness check re-run for this new estimator
+  first -- chunked full[0:20] and mini[0:30] final_layer_mse matched the
+  official CLI to the exact last printed digit.
+- Pre-validation probe (B45-probe1.py): candidate predictions match
+  B43's candidate within 8.8e-08 across all 32 layers on 3 real Mini
+  MLPs; in-process residual 44-45ms (B43) -> 15-17ms (B45) vs champion
+  13-14ms.
+- Change: candidate_claude_lead.py @ 90fa580 -- B43's direction
+  construction verbatim (25 exact-Haar QR blocks + 100 iid rows, same
+  rng order) + B42's forward (f32 weights, 650-row chunks, f64 sums,
+  closed-form E[r] scale).
+- Result (Mini, recorded per ruling condition 2): candidate 6.0535e-07
+  vs champion 7.6128e-07 aggregate (-20.48%); MSE -24.24%; paired CI
+  [-4.131e-07, +1.012e-07] straddles zero at 50/100 -- the exact
+  fat-tail false-negative shape B44 diagnosed; zero failure flags.
+- Result (Full, 1000/1000, zero failure flags): adjusted
+  6.746212708916e-07, final_layer_mse 6.050641874367e-06,
+  mean_effective_compute 3.03302e10 (+0.83% over B26's champion record;
+  the un-stacked B44 candidate paid +4.56%). Paired vs B26 submitted
+  baseline: adjusted mean delta -1.7608e-07, CI(t=2.0)
+  [-2.3889e-07, -1.1328e-07] entirely below zero (-5.61 sigma), 605/1000
+  improved, median -7.69e-08, robust to 10%-trim and excl-best-2; MSE
+  -5.80 sigma, 611/1000. Sensitivity vs simulated-B42 baseline
+  (champion effective compute rescaled by 0.95987, refloored): -4.65
+  sigma, 592/1000, aggregate -17.38%. Prediction carryover confirmed:
+  per-MLP MSE vs B44's B43 record max rel diff 5.2e-04 (f32 rounding,
+  B42-precedent magnitude).
+- Verdict: PASS per the B45 lead ruling -- all four ruling conditions
+  satisfied. Proceeding to CAS promotion and then the step-7 submission
+  protocol (Full adjusted -20.70% vs last_submitted_score
+  8.507033588741281e-07, 4x the 5% bar).
+- Full/submission gate: Full COMPLETE (report
+  B45-claude-lead-20260717T090826Z-013df29-full-COMPLETE.json); this
+  commit persists the result BEFORE promotion per AGENTS.md step 5.
+- New ideas queued: none (B46 already covers the QR-FLOP reduction
+  follow-up).
