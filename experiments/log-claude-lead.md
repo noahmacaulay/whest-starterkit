@@ -266,3 +266,57 @@ no harness modification):
   — ordering still consistent; commit times remain authoritative.
 - No coordination problems requiring escalation. Phase 2 proceeds.
 
+## 2026-07-17T01:55:00Z - B42-claude-lead-20260717T011419Z: Minimize the champion's charged residual (PROMOTED)
+- Hypothesis: the scorer charges C = flops_used + 1e11*(wall - backend -
+  overhead) (verified in whestbench/budget.py + flopscope/_budget.py this
+  tick); the champion's ~24-26ms/MLP charged residual is allocator/OS
+  memory churn from its float64 13MB per-layer temporaries and can be
+  removed without changing the estimator: float32 forward chain (halves
+  memory traffic), 650-row chunks (every temporary ~650KB -> allocator
+  arena reuse instead of OS churn), float64 accumulation of per-layer
+  sums (predictions stay within ~7.7e-08 of the champion because the f32
+  forward rounding averages out over 6,500 samples).
+- Base champion: B25 radial-exact MC, estimator.py @ 2227ef3 (verified
+  bit-identical to promotion this tick); champion Mini reference re-run
+  fresh alongside the candidate (not reused).
+- Environment: whestbench=0.12.0rc3, flopscope=0.8.0rc5+np2.2.6, uv.lock
+  last changed @ 9b677e2; `uv sync --frozen` clean; `whest validate`
+  passed on candidate_claude_lead.py.
+- Evaluation: dataset=hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+  (sha256 5b00938b...c433), split=mini (100 MLPs), budget=272000000000,
+  runner=subprocess, both runs exit 0, JSON reports + stderr persisted
+  under experiments/results/claude-lead/.
+- Pre-validation (three committed probes, B42-probe*.py): residual
+  attribution by phase — RNG draw 0.7ms residual (its 17ms wall is
+  uncharged overhead), normalize 0.3ms, 32-layer loop ~41ms f64 /
+  ~22ms f32 / ~10-13ms f32-chunked; free-deferral made it WORSE
+  (page pressure), confirming churn not frees per se. In-process
+  end-to-end: champion 0.1164 multiplier vs candidate 0.1053 (-9.5%).
+  MSE sanity on 3 real MLPs: identical to 6 significant digits
+  (max |pred diff| 7.7e-08).
+- Change: candidate_claude_lead.py @ ed58a93 — same seeded draw, same
+  directions, same statistics as the champion; f32 chain, chunk=650,
+  f64 sums, scale by closed-form E[r]/n at the end.
+- Result: candidate_score=7.623281542134e-07 vs
+  champion_score=7.886986699953e-07, relative_change=-3.3435%;
+  final_layer_mse 7.210819040324e-06 vs 7.210787749159e-06 (+4.3e-06
+  relative, i.e. unchanged; max per-MLP relative MSE change 5.0e-04);
+  mean_effective_compute 2.87546e10 vs 2.97460e10;
+  paired_mean_delta=-2.637051578190e-08,
+  conservative 95% CI=[-3.626087959213e-08, -1.648015197167e-08]
+  (tcrit=2.0), 100/100 MLPs improved, worst per-MLP delta -2.590e-09
+  (still an improvement), all budget/time/residual/error flags zero.
+- Verdict: PROMOTED. The CI is entirely below zero with every single
+  MLP improving — the B23 "same predictions, lower multiplier" shape
+  realized. Note the realized -3.34% is smaller than the -9.5%
+  in-process ceiling: under the subprocess harness the champion's own
+  residual is ~24ms (not 41ms), and the candidate floors at ~14ms.
+- Full/submission gate: NOT_RUN this tick. -3.34% Mini alone will not
+  clear the >=5%-over-last_submitted_score bar; the submission route is
+  stacking with B43 (instrumented exact-Haar blocks, expected ~-1.5 to
+  -2% net) and/or further residual reduction, then a fresh paired Full
+  gate vs the submitted champion per AGENTS.md step 7. Per B30/B29
+  precedent the multiplier-only effect is machine-stable and should
+  replicate on Full (MSE identical by construction), but the full gate
+  must still be run before any reservation.
+- New ideas queued: none beyond B43 (already queued this tick's Phase 1).

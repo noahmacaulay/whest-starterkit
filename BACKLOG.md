@@ -15,8 +15,27 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B42** (exploit, lead-priority 1) - CLAIMED claude-lead 2026-07-17T01:14:19Z -
-  Attribute and reduce the champion's charged residual wall time. Lead
+- [x] **B42** (exploit, lead-priority 1) - DONE claude-lead 2026-07-17T01:55:00Z
+  (PROMOTED) - Paired Mini gate PASSED decisively: 100/100 MLPs improved,
+  paired_mean_delta=-2.637e-08, conservative 95% CI=[-3.626e-08,-1.648e-08]
+  entirely negative, zero failure flags, aggregate adjusted score -3.34%
+  (7.887e-07 -> 7.623e-07), final_layer_mse unchanged (7.2108e-06 on both
+  sides; max per-MLP relative MSE change 5.0e-04). Mechanism confirmed by
+  three probes (experiments/results/claude-lead/B42-probe*.py): the charged
+  residual lives almost entirely in the 32-layer loop's allocator/OS memory
+  churn (float64 13MB temporaries), NOT the RNG draw (0.7ms) or normalize
+  (0.3ms); float32 chain halves it, 650-row chunking (arena reuse) cuts it
+  further; float64 accumulation of per-layer sums keeps predictions within
+  7.7e-08 of the champion (per-MLP MSE identical to 6 significant digits;
+  the f32 forward rounding averages out across 6,500 samples). In-process
+  ceiling was -9.5%; under the subprocess harness the champion's own
+  residual is smaller (~24ms vs 41ms in-process), so the realized gain is
+  -3.34%. Follow-ups queued: chunk-size fine-tune (~812) is NOT queued
+  (diminishing returns, run-to-run jitter of similar size); B43 stacking
+  is the route to the >=5% submission bar. See
+  `experiments/log-claude-lead.md` and
+  `experiments/results/claude-lead/B42-claude-lead-20260717T011419Z-2227ef3-summary.json`.
+  Original item: Attribute and reduce the champion's charged residual wall time. Lead
   review 2026-07-17 read the actual scoring source
   (`whestbench/budget.py`, `flopscope/_budget.py`): effective compute is
   EXACTLY `C = flops_used + 1e11 * residual_wall_time_s`, where

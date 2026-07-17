@@ -1,0 +1,56 @@
+{
+ "experiment_id": "B42-claude-lead-20260717T011419Z",
+ "agent": "claude-lead",
+ "hypothesis": "The scorer charges effective compute C = flops_used + 1e11*(wall - flopscope_backend - flopscope_overhead); the champion's ~24-26ms/MLP charged residual is allocator/OS memory churn from 13MB float64 per-layer temporaries, removable by a float32 forward chain computed in 650-row chunks (arena reuse) with float64 accumulation, leaving predictions numerically identical (max |diff| ~7e-8).",
+ "base": {
+  "champion_estimator_commit": "2227ef3",
+  "candidate_commit": "ed58a93",
+  "backlog_claim_commit": "a2f7577"
+ },
+ "environment": {
+  "whestbench": "0.12.0rc3",
+  "flopscope": "0.8.0rc5+np2.2.6",
+  "uv_lock_commit": "9b677e2",
+  "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+  "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+  "split": "mini",
+  "flop_budget": 272000000000,
+  "runner": "subprocess"
+ },
+ "commands": [
+  "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+  "uv run --frozen whest run --estimator candidate_claude_lead.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json"
+ ],
+ "results": {
+  "champion": {
+   "adjusted_final_layer_score": 7.886986699953293e-07,
+   "final_layer_mse": 7.210787749158953e-06,
+   "mean_effective_compute": 29746019392.828636,
+   "mean_score_multiplier": 0.10936036541481121,
+   "n_failed_mlps": 0
+  },
+  "candidate": {
+   "adjusted_final_layer_score": 7.623281542134296e-07,
+   "final_layer_mse": 7.210819040324168e-06,
+   "mean_effective_compute": 28754554798.39205,
+   "mean_score_multiplier": 0.10571527499408838,
+   "n_failed_mlps": 0
+  },
+  "relative_aggregate_change_pct": -3.343547641846012,
+  "paired_mean_delta": -2.637051578189961e-08,
+  "paired_95pct_ci_tcrit2": [
+   -3.626087959213409e-08,
+   -1.6480151971665128e-08
+  ],
+  "n_improved": 100,
+  "n_regressed": 0,
+  "worst_regression": -2.5899077188819368e-09,
+  "all_failure_flags_zero": true,
+  "max_abs_per_mlp_mse_rel_change": 0.0005046
+ },
+ "verdict": "PROMOTE: paired mean delta negative, conservative 95% CI entirely below zero, 100/100 MLPs improved, zero failure flags, MSE unchanged within 5e-4 relative per MLP.",
+ "raw_reports": [
+  "experiments/results/claude-lead/B42-claude-lead-20260717T011419Z-2227ef3-champion-mini.json",
+  "experiments/results/claude-lead/B42-claude-lead-20260717T011419Z-2227ef3-candidate-mini.json"
+ ]
+}
