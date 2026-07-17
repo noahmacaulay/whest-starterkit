@@ -15,8 +15,44 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B44** (exploit) - CLAIMED claude 2026-07-17T02:00:00Z - Full-split
-  paired MSE robustness test of B43's orthogonal directions. B43's Mini
+- [ ] **B45** (exploit, LEAD DECISION REQUIRED - promotion override) - B44 proved B43 is a
+  large, robust champion-beating win (-17.7% adjusted / -21% MSE on the
+  full 1000-MLP split, -4.7 to -5.8 sigma, 597-611/1000 improved, broad
+  not outlier-driven, zero failure flags) that the 100-MLP Mini gate
+  FALSE-NEGATIVED (50/100, CI straddled zero -- underpowered against
+  B43's fat-tailed per-MLP deltas). Promotion is gated on the Mini CI,
+  which B43 fails, so a worker cannot promote unilaterally -- this needs
+  a LEAD ruling (analogous to the S3 first-submission ruling) that the
+  overwhelming Full paired evidence justifies promotion. Recommended
+  execution once ruled: (1) rebuild B43's orthogonal directions
+  (candidate_claude.py @ 56c3f41) on top of B42's residual-minimizing
+  forward structure -- the current candidate pays ~+4.6% multiplier from
+  higher residual + QR FLOPs; stacking on B42 recovers most of the
+  residual and enlarges the win; (2) re-run the Full paired gate on the
+  rebuilt candidate vs the B42 champion to confirm (Mini will still
+  false-negative, so gate on Full per this ruling); (3) promote via the
+  standard CAS proposal citing B44's Full evidence; (4) submit -- Full
+  adjusted 7.005e-07 vs last_submitted local Full 8.507e-07 is ~17.7%
+  better, far above the 5% bar (a major leaderboard improvement over the
+  current 6.6845e-07 submission). Also: consider a methodology amendment
+  -- Full-confirm rather than reject a large-aggregate Mini candidate
+  that fails only on CI width (the inverse of B30). See B44 summary and
+  log-claude.md B44 entry.
+
+- [x] **B44** (exploit) - DONE claude 2026-07-17T02:00:00Z - Full-split
+  paired MSE robustness test of B43's orthogonal directions. RESULT:
+  DECISIVE PASS on the full 1000-MLP split -- MSE -21.3%
+  (95%CI=[-2.197e-06,-1.086e-06], -5.8 sigma, 611/1000), adjusted score
+  -17.7% (95%CI=[-2.130e-07,-8.749e-08], -4.7 sigma, 597/1000), broad
+  (survives excl-top-2 and 10%-trim, median delta -7.3e-07), zero
+  failure flags. Proves B43's variance reduction is robust and large,
+  and that the 100-MLP Mini gate FALSE-NEGATIVED it (underpowered
+  against fat-tailed per-MLP deltas -- the inverse of B30). Did NOT
+  promote unilaterally (Mini gate failure -> lead ruling required, queued
+  as B45). Reused B26's champion Full report (identical predictions).
+  Detail: log-claude.md B44 entry,
+  `experiments/results/claude/B44-claude-20260717T020000Z-summary.json`,
+  and the combined 1000-MLP report B44-...-B43-full-COMPLETE.json. B43's Mini
   paired gate failed (CI straddles zero) but its -24% aggregate MSE is
   informative: the free-data post-mortem shows the headline is ~entirely
   2 outlier MLPs (excl top-2 -> mean +3.9e-09), YET the 10%-trimmed mean

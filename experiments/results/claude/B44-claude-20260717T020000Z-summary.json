@@ -1,0 +1,42 @@
+{
+  "experiment_id": "B44-claude-20260717T020000Z",
+  "agent": "claude",
+  "purpose": "Definitive Full-split (1000-MLP) paired robustness test of B43's orthogonal-directions variance reduction. B43 FAILED the routine 100-MLP Mini paired gate (CI straddled zero, 50/100) but showed a -24% aggregate MSE; the free post-mortem revealed the Mini headline was ~entirely 2 outlier MLPs YET the 10%-trimmed mean was a modest real negative -- suggesting the Mini gate was underpowered (false negative) rather than the effect being absent. The Full split (1000 MLPs, 10x power, dilutes single-MLP outliers) is the definitive test.",
+  "method": "Ran B43 (candidate_claude.py @ 56c3f41) on the complete 1000-MLP Full split via B26's validated chunked driver (seed_protocol_version fix; ten 100-MLP chunks, subprocess runner). Paired each MLP's final_layer_mse and adjusted_final_layer_score by mlp_name against B26's complete champion Full report (champion-full-gate-COMPLETE, estimator.py @ 2227ef3 = B25 = current B42 predictions -- B42's residual-min changed compute not predictions, so champion MSE is identical). Both use the pre-B42 forward structure, so the adjusted-score comparison is a FAIR B43-orthogonal vs B25-iid contrast.",
+  "environment": {"whestbench": "0.12.0rc3", "flopscope": "0.8.0rc5", "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1", "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433", "split": "full", "flop_budget": 272000000000, "runner": "subprocess"},
+  "source_reports": {
+    "b43_candidate_full": "experiments/results/claude/B44-claude-20260717T020000Z-56c3f41-B43-full-COMPLETE.json",
+    "champion_full": "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json"
+  },
+  "result_full_1000_mlp": {
+    "n_mlps": 1000,
+    "champion_aggregate_final_layer_mse": 7.69252006307397e-06,
+    "candidate_aggregate_final_layer_mse": 6.050640002683849e-06,
+    "mse_rel_change": -0.2134,
+    "mse_paired_mean_delta": -1.6418800603901218e-06,
+    "mse_paired_95pct_ci": [-2.197350727801225e-06, -1.0864093929790185e-06],
+    "mse_ci_entirely_below_zero": true,
+    "mse_sigmas": -5.80,
+    "mse_n_improved": 611,
+    "mse_excl_top2_mean": -1.5254261679095732e-06,
+    "mse_10pct_trimmed_mean": -1.0541227017313304e-06,
+    "mse_median_delta": -7.29e-07,
+    "champion_aggregate_adjusted_score": 8.507033588741269e-07,
+    "candidate_aggregate_adjusted_score": 7.004737794463051e-07,
+    "adjusted_score_rel_change": -0.1766,
+    "adjusted_paired_mean_delta": -1.5022957942782122e-07,
+    "adjusted_paired_95pct_ci": [-2.1297361609304167e-07, -8.748554276260077e-08],
+    "adjusted_ci_entirely_below_zero": true,
+    "adjusted_sigmas": -4.70,
+    "adjusted_n_improved": 597,
+    "candidate_mean_effective_compute": 31450652182.603977,
+    "champion_mean_effective_compute": 30079472132.07944,
+    "multiplier_rel_increase": 0.0456,
+    "candidate_failure_flags_total": 0
+  },
+  "verdict": "B43's variance reduction is DEFINITIVELY ROBUST and LARGE on the full population. Both the MSE gate (-5.8 sigma) and the adjusted-score gate (-4.7 sigma) pass with 95% CI entirely below zero; 611/1000 (MSE) and 597/1000 (adjusted) MLPs improve; the effect survives removing the top-2 outliers (-1.53e-06) and 10% trimming (-1.05e-06) and the MEDIAN delta is clearly negative (-7.3e-07). This is a broad, real -21% MSE / -17.7% adjusted-score improvement, not the outlier artifact the Mini result suggested.",
+  "critical_finding": "The routine 100-MLP Mini promotion gate produced a FALSE NEGATIVE for B43: it reported 50/100 improved with the paired CI straddling zero, while the 1000-MLP Full split shows 597/1000 improved at -4.7 sigma. Root cause: B43's per-MLP adjusted-score delta is fat-tailed (a real broad negative shift of ~-1.5e-07 plus heavy tails), and on only 100 MLPs 2 lucky/unlucky outliers dominate the sample mean and inflate the variance enough to make the CI straddle zero. This is the INVERSE of B30's over-promotion risk: the Mini gate can also UNDER-detect (discard) a genuine large variance-reduction win. AGENTS.md's two-tier design assumes Mini is a reliable proxy for Full; for fat-tailed variance-reduction effects it is not.",
+  "recommendation_for_lead": "PROMOTE B43 (the orthogonal-directions estimator) -- it is a definitive, large (-17.7% adjusted score, -21% MSE), robust (-4.7 to -5.8 sigma on 1000 MLPs, broad, zero failure flags) champion-beating improvement that the underpowered Mini gate wrongly rejected. Because promotion is gated on the Mini paired CI (which B43 fails) and overriding that on Full evidence is a lead ruling (analogous to the S3 first-submission ruling), a worker should not promote unilaterally -- flagged here for the lead. Recommended path: (1) rebuild B43's orthogonal directions on top of B42's residual-minimizing forward structure (candidate_claude.py currently uses the pre-B42 structure, so it pays ~+4.6% multiplier from higher residual + QR FLOPs; stacking on B42 recovers most of that, making the win even larger), (2) promote via the standard CAS proposal citing THIS Full paired evidence, (3) this also unblocks a much-improved SUBMISSION: candidate Full adjusted 7.005e-07 vs the last_submitted local Full 8.507e-07 is a ~17.7% improvement, far above the 5% bar. Also worth a methodology note: consider a rule that a large-aggregate Mini candidate failing only on CI width gets a Full confirmation before rejection (the inverse of B30).",
+  "protocol_note": "Did NOT promote unilaterally: B43 failed the Mini gate (AGENTS.md step 4), and resolving that against overwhelming Full evidence is a lead ruling. estimator.py/champion.json untouched. B43 candidate retained at 56c3f41. This B44 experiment is a diagnostic Full-split evaluation (like B24/B26/B29), not a promotion.",
+  "full_submission_gate": "The Full paired evidence here would satisfy step 7 for a B43 promotion, but promotion must happen first."
+}

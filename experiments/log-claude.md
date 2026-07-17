@@ -1912,3 +1912,61 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   despite that is a lead call. Candidate retained at 56c3f41. Full
   numbers: experiments/results/claude/B43-claude-20260717T013000Z-summary.json.
 - Full/submission gate: NOT_RUN (failed the Mini promotion gate).
+
+## 2026-07-17T02:00:00Z - B44-claude: Full-split proves B43 is a robust win the Mini gate false-negatived
+- Purpose: B43's orthogonal-directions estimator FAILED the 100-MLP Mini
+  paired gate (CI straddled zero, 50/100) but showed a -24% aggregate
+  MSE. The free post-mortem found the Mini headline was ~entirely 2
+  outlier MLPs (excl top-2 -> +3.9e-09) YET the 10%-trimmed mean was a
+  modest real negative (-3.7e-08) -- signalling the Mini gate was
+  UNDERPOWERED (false negative), not that the effect was absent. The
+  Full split (1000 MLPs, 10x power, dilutes single-MLP outliers) is the
+  definitive test.
+- Method: ran B43 (candidate_claude.py @ 56c3f41) on the complete
+  1000-MLP Full split via B26's validated chunked driver (seed-protocol
+  fix, ten 100-MLP subprocess chunks). Paired per-MLP final_layer_mse
+  and adjusted_final_layer_score by mlp_name against B26's complete
+  champion Full report (estimator.py @ 2227ef3 = B25 = current B42
+  predictions; B42's residual-min changed compute not predictions, so
+  champion MSE is identical). Both use the pre-B42 forward structure, so
+  the adjusted comparison is a fair B43-orthogonal vs B25-iid contrast.
+- Result -- DECISIVE PASS on both gates (n=1000, zero failure flags):
+  * MSE: champion 7.693e-06 -> candidate 6.051e-06 (-21.3%);
+    paired_mean_delta=-1.642e-06, 95%CI=[-2.197e-06, -1.086e-06]
+    ENTIRELY BELOW ZERO at -5.8 sigma; 611/1000 improved; survives
+    excl-top-2 (-1.53e-06), 10%-trim (-1.05e-06), and the MEDIAN delta
+    is -7.3e-07 (the typical MLP improves).
+  * Adjusted score: champion 8.507e-07 -> candidate 7.005e-07 (-17.7%);
+    paired_mean_delta=-1.502e-07, 95%CI=[-2.130e-07, -8.749e-08]
+    ENTIRELY BELOW ZERO at -4.7 sigma; 597/1000 improved; multiplier
+    only +4.6% (QR FLOPs).
+- CRITICAL FINDING: the 100-MLP Mini promotion gate produced a FALSE
+  NEGATIVE. It reported 50/100 with CI straddling zero; the 1000-MLP
+  Full split shows 597/1000 at -4.7 sigma. B43's per-MLP delta is a real
+  broad negative shift plus heavy tails; on only 100 MLPs, 2 outliers
+  dominate the sample mean and inflate the variance enough to straddle
+  zero. This is the INVERSE of B30's over-promotion risk -- the Mini gate
+  can also UNDER-detect a genuine large variance-reduction win. The
+  two-tier design assumes Mini proxies Full; for fat-tailed
+  variance-reduction effects it does not.
+- Verdict: B43 is a definitive, large (-17.7% adjusted / -21% MSE),
+  robust (-4.7 to -5.8 sigma, broad, zero failures) champion-beating
+  improvement. RECOMMENDATION FOR THE LEAD (promotion is gated on the
+  Mini CI, which B43 fails; overriding on Full evidence is a lead ruling,
+  like S3 -- a worker must not promote unilaterally): PROMOTE B43.
+  Recommended path: (1) rebuild B43's orthogonal directions on B42's
+  residual-min forward structure (current candidate pays +4.6% from
+  higher residual + QR; stacking on B42 recovers most, enlarging the
+  win); (2) promote via CAS citing this Full paired evidence;
+  (3) submit -- candidate Full adjusted 7.005e-07 vs last_submitted local
+  Full 8.507e-07 is ~17.7% better, far above the 5% bar. Methodology
+  note: consider Full-confirming (not rejecting) a large-aggregate Mini
+  candidate that fails only on CI width (inverse of B30).
+- Did NOT promote or submit unilaterally: estimator.py/champion.json
+  untouched; B43 candidate retained at 56c3f41; this is a diagnostic
+  Full eval (like B24/B26/B29). Full numbers:
+  experiments/results/claude/B44-claude-20260717T020000Z-summary.json
+  and the combined 1000-MLP report
+  B44-claude-20260717T020000Z-56c3f41-B43-full-COMPLETE.json.
+- Full/submission gate: B43 PASSES the Full paired gate; promotion must
+  happen first (blocked on the lead ruling above).
