@@ -1,8 +1,8 @@
-"""Your estimator. Edit `predict()`. Run `python estimator.py` to iterate.
+"""B46 candidate: radial-exact Monte Carlo with shared-Haar sign orbits.
 
-Stage 1 of the WhestBench ladder: just `flopscope` and the local engine. No CLI
-knowledge required. Once `predict()` returns something interesting, climb to
-Stage 2: `whest validate --estimator estimator.py`.
+One exact-Haar frame supplies 25 independently column-signed orbit blocks.
+Each block remains Haar-marginal, but the construction pays for only one QR.
+The B42 float32 chunked forward minimizes charged residual wall time.
 """
 
 from __future__ import annotations
@@ -18,58 +18,60 @@ import flopscope.numpy as fnp
 from whestbench import MLP, BaseEstimator
 
 _COV_RESCALE_THRESHOLD = 1e100
-_BLOCK_SIZE = 64
-
-
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Radial-exact partial-Haar orthogonal Monte Carlo (B41).
+        """Radial-exact MC with shared-Haar signed-orbit blocks (B46).
 
         For z ~ N(0, I_d), z = r*u with r = ||z|| ~ chi(d), u = z/r ~
         Uniform(sphere), r independent of u. `MLP` has no bias field, so
         the ReLU forward pass is exactly positively homogeneous:
         f(c*x) = c*f(x) for c > 0. Hence E[f(z)] = E[r]*E[f(u)] exactly --
         substitute the closed-form E[r] for the sampled radius and
-        forward only directions, eliminating the radial component of MC
-        variance entirely at negligible extra FLOP cost.
+        forward only directions.
+
+        A sign-corrected QR produces one exact-Haar orthogonal frame Q.
+        Each Q*diag(d_b), for an independent Rademacher vector d_b, is
+        also exactly Haar-marginal. Its rows are therefore exactly uniform
+        sphere directions and the estimator remains unbiased, while the
+        25 dependent sign-orbit frames need only one QR instead of B43's 25.
         """
         n_samples = 6_500
+        n_blocks = 25
+        n_extra = 100
+        chunk = 650
         _ = budget
         width = mlp.width
 
         rng = fnp.random.default_rng(mlp.seed)
-        block_size = min(_BLOCK_SIZE, width)
-        n_blocks, remainder = divmod(n_samples, block_size)
 
-        # A reduced QR of a width-by-k Gaussian matrix yields a Haar-uniform
-        # k-frame. Every row below is therefore marginally uniform on the
-        # sphere, while directions inside each block are exactly orthogonal.
-        matrices = _np.asarray(
-            rng.standard_normal((n_blocks, width, block_size)),
-            dtype=_np.float64,
-        )
-        q, r = _np.linalg.qr(matrices, mode="reduced")
-        signs = _np.sign(_np.diagonal(r, axis1=-2, axis2=-1))
-        signs[signs == 0.0] = 1.0
-        directions = _np.transpose(q * signs[:, None, :], (0, 2, 1))
-        directions = directions.reshape(n_blocks * block_size, width)
-        if remainder:
-            z = _np.asarray(
-                rng.standard_normal((remainder, width)), dtype=_np.float64
-            )
-            z /= _np.linalg.norm(z, axis=1)[:, None]
-            directions = _np.concatenate((directions, z), axis=0)
-        u = fnp.array(directions.astype(_np.float32))
+        g = rng.standard_normal((width, width)).astype(fnp.float32)
+        q, r = fnp.linalg.qr(g)
+        q = q * fnp.sign(fnp.diagonal(r))
 
-        rows = []
-        for w in mlp.weights:
-            u = fnp.maximum(fnp.matmul(u, w), 0.0)
-            rows.append(fnp.mean(u, axis=0))
+        orbit_draws = rng.standard_normal((n_blocks - 1, width))
+        orbit_signs = fnp.where(orbit_draws >= 0.0, 1.0, -1.0).astype(fnp.float32)
+        blocks = [q]
+        blocks.extend(q * orbit_signs[b] for b in range(n_blocks - 1))
+
+        z = rng.standard_normal((n_extra, width)).astype(fnp.float32)
+        z = z / fnp.linalg.norm(z, axis=1)[:, None]
+        blocks.append(z)
+        u_all = fnp.concatenate(blocks, axis=0)
+
+        w32 = [w.astype(fnp.float32) for w in mlp.weights]
+        acc = None
+        for start in range(0, n_samples, chunk):
+            u = u_all[start : start + chunk]
+            sums = []
+            for w in w32:
+                u = fnp.maximum(fnp.matmul(u, w), 0.0)
+                sums.append(fnp.sum(u, axis=0, dtype=fnp.float64))
+            acc = sums if acc is None else [a + b for a, b in zip(acc, sums)]
 
         e_r = math.sqrt(2.0) * math.exp(
             math.lgamma((width + 1) / 2.0) - math.lgamma(width / 2.0)
         )
-        return e_r * fnp.stack(rows, axis=0)
+        return (e_r / n_samples) * fnp.stack(acc, axis=0)
 
         # --- Step 1: initialise the input distribution ---
         # Input is modelled as standard multivariate normal: mu=0, cov=I.
