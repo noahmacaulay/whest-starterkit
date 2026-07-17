@@ -18,47 +18,62 @@ from whestbench import MLP, BaseEstimator
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """B25: radial-exact Monte Carlo.
+        """B43: radial-exact MC with exact-Haar ORTHOGONAL directions (B22
+        done right -- all through instrumented flopscope ops).
 
-        For z ~ N(0, I_d), write z = r*u where r = ||z|| ~ chi(d) and
-        u = z/r ~ Uniform(sphere), with r and u independent (a standard
-        multivariate-normal fact). `whestbench.MLP` has no bias field, so
-        these networks' ReLU forward pass is exactly positively
-        homogeneous: f(c*x) = c*f(x) for c > 0 (holds layer-by-layer by
-        induction since ReLU(c*a) = c*ReLU(a) for c > 0). Verified
-        empirically on a real Mini-split MLP: max relative error between
-        f(r*u) and r*f(u) across all 32 layers was ~2.3e-11 (machine
-        precision).
+        B25's radial-exact substitution (below) forwards uniform-sphere
+        directions and scales the layer means by the closed-form chi-mean
+        E[r]. B22 showed that replacing i.i.d. sphere directions with
+        blocks of mutually-orthogonal (Haar) directions lowers the
+        final-layer MC variance by ~5.5% (the anti-correlated orthogonal
+        samples cover the sphere more evenly). B22's compute penalty
+        (+149% effective compute) was an INSTRUMENTATION ARTIFACT: its
+        candidate generated the QR with PLAIN numpy, invisible to
+        flopscope, so the ~0.5s/MLP of QR wall time was charged as
+        residual at lambda=1e11 FLOPs/s. The scoring model
+        (C = flops_used + 1e11*residual_wall_time_s;
+        residual = wall - backend - overhead) never charges the wall
+        time of INSTRUMENTED fnp ops -- only their symbolic FLOPs. So
+        doing the QR through `fnp.linalg.qr` charges only ~4.59e7 FLOPs
+        per 256x256 block (~1.15e9 for 25 blocks, +4.2% on raw FLOPs) with
+        its backend wall time free.
 
-        That means E[f(z)] = E[r]*E[f(u)] exactly (independence + exact
-        homogeneity), so instead of sampling r from its actual
-        distribution (contributing sampling variance for no benefit,
-        since only its mean matters), we substitute the closed-form
-        E[r] = sqrt(2)*Gamma((d+1)/2)/Gamma(d/2) (computed via lgamma for
-        numerical stability at d=256) and forward only the *directions*
-        u through the network. This eliminates the radial component of
-        Monte Carlo variance entirely rather than reducing it -- unbiased
-        by construction, and the E[r] formula was checked against a
-        2,000,000-sample empirical estimate (matched to 4 significant
-        figures).
+        Construction: 25 blocks of exact-Haar orthonormal directions via
+        `fnp.linalg.qr` of a Gaussian matrix, sign-corrected by
+        sign(diag(R)) so the orthogonal matrix is Haar-distributed (its
+        rows are then uniform-marginal, mutually-orthogonal unit
+        directions -- no radii needed, radial-exact handles magnitude).
+        25*256 = 6400 orthogonal rows plus 100 i.i.d. normalized rows =
+        6500 directions, matching the champion's sample budget. Forward
+        all rows through the 32 layers, take per-layer means, scale by
+        E[r] = sqrt(2)*exp(lgamma((d+1)/2) - lgamma(d/2)).
 
-        Measured on 60 independent trials (n_samples=6,500, matching the
-        champion): mean per-neuron variance at the final (scored) layer
-        dropped from 4.206e-06 (standard MC) to 4.042e-06 (radial-exact),
-        a ~3.9% relative variance reduction, with matching (unbiased)
-        means between the two estimators. Extra cost is one
-        `fnp.linalg.norm(axis=1)` and one broadcast division over the
-        (n_samples, width) input -- O(n_samples*width), negligible next
-        to the O(n_samples*width^2) per-layer matmuls that dominate FLOPs.
+        Unbiased: each row is marginally uniform on the sphere (Haar rows
+        and normalized-Gaussian rows alike), so the sample mean is an
+        unbiased estimator of E[f(u)]; orthogonality only reduces its
+        variance. Radial-exactness is preserved exactly (rows are unit
+        vectors; magnitude comes entirely from the E[r] scale).
         """
-        n_samples = 6_500
         _ = budget
         width = mlp.width
+        n_blocks = 25          # 25*256 = 6400 orthogonal rows
+        n_extra = 100          # + 100 iid rows = 6500 total (champion budget)
 
         rng = fnp.random.default_rng(mlp.seed)
-        z = rng.standard_normal((n_samples, width)).astype(fnp.float32)
-        norms = fnp.linalg.norm(z, axis=1)
-        u = z / norms[:, None]
+
+        blocks = []
+        for _b in range(n_blocks):
+            g = rng.standard_normal((width, width)).astype(fnp.float32)
+            q, r = fnp.linalg.qr(g)
+            # Sign-correct columns by sign(diag(R)) -> Q is exactly Haar.
+            q = q * fnp.sign(fnp.diagonal(r))
+            blocks.append(q)
+
+        z = rng.standard_normal((n_extra, width)).astype(fnp.float32)
+        z = z / fnp.linalg.norm(z, axis=1)[:, None]
+        blocks.append(z)
+
+        u = fnp.concatenate(blocks, axis=0)  # (6500, width) unit directions
 
         rows = []
         for w in mlp.weights:
