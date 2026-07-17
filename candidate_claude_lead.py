@@ -1,12 +1,15 @@
-"""B42 candidate (claude-lead): champion with the charged residual minimized.
+"""B45 candidate (claude-lead): B43's exact-Haar orthogonal directions
+rebuilt on B42's residual-minimized forward structure.
 
-Identical estimator to the B25 radial-exact champion (same seeded draw, same
-directions, same statistics); only the arithmetic is restructured so that the
-un-instrumented wall time flopscope charges as residual (at 1e11 FLOPs/s)
-nearly vanishes: float32 forward chain (halves memory traffic) computed in
-650-row chunks (keeps every temporary small enough for allocator arena reuse
-instead of OS-level churn), with per-layer sums accumulated in float64 so the
-final layer means match the champion's to ~7e-8 absolute.
+Directions are generated exactly as B43's candidate (candidate_claude.py @
+56c3f41) does -- same seeded draw order, same float32 QR blocks, same
+sign correction, same 100 iid tail rows -- so the per-MLP statistics that
+B44 verified on the complete Full split carry over up to float32 forward
+rounding. The forward pass then uses B42's structure: float32 weights,
+650-row chunks (allocator arena reuse eliminates the OS memory churn that
+flopscope charges as residual wall time at 1e11 FLOPs/s), per-layer sums
+accumulated in float64, scaled once by the closed-form chi(width) mean
+radius.
 """
 
 from __future__ import annotations
@@ -16,43 +19,57 @@ import importlib.util
 import math
 from pathlib import Path
 
-import flopscope as flops
 import flopscope.numpy as fnp
 from whestbench import MLP, BaseEstimator
-
-_COV_RESCALE_THRESHOLD = 1e100
 
 
 class Estimator(BaseEstimator):
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        """Radial-exact Monte Carlo (B25) with minimized charged residual (B42).
+        """Radial-exact MC over exact-Haar orthogonal direction blocks.
 
-        For z ~ N(0, I_d), z = r*u with r = ||z|| ~ chi(d), u = z/r ~
-        Uniform(sphere), r independent of u. `MLP` has no bias field, so
-        the ReLU forward pass is exactly positively homogeneous:
-        f(c*x) = c*f(x) for c > 0. Hence E[f(z)] = E[r]*E[f(u)] exactly --
-        substitute the closed-form E[r] for the sampled radius and
-        forward only directions.
+        Sampling law (B43/B22): 25 blocks of exact-Haar orthonormal
+        directions via `fnp.linalg.qr` of a seeded Gaussian (width,width)
+        matrix, sign-corrected by sign(diag(R)) so each Q is exactly
+        Haar-distributed; rows are mutually-orthogonal unit directions
+        with exactly uniform sphere marginals, so the sample mean stays
+        unbiased while within-block negative dependence cuts variance.
+        25*256 = 6400 rows plus 100 iid normalized rows = 6500 directions.
+        The QR runs through instrumented fnp, so it charges only its
+        symbolic FLOPs (~1.15e9 total, +4.2% raw) and its backend wall
+        time is free (B22's +149% penalty was plain-numpy invisibility).
 
-        B42 restructuring (statistically identical, near-bit-identical
-        predictions): the scorer charges effective compute
-        C = flops_used + 1e11 * (wall - backend - overhead), so only
-        un-instrumented time (allocator/OS churn between fnp ops) costs
-        score. Forwarding the same 6,500 directions in float32 and in
-        650-row chunks keeps every temporary ~650KB, which the process
-        allocator recycles without OS-level alloc/free churn; per-layer
-        sums accumulate in float64 so the returned means match the
-        float64 champion to ~1e-7 absolute (MSE change < 1e-15).
+        Radial exactness (B25): bias-free ReLU nets are exactly
+        positively homogeneous, so E[f(z)] = E[r]*E[f(u)] with the
+        closed-form chi(d) mean E[r]; only directions are forwarded.
+
+        Forward structure (B42): float32 weights, 650-row chunks so every
+        temporary is ~650KB and the allocator recycles arenas instead of
+        OS-level alloc/free churn (the only wall time the scorer charges,
+        at 1e11 FLOPs/s); per-layer sums accumulate in float64, matching
+        the float64 forward within ~1e-7 absolute.
         """
-        n_samples = 6_500
-        chunk = 650
         _ = budget
         width = mlp.width
+        n_blocks = 25          # 25*256 = 6400 orthogonal rows
+        n_extra = 100          # + 100 iid rows = 6500 total
+        n_samples = n_blocks * width + n_extra
+        chunk = 650
 
         rng = fnp.random.default_rng(mlp.seed)
-        z = rng.standard_normal((n_samples, width)).astype(fnp.float32)
-        norms = fnp.linalg.norm(z, axis=1)
-        u_all = z / norms[:, None]
+
+        blocks = []
+        for _b in range(n_blocks):
+            g = rng.standard_normal((width, width)).astype(fnp.float32)
+            q, r = fnp.linalg.qr(g)
+            # Sign-correct columns by sign(diag(R)) -> Q is exactly Haar.
+            q = q * fnp.sign(fnp.diagonal(r))
+            blocks.append(q)
+
+        z = rng.standard_normal((n_extra, width)).astype(fnp.float32)
+        z = z / fnp.linalg.norm(z, axis=1)[:, None]
+        blocks.append(z)
+
+        u_all = fnp.concatenate(blocks, axis=0)  # (6500, width) unit rows
 
         w32 = [w.astype(fnp.float32) for w in mlp.weights]
 
