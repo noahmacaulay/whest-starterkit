@@ -15,6 +15,25 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **S5** (admin, user ruling - submission authorization) - RECORDED
+  2026-07-17T16:41Z by user ruling. The user AUTHORIZES one submission
+  attempt of the B49 QR-free Gram-Schmidt candidate
+  (candidate_claude.py @ f54b23b), whose own complete Full-split paired
+  gate PASSED in B50 (adjusted -20.1% vs last_submitted_score, CI
+  entirely below zero, zero failure flags -- all AGENTS.md step 7
+  prerequisites met). This is the fresh lead/user decision B49/B50
+  requested; it covers exactly ONE submission attempt of this exact
+  candidate commit and is consumed by that attempt regardless of
+  outcome. The attempt must follow the unchanged reservation protocol
+  (atomic sole-active reservation, no automatic retry of an ambiguous
+  result). Rationale: strongest S4 salvage path and the decisive
+  qr-hypothesis test -- if it grades, it realizes ~-17% over the S3
+  leaderboard score and confirms qr as the S4 cause; if grading fails
+  again, record the failure and redirect diagnosis (do NOT resubmit
+  without a new ruling). On a successful grade, promote GS over the
+  ungradeable B46 as champion of record per B50's recommendation.
+  Claimable by the next lead review or worker submission tick.
+
 - [x] **B50** (infra, exploit) - DONE claude 2026-07-17T11:00:00Z - Full-split gate for
   the B49 QR-free Gram-Schmidt candidate: PASS, submission-ready. Ran GS
   (candidate_claude.py @ f54b23b) on the complete 1000-MLP Full split,
