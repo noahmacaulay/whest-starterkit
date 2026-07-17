@@ -1,0 +1,46 @@
+{
+  "experiment_id": "B43-claude-20260717T013000Z",
+  "agent": "claude",
+  "hypothesis": "Lead review 2026-07-17 found B22's orthogonal-directions compute penalty was an INSTRUMENTATION ARTIFACT: B22 generated its Haar blocks with plain numpy (invisible to flopscope), so ~0.5s/MLP of QR wall time was charged as residual at lambda=1e11 (the +149% penalty). The scoring model (C = flops_used + 1e11*residual_wall_time_s; residual = wall - backend - overhead) never charges the wall time of INSTRUMENTED fnp ops -- only their symbolic FLOPs. So doing the QR through fnp.linalg.qr should cost only ~4.59e7 FLOPs/block (+4% raw FLOPs) with its backend wall time free, capturing B22's real -5.5% MSE gain cheaply. B40's 'orthogonal-directions line is compute-blocked' verdict was closed on this artifact and is WITHDRAWN.",
+  "base": {"champion_estimator_commit": "2227ef3", "candidate_commit": "56c3f41", "claim_commit": "634ac99"},
+  "environment": {"whestbench": "0.12.0rc3", "flopscope": "0.8.0rc5", "uv_lock_commit": "9b677e2", "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1", "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433", "split": "mini", "flop_budget": 272000000000, "runner": "subprocess"},
+  "construction": "25 blocks of exact-Haar orthonormal directions via fnp.linalg.qr of a Gaussian (256,256) matrix, sign-corrected by q*fnp.sign(fnp.diagonal(r)) so Q is Haar-distributed (rows are uniform-marginal, mutually-orthogonal unit vectors); + 100 iid normalized rows = 6500 directions; forward through 32 layers; scale layer means by closed-form E[r] (radial-exact). All ops through fnp. Verified: rows unit (norm~1), mutually orthogonal (max|offdiag|~6e-7), marginally uniform.",
+  "artifact_fix_confirmed": {
+    "champion_multiplier": 0.1121238639466672,
+    "candidate_multiplier": 0.11685371026533074,
+    "multiplier_rel_increase": 0.042,
+    "candidate_mlp0_residual_wall_time_s": 0.041,
+    "candidate_mlp0_backend_time_s": 0.660,
+    "candidate_flops_used_rel_increase": 0.041,
+    "note": "The QR's 0.66s backend wall time is now FREE (counted as backend, not residual); residual stayed 0.041s (~champion's 0.026s), not B22's ~0.5s. Only the +4.1% QR FLOPs are charged. B40's 'inherent compute penalty' was wrong -- it benchmarked PLAIN-numpy wall time without accounting for the scoring model's free treatment of instrumented-op backend time."
+  },
+  "standalone_controlled_check": "8 MLPs, 12 seeds each, ortho vs iid both radial-exact: mean iid MSE 5.834e-06 vs mean ortho MSE 5.005e-06 = +14.2% reduction -- a real, fairly consistent variance reduction (larger than B22's 5.5% because radial-exact removes the chi-radius noise B22 still had).",
+  "harness_result_100_mlp": {
+    "n_mlps": 100,
+    "champion_final_layer_mse": 7.210787749158953e-06,
+    "candidate_final_layer_mse": 5.463375857743813e-06,
+    "mse_rel_change": -0.2423,
+    "champion_adjusted_final_layer_score": 8.070911506379556e-07,
+    "candidate_adjusted_final_layer_score": 6.384181310647366e-07,
+    "adjusted_score_rel_change": -0.2090,
+    "paired_metric": "adjusted_final_layer_score (candidate - champion), paired on mlp_name",
+    "paired_mean_delta": -1.6867301957321894e-07,
+    "paired_95pct_ci": [-4.378867444059852e-07, 1.005407052595473e-07],
+    "n_improved": 50,
+    "n_regressed": 50,
+    "mse_only_paired_mean_delta": -1.7474e-06,
+    "mse_only_paired_95pct_ci": [-4.1536e-06, 6.5882e-07],
+    "mse_only_n_improved": 51,
+    "candidate_failure_flags_all_zero": true,
+    "delta_distribution": {"q05": -1.213e-06, "q25": -3.515e-07, "q50": -1.176e-08, "q75": 2.239e-07, "q95": 9.382e-07, "best3": [-9.61e-06, -7.64e-06, -1.36e-06], "worst3": [1.59e-06, 2.21e-06, 2.43e-06]}
+  },
+  "verdict": "REJECTED at the standard Mini paired promotion gate (not promotable alone), WITH major positive findings.",
+  "reason": "The 95% paired CI straddles zero for BOTH adjusted score ([-4.38e-07, +1.01e-07]) and MSE ([-4.15e-06, +6.59e-07]), so the standard promotion gate (mean negative AND CI entirely below zero) fails. Despite the large -24% aggregate MSE / -20.9% aggregate adjusted-score improvement, the per-MLP effect is a 50/50 coin flip with a ~0 median: the aggregate win is FAT-TAILED, driven almost entirely by ~2 outlier MLPs (deltas -9.61e-06, -7.64e-06) where the champion's single iid draw was unlucky. This is exactly the non-robust, outlier-driven aggregate win the paired gate exists to reject (per B30's suite-sampling analysis). The genuine, robust component is the ~5-14% variance reduction (controlled standalone), but at single-seed harness scale plus the deterministic +4% multiplier penalty it does not clear the significance bar.",
+  "positive_findings": [
+    "B40's 'orthogonal-directions line is compute-blocked' verdict is DEFINITIVELY WRONG and withdrawn: the penalty was an instrumentation artifact (plain-numpy QR charged as residual). Through instrumented fnp.linalg.qr the compute cost is only +4.2% multiplier, confirmed on the real harness.",
+    "Radial-exact (B25) and orthogonal directions (B22) STACK: aggregate MSE -24% here vs B22's -5.5%, because radial-exact removes the chi-radius sampling noise that masked most of the orthogonal gain in B22. B22's chi radii are obsolete under radial-exact, as the lead noted.",
+    "The construction is exactly unbiased (uniform-marginal Haar + normalized-Gaussian rows) with zero failure flags."
+  ],
+  "recommendation": "Do not promote alone (fails paired gate). This is a strong, artifact-free building block. Per the lead's B43 note, its value is in STACKING with B42 (residual-time cut): B42 lowers baseline C, shrinking the +4% multiplier penalty's relative impact, which combined with the real ~5-14% variance reduction could yield a net effect that clears the gate and contributes to the >=5% submission bar. Also worth the lead's consideration: the aggregate improvement is unusually large (-20.9% adjusted); if a less per-MLP-noisy evaluation (e.g. multi-seed or the Full split's 1000 MLPs, which dilutes single-MLP outliers) shows a robust effect, the promotion picture could change. Candidate retained at commit 56c3f41.",
+  "full_submission_gate": "NOT_RUN"
+}

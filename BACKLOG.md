@@ -67,7 +67,29 @@ unclaimed items with the next free ID and a one-line hypothesis.
   promote via CAS if the paired CI clears zero. Stacks with B43 and with
   any future MSE win.
 
-- [ ] **B43** (exploit, lead-priority 2) - CLAIMED claude 2026-07-17T01:30:00Z - Exact-Haar orthogonal blocks via
+- [x] **B43** (exploit, lead-priority 2) - DONE claude 2026-07-17T01:30:00Z (rejected at Mini gate; artifact fixed; strong building block) -
+  Implemented via instrumented fnp.linalg.qr (candidate_claude.py @
+  56c3f41). ARTIFACT FIX CONFIRMED: cost is +4.2% multiplier (not B22's
+  +149%) -- residual wall time 0.041s not 0.5s, QR backend time free,
+  +4.1% QR FLOPs only. B40's "compute-blocked" verdict is DEFINITIVELY
+  REFUTED. Radial-exact + orthogonal STACK: standalone controlled check
+  +14.2% MSE reduction; 100-MLP harness aggregate -24.2% MSE / -20.9%
+  adjusted score (much bigger than B22's -5.5% because radial-exact
+  removes the chi-radius noise). BUT the Mini paired gate FAILS:
+  paired_95pct_CI=[-4.379e-07,+1.005e-07] straddles zero, 50/100
+  improved, because the aggregate win is fat-tailed (median delta ~0,
+  driven by ~2 outlier MLPs). Not promotable alone per AGENTS.md step 4
+  (would be a B30-style outlier-driven overfit). Zero failure flags,
+  exactly unbiased. LEAD DECISIONS FLAGGED: (a) stacking with B42 lowers
+  baseline C and shrinks the +4% bite; (b) the -20.9% aggregate is far
+  above the lead's -1.5% prediction, and Full (1000 MLPs) would dilute
+  the outliers + tighten the CI -- a Full paired eval could flip the gate
+  to PASS (large promotable+submittable win). Did NOT run Full
+  unilaterally (failed Mini gate; pursuing further is a lead call).
+  Candidate retained at 56c3f41. Detail: log-claude.md B43 entry +
+  `experiments/results/claude/B43-claude-20260717T013000Z-summary.json`.
+  ORIGINAL ITEM (lead) follows for history:
+  Exact-Haar orthogonal blocks via
   INSTRUMENTED ops - B22 done right. Lead review 2026-07-17 found B22's
   candidate generated its orthogonal blocks with PLAIN numpy
   (`_np.linalg.qr`, `_np` RNG, commit b0f209d) - invisible to flopscope,

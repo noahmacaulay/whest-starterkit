@@ -1849,3 +1849,66 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
 - Verdict: REJECTED (feasibility, pre-harness). No candidate file, no
   harness compute spent. The cheap timing benchmark settled it.
 - Full/submission gate: NOT_RUN (no candidate).
+
+## 2026-07-17T01:30:00Z - B43-claude: Exact-Haar orthogonal directions via instrumented fnp (B22 done right)
+- Context: the lead's 2026-07-17 review found B22's +149% compute penalty
+  was an INSTRUMENTATION ARTIFACT (B22 built its Haar blocks with plain
+  numpy, invisible to flopscope, so ~0.5s/MLP of QR wall time was charged
+  as residual at lambda=1e11). The scoring model only charges
+  UN-instrumented wall time; instrumented fnp ops' backend time is free,
+  only their symbolic FLOPs count. The lead explicitly WITHDREW my B40
+  "orthogonal-directions line is compute-blocked" verdict -- correctly, I
+  had benchmarked PLAIN-numpy QR wall time without accounting for the
+  scoring model's free treatment of instrumented backend time. My error;
+  the lead's audit caught it. Claimed B43 to do it right.
+- Change (candidate_claude.py @ 56c3f41): 25 blocks of exact-Haar
+  orthonormal directions via fnp.linalg.qr of a Gaussian (256,256),
+  sign-corrected by q*fnp.sign(fnp.diagonal(r)) (Haar); + 100 iid
+  normalized rows = 6500 directions; forward 32 layers; scale means by
+  closed-form E[r]. All ops through fnp. Verified rows unit
+  (norm~1), orthogonal (max|offdiag|~6e-7), marginally uniform. No chi
+  radii (radial-exact handles magnitude -- B22's radii obsolete).
+- Artifact fix CONFIRMED on the real harness: fnp.linalg.qr charges
+  1.146e9 FLOPs for 25 blocks (+4.1% raw FLOPs, matching the lead's
+  model); MLP0 residual wall time 0.041s (not B22's ~0.5s) with the QR's
+  0.66s counted as free backend; candidate multiplier 0.1169 vs champion
+  0.1121 = +4.2% (not +149%). B40's "inherent compute penalty" is
+  DEFINITIVELY refuted.
+- Standalone controlled check (8 MLPs, 12 seeds, ortho vs iid both
+  radial-exact): +14.2% MSE reduction -- a real, consistent variance
+  reduction, LARGER than B22's 5.5% because radial-exact removes the
+  chi-radius noise B22 still carried (radial-exact + orthogonal STACK).
+- Harness paired (100-MLP Mini, subprocess, both fresh, zero failure
+  flags): champion final_layer_mse 7.211e-06 -> candidate 5.463e-06
+  (-24.2% aggregate); champion adjusted 8.071e-07 -> candidate 6.384e-07
+  (-20.9% aggregate). BUT paired_mean_delta=-1.687e-07,
+  paired_95pct_CI=[-4.379e-07, +1.005e-07] STRADDLES ZERO; 50/100
+  improved. MSE-only CI also straddles ([-4.15e-06, +6.59e-07], 51/100).
+  Delta distribution is extremely fat-tailed: median ~0 (-1.18e-08), but
+  the 3 best MLPs are -9.61e-06, -7.64e-06, -1.36e-06 -- the aggregate
+  win is driven almost entirely by ~2 outlier MLPs where the champion's
+  single iid draw was unlucky.
+- Verdict: REJECTED at the standard Mini paired promotion gate (CI not
+  entirely below zero), per AGENTS.md step 4. Promoting would be exactly
+  the B30 overfitting mistake (a fat-tailed, outlier-driven aggregate win
+  that isn't per-MLP robust). NO promotion attempted.
+- BUT three major positive findings recorded for the lead: (1) B40's
+  compute-blocked verdict is definitively wrong -- artifact fixed, cost is
+  +4.2% not +149%; (2) radial-exact + orthogonal genuinely STACK (-24%
+  aggregate MSE vs B22's -5.5%); (3) construction is exactly unbiased,
+  zero failure flags. The robust component is the controlled ~5-14%
+  variance reduction.
+- Recommendation for the lead (above worker scope to act on): B43 is a
+  strong, artifact-free building block. Per the lead's own B43 note its
+  value is STACKING with B42 (residual-time cut lowers baseline C,
+  shrinking the +4% multiplier's relative bite). Separately worth
+  weighing: the aggregate effect (-20.9%) is far larger than the lead's
+  ~-1.5% prediction, and the Full split (1000 MLPs) would DILUTE the
+  single-MLP outliers while tightening the CI -- a Full paired
+  evaluation could plausibly flip the gate to PASS and, if so, would be
+  a large promotable+submittable win (>5% over last_submitted). I did
+  NOT run the Full gate unilaterally: B43 failed the Mini gate, so under
+  the protocol it does not advance, and whether to pursue it further
+  despite that is a lead call. Candidate retained at 56c3f41. Full
+  numbers: experiments/results/claude/B43-claude-20260717T013000Z-summary.json.
+- Full/submission gate: NOT_RUN (failed the Mini promotion gate).
