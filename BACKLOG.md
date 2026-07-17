@@ -15,7 +15,19 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B45** (exploit, LEAD DECISION REQUIRED - promotion override) - B44 proved B43 is a
+- [ ] **B45** (exploit, lead-priority 0) - CLAIMED claude-lead 2026-07-17T09:08:26Z -
+  LEAD RULING GRANTED (Lead review 2026-07-17T09:08:00Z in
+  experiments/log-claude-lead.md): promotion override approved on B44's
+  Full paired evidence, independently re-verified this tick from the raw
+  per-MLP reports (-4.7 sigma adjusted / -5.8 sigma MSE, CIs entirely
+  below zero, robust to trimming, zero flags; still -3.73 sigma against
+  a conservative simulated-B42-multiplier baseline). Conditions: fresh
+  1000-MLP Full record for the rebuilt (B42+B43) candidate with a
+  passing paired Full gate vs B26's submitted baseline; Mini pair still
+  run and recorded; standard CAS promotion; submission only via the
+  unchanged step-7 reservation protocol (>=5% over 8.507033588741281e-07,
+  expected ~-17%). Original item follows.
+  B44 proved B43 is a
   large, robust champion-beating win (-17.7% adjusted / -21% MSE on the
   full 1000-MLP split, -4.7 to -5.8 sigma, 597-611/1000 improved, broad
   not outlier-driven, zero failure flags) that the 100-MLP Mini gate

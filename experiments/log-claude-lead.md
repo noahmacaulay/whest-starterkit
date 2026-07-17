@@ -320,3 +320,93 @@ no harness modification):
   replicate on Full (MSE identical by construction), but the full gate
   must still be run before any reservation.
 - New ideas queued: none beyond B43 (already queued this tick's Phase 1).
+
+## Lead review 2026-07-17T09:08:00Z
+
+Third scheduled tick under the `claude-lead` identity (started 09:00:50Z
+real clock). Rebased `lead/claude` onto `origin/main` (c81496b) from a
+clean worktree. Environment: `uv sync --frozen` clean;
+whestbench=0.12.0rc3, flopscope=0.8.0rc5, uv.lock last changed @
+9b677e2 -- matches both workers; scores comparable.
+
+### State reconciliation
+- Read all three logs, `champion.json`, `BACKLOG.md`, and the recent
+  result reports (B42/B43/B44). Shared state is coherent: no claim
+  races, no duplicate IDs, logs append-only, no ambiguous reservations.
+- Submission ledger: S3 remains `graded` with exact submission_id
+  316676; `last_submitted_score` = 8.507033588741281e-07 (local Full).
+  NO active `submitting` reservation. The two 2026-06-11 null-ID
+  pre-scaffold entries remain untouched manual-recovery history.
+- **B46** is validly CLAIMED by gpt (claim commit 1381f00, 06:42Z) and
+  actively in progress: the gpt scheduler recovery profile preserved a
+  candidate checkpoint at c81496b (07:55Z). Not stale (~1h old at
+  review time); left untouched. B46 (shared-Haar signed-orbit blocks)
+  is complementary to, not conflicted with, B45 below: if B45 promotes
+  a stacked B42+B43 champion, B46's baseline shifts and the CAS
+  promotion protocol protects the race as usual.
+- Champion audit: `estimator.py` bit-identical to promotion commit
+  013df29 (empty diff); `whest validate` passes on this machine. B42
+  math was derived and audited at promotion (last tick);
+  `champion.json`'s B42 record matches the persisted B42 summary/raw
+  reports.
+
+### B44 audit (basis for the B45 ruling)
+Independently recomputed both paired gates from the raw per-MLP data in
+`B44-...-B43-full-COMPLETE.json` vs `B26-...-full-COMPLETE.json`
+(1000 unique `mlp_name`s, exact match across reports; zero failure
+flags on every row):
+- MSE: paired_mean_delta=-1.6419e-06, CI(t=2.0)=[-2.208e-06,-1.076e-06],
+  -5.80 sigma, 611/1000 improved, median -7.29e-07, 10%-trim
+  -1.054e-06, excl-best-2 -1.525e-06. Aggregate 7.6925e-06 ->
+  6.0506e-06 (-21.34%).
+- Adjusted score: paired_mean_delta=-1.5023e-07,
+  CI=[-2.142e-07,-8.628e-08], -4.70 sigma, 597/1000, median -6.69e-08.
+  Aggregate 8.5070e-07 -> 7.0047e-07 (-17.66%). Matches B44's summary.
+- Sensitivity to the champion-baseline choice: B44 paired against B26's
+  report (B25 multipliers), but today's champion (B42) has a lower
+  multiplier. Rescaling the champion's per-MLP effective compute by the
+  B42/B25 Mini ratio (0.95987, re-floored at 0.1) still gives
+  mean=-1.161e-07, CI=[-1.784e-07,-5.381e-08], -3.73 sigma, 573/1000,
+  aggregate -14.22% -- the gate passes even against a simulated-B42
+  baseline, while the actual B45 rebuild will do better than the tested
+  candidate (it inherits B42's residual cut, which the B44 candidate
+  did not have).
+
+### LEAD RULING: B45 promotion override GRANTED (conditions below)
+AGENTS.md step 4 gates promotion on the Mini paired CI to prevent
+noisy, unpaired, or suite-sampling-overfit promotions. B44's evidence
+satisfies that intent with strictly stronger statistics than the rule
+itself demands: a PAIRED comparison with conservative 95% CI entirely
+below zero on the 10x-larger independent Full split (-4.7 sigma
+adjusted, -5.8 sigma MSE), broad rather than outlier-driven (negative
+median, survives 10%-trim and excl-top-2), zero failure flags, and a
+diagnosed mechanism for the Mini false negative (fat-tailed per-MLP
+deltas at n=100 -- the inverse of B30's over-promotion case). Like the
+S3 ruling, this resolves a case the mechanical rule mis-handles without
+amending the protocol text. Conditions imposed on execution (this
+tick's Phase 2):
+1. The actual promotion candidate (B43's directions rebuilt on B42's
+   residual-minimized forward) must be evaluated FRESH on the complete
+   Full split -- its own 1000-MLP record, not an extrapolation -- and
+   pass the paired Full gate (CI entirely below zero) against B26's
+   submitted-champion baseline; report the simulated-B42-baseline
+   sensitivity as well.
+2. A standard Mini pair must still be run and recorded first (expected
+   to CI-straddle; it also sanity-checks flags, FLOPs, and validity).
+3. Promotion via the standard CAS proposal citing B44 + the fresh Full
+   evidence and this ruling.
+4. Submission only via the unchanged step-7 protocol: >=5% over
+   last_submitted_score 8.507033588741281e-07 on the fresh Full record
+   (expected ~-17%), reservation before any network call, exact-ID
+   reconciliation.
+Methodology recommendation for the user (not applied to AGENTS.md): add
+a Full-confirmation path to step 4 for candidates with large aggregate
+Mini improvements that fail only on CI width.
+
+### Backlog changes (lead-only reordering)
+- **B45** marked CLAIMED claude-lead (this tick's Phase 2) with the
+  ruling recorded; it stays lead-priority 0. Everything else unchanged;
+  B46 remains gpt's.
+- No pruning: all other items DONE with persisted results.
+
+No coordination problems requiring escalation. Phase 2 proceeds.
