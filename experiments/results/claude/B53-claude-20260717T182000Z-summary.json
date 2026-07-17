@@ -1,0 +1,25 @@
+{
+  "experiment_id": "B53-claude-20260717T182000Z",
+  "agent": "claude",
+  "purpose": "Apply B51's fix: build a GRADEABLE orthogonal-directions candidate. B51 proved the B42 chunked forward is grader-safe and localized the S4/S5 grader 'Evaluation error' to the FRAME ops fnp.concatenate and/or fnp.where. This candidate keeps B49's QR-free Gram-Schmidt frame and B42's forward but removes both frame suspects.",
+  "changes_vs_B49_GS": [
+    "fnp.where(draws>=0,1,-1) -> arithmetic 2.0*(orbit_draws>=0.0).astype(fnp.float32)-1.0 (no fnp.where)",
+    "fnp.concatenate(blocks)/u_all/reshape -> forward each width-row orbit block DIRECTLY (each block a natural chunk; summing per-block == summing one concatenated batch). No fnp.concatenate, no fnp.reshape.",
+    "dropped the +100 iid tail so all 25 blocks are equal-size -> 6400 directions (vs 6500); negligible statistical cost."
+  ],
+  "candidate": "candidate_claude.py @ 208dcf5",
+  "op_set": "Only ops S3/B42 graded successfully: standard_normal, astype, matmul, maximum, fnp.sum(axis=0,dtype=float64), stack, linalg.norm, comparison(>=), scalar arithmetic. NO fnp.concatenate / fnp.where / fnp.linalg.qr / fnp.reshape.",
+  "mini_100": {"final_layer_mse": 5.094907784268799e-06, "adjusted": 5.879213664569344e-07, "multiplier": 0.11590489241673393, "failures": 0, "note": "MSE +1.5% vs B46 (5.017e-06) from 6400 vs 6500 samples -- orthogonal benefit preserved"},
+  "full_1000": {
+    "single_estimator": {"adjusted_final_layer_score": 7.102855471943654e-07, "final_layer_mse": 6.13268207581541e-06, "mean_score_multiplier": 0.11584073108266829, "failure_flags_total": 0},
+    "paired_vs_submitted_B25": {
+      "mse_rel_change": -0.2028, "mse_paired_95pct_ci": [-2.142e-06, -9.775e-07], "mse_sigmas": -5.26, "mse_n_improved": 566,
+      "adjusted_rel_change": -0.1651, "adjusted_paired_95pct_ci": [-2.059e-07, -7.492e-08], "adjusted_sigmas": -4.21, "adjusted_n_improved": 546,
+      "ci_entirely_below_zero": true
+    },
+    "vs_last_submitted": {"last_submitted_score": 8.507033588741281e-07, "b53_full_adjusted": 7.102855471943654e-07, "improvement": -0.1651, "exceeds_5pct_bar": true}
+  },
+  "vs_gs_and_b46": "B53 adjusted Full -16.5% (gradeable) vs GS/B50 -20.1% (ungradeable, failed grading S5) vs B46 ~-23% (ungradeable, failed grading S4). The ~3.6% gap to GS is the dropped iid rows + block-wise forward overhead (multiplier 0.1158 vs GS 0.1118). B53 is the best SUBMITTABLE candidate: it trades a few % of margin for using only the ops B51 confirmed grade.",
+  "verdict": "PASS + GRADEABLE. B53's Full gate satisfies all AGENTS.md step-7 GATE prerequisites (paired Full CI entirely below zero at -4.2/-5.3 sigma; -16.5% over last_submitted >> 5% bar; zero failures) using ONLY grader-safe ops. It is the gradeable realization of the orthogonal win.",
+  "next_action": "Submit B53 -- a FRESH lead/user decision (B53 is a new candidate; the S5 user ruling covered only the GS blob f54b23b; 3 attempts used today of 10). This is the decisive test of B51's frame-op localization: if B53 GRADES (as its op-set predicts, since B51 proved the forward safe and B53 removed both frame suspects), it realizes a ~-16% improvement over the S3 leaderboard 6.6845e-07 -- the first orthogonal-win submission that grades. If it STILL fails, the remaining suspect is broadcast-multiply / a grader resource limit (escalate). I did NOT submit (no authorization for B53)."
+}

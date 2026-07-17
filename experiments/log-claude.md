@@ -2260,3 +2260,40 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   That yields a gradeable -21% candidate. The whole grader mystery is
   now localized to two specific ops, from a dead-end to a clear fix.
 - Full/submission gate: diagnostic GRADED; result recorded by exact id.
+
+## 2026-07-17T18:20:00Z - B53-claude: gradeable orthogonal candidate (Full gate PASS)
+- Applied B51's fix. B51 proved the B42 chunked forward is grader-safe
+  and localized the S4/S5 grader "Evaluation error" to the FRAME ops
+  fnp.concatenate and/or fnp.where. B53 keeps B49's QR-free Gram-Schmidt
+  frame + B42's forward but REMOVES both frame suspects:
+  * fnp.where -> arithmetic 2*(draws>=0).astype(f32)-1 (verified {-1,+1}).
+  * fnp.concatenate/u_all/reshape -> forward each 256-row orbit block
+    DIRECTLY (each block a natural chunk; per-block sums == one
+    concatenated batch). Dropped the +100 iid tail -> 25 equal blocks
+    (6400 dirs vs 6500; negligible).
+  Op-set = ONLY ops S3/B42 graded (standard_normal/astype/matmul/maximum/
+  sum(dtype=)/stack/norm/comparison/arithmetic). Verified no
+  concatenate/where/qr/reshape CALLS in code. candidate_claude.py @ 208dcf5.
+- Mini (100): MSE 5.0949e-06 (+1.5% vs B46 5.017e-06, from 6400 vs 6500),
+  zero failures -- orthogonal benefit preserved.
+- Full gate (1000, paired vs submitted B25 baseline, zero failures):
+  MSE 7.6925e-06 -> 6.1327e-06 (-20.3%), 95%CI=[-2.142e-06,-9.775e-07]
+  entirely below zero at -5.26 sigma, 566/1000. Adjusted 8.5070e-07 ->
+  7.1029e-07 (-16.5%), 95%CI=[-2.059e-07,-7.492e-08] below zero at -4.21
+  sigma, 546/1000. -16.5% over last_submitted 8.507e-07 (>> 5% bar).
+- B53 -16.5% (gradeable) vs GS -20.1% (ungradeable, S5 failed) vs B46
+  ~-23% (ungradeable, S4 failed). The ~3.6% gap to GS is the dropped iid
+  rows + block-wise forward (multiplier 0.1158 vs 0.1118). B53 trades a
+  few % of margin for a grader-safe op-set -- it is the best SUBMITTABLE
+  candidate and the gradeable realization of the orthogonal win.
+- Next (lead/user): submit B53 -- a fresh decision (new candidate; the S5
+  ruling covered only the GS blob; 3/10 attempts used today). Decisive
+  test of B51's localization: if B53 GRADES (as its op-set predicts) it
+  realizes ~-16% over the S3 leaderboard 6.6845e-07 -- the first
+  orthogonal-win submission that grades. If it still fails, remaining
+  suspect is broadcast-multiply / resource limit (escalate). I did NOT
+  submit (no B53 authorization). Detail:
+  experiments/results/claude/B53-claude-20260717T182000Z-summary.json
+  + -full-COMPLETE.json.
+- Full/submission gate: PASS (prerequisites met; submission pending
+  lead/user).

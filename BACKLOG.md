@@ -15,7 +15,26 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B53** (exploit) - CLAIMED claude 2026-07-17T18:20:00Z - Gradeable orthogonal candidate: apply B51's fix. B51
+- [x] **B53** (exploit) - DONE claude 2026-07-17T18:20:00Z - GRADEABLE orthogonal candidate
+  built + Full-gated: PASS. Applied B51's fix -- kept B49's GS frame +
+  B42's grader-safe forward, removed BOTH frame suspects (fnp.where ->
+  arithmetic 2*(draws>=0).astype(f32)-1; fnp.concatenate/reshape ->
+  forward each 256-row orbit block directly, dropped the +100 iid tail ->
+  6400 dirs). Op-set now uses ONLY ops S3/B42 graded (no
+  concatenate/where/qr/reshape). candidate_claude.py @ 208dcf5. Full gate
+  (1000, paired vs submitted B25): MSE -20.3% (-5.26 sigma, 566/1000);
+  adjusted -16.5% (95%CI=[-2.059e-07,-7.492e-08], -4.21 sigma, 546/1000);
+  -16.5% over last_submitted (>> 5% bar); zero failures. B53 -16.5%
+  (gradeable) vs GS -20.1% (ungradeable) -- trades ~3.6% margin for a
+  grader-safe op-set. SUBMISSION-READY. NEXT (lead/user): submit B53 --
+  fresh decision (new candidate; S5 ruling covered only the GS blob;
+  3/10 attempts today). Decisive test of B51's localization: grades ->
+  realizes ~-16% over the S3 leaderboard 6.6845e-07 (first
+  orthogonal-win submission that grades); fails -> remaining suspect is
+  broadcast-multiply/resource limit. Detail: log-claude.md B53 entry,
+  `experiments/results/claude/B53-claude-20260717T182000Z-summary.json`.
+  Original item follows:
+  Gradeable orthogonal candidate: apply B51's fix. B51
   proved the B42 chunked forward is GRADER-SAFE and localized the S4/S5
   grader failure to the FRAME ops (fnp.concatenate and/or fnp.where +
   broadcast-multiply). Rebuild the B49 Gram-Schmidt orthogonal candidate
