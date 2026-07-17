@@ -216,6 +216,32 @@
   ],
   "submissions": [
     {
+      "attempt_id": "S5-claude-lead-20260717T170700Z",
+      "timestamp": "2026-07-17T17:07:00Z",
+      "agent": "claude-lead",
+      "backlog_item": "S5",
+      "status": "submitting",
+      "submission_id": null,
+      "champion_experiment_id": "B49-claude-20260717T103000Z",
+      "candidate_file": "candidate_claude.py (QR-free Gram-Schmidt orthogonal frame, NOT the current estimator.py champion B46 which failed grading in S4)",
+      "estimator_git_blob": "f54b23bb9ca6952b63e3c8293153107ba0408837",
+      "estimator_sha256": "52ae6555683a692ec56160cf3abd22cbc3c492ef23153ed94b77559114c1f983",
+      "artifact": "submissions/S5-claude-lead-20260717T170700Z-GS-f54b23b.tar.gz",
+      "artifact_sha256": "cda55d67c44fb86b1257178f456a0780f5f53528b9cc8d2d90b909771d1726bf",
+      "artifact_note": "Packaged by `whest package --estimator candidate_claude.py`; validate-package OK; extracted estimator.py verified bit-identical to git blob f54b23b (the exact B49/B50/S5 candidate). Artifact retained locally (*.tar.gz gitignored); hashes authoritative.",
+      "reserved_on_main_commit": "5ebc560",
+      "local_full_score": 6.7972266077423043e-07,
+      "local_full_report": "experiments/results/claude/B50-claude-20260717T110000Z-GS-full-COMPLETE.json",
+      "full_gate_reference": "B50-claude-20260717T110000Z: GS candidate's OWN complete 1000-MLP Full gate, paired vs the submitted S3/B25 baseline (B26 report): adjusted -20.1% (95%CI [-2.360e-07,-1.060e-07] entirely below zero, -5.16 sigma, 543/1000), MSE -21.0% (-5.40 sigma), zero failure flags; -20.1% vs last_submitted_score 8.507033588741281e-07.",
+      "environment": {
+        "whestbench": "0.12.0rc3",
+        "flopscope": "0.8.0rc5+np2.2.6",
+        "uv_lock_last_changed": "9b677e2"
+      },
+      "authorization": "S5 user ruling (RECORDED 2026-07-17T16:41Z, commit 3b5aa43): exactly ONE submission attempt of this exact candidate (blob f54b23b), consumed by this attempt regardless of outcome. Also independently satisfied: the relaxed step-7 standing authorization (user ruling commit 6c81bd2) -- paired Full adjusted CI entirely below zero vs last submitted champion. Daily cap check: this is UTC-day attempt 2/10 (S4 was 1).",
+      "reservation_note": "ACTIVE reservation pushed atomically to origin/main BEFORE any network call, as the sole active `submitting` entry (ledger checked: 0 active prior; S4 status=failed, reconciled by exact id 316800). Purpose doubles as the decisive qr-hypothesis test per S5/B50: grades -> qr caused S4's Evaluation error, promote GS per S5; fails -> cause is not qr, record and stop (no retry without a new ruling). If found stuck in status=submitting with null submission_id, reconcile ONLY via this exact attempt_id in the submission description -- never by timestamp."
+    },
+    {
       "attempt_id": "S4-claude-20260717T094500Z",
       "timestamp": "2026-07-17T09:45:00Z",
       "submitted_at": "2026-07-17T11:08:31Z",
