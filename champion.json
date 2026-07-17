@@ -1,15 +1,15 @@
 {
   "champion": {
     "file": "estimator.py",
-    "description": "Radial-exact Monte Carlo post-ReLU mean estimator; substitutes the closed-form E[r] of the chi(width) radius for the sampled radius (exact by ReLU positive homogeneity on bias-free MLPs), forwarding only directions through the network. Selected from B25 Mini paired comparison against the B0 champion.",
-    "adjusted_final_layer_score": 7.949243932452441e-07,
-    "final_layer_mse": 7.210787749158953e-06,
-    "mean_effective_compute": 29956575592.22443,
-    "flops_used": 27346176000.0,
-    "measured_at": "2026-07-16T16:00:00Z",
+    "description": "Radial-exact Monte Carlo post-ReLU mean estimator (B25) with minimized charged residual (B42): same seeded float64 Gaussian draw and unit directions, forwarded in float32 in 650-row chunks (allocator arena reuse eliminates the OS memory churn that flopscope charges as residual wall time at 1e11 FLOPs/s), per-layer sums accumulated in float64, scaled by the closed-form chi(width) mean radius. Predictions match the B25 champion within 7.7e-08 absolute; only mean_effective_compute changes.",
+    "adjusted_final_layer_score": 7.623281542134296e-07,
+    "final_layer_mse": 7.210819040324168e-06,
+    "mean_effective_compute": 28754554798.39205,
+    "flops_used": 27349504000.0,
+    "measured_at": "2026-07-17T01:45:00Z",
     "measured_on": {
-      "experiment_id": "B25-claude-20260716T160000Z",
-      "source_result_commit": "1cf928a",
+      "experiment_id": "B42-claude-lead-20260717T011419Z",
+      "source_result_commit": "ba03635",
       "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
       "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
       "split": "mini",
@@ -17,82 +17,80 @@
       "runner": "subprocess",
       "whestbench": "0.12.0rc3",
       "flopscope": "0.8.0rc5",
-      "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f",
-      "paired_mean_delta": -1.4337479573035662e-07,
-      "paired_95pct_ci": [-2.5806878728564897e-07, -2.8680804175064248e-08]
+      "uv_lock_commit": "9b677e2",
+      "paired_mean_delta": -2.637051578189961e-08,
+      "paired_95pct_ci": [
+        -3.626087959213409e-08,
+        -1.6480151971665128e-08
+      ],
+      "n_improved": 100,
+      "n_regressed": 0
     },
-    "agent": "claude",
-    "note": "Promoted after B25 Mini paired gate (69/100 MLPs improved, CI entirely negative). Supersedes the B0 champion (1598169). B26 (2026-07-16T17:00:00Z) completed this champion's own (single-estimator) Full-split gate (see full_gate below); the previous_champion.full_gate entry is the superseded B0 champion's stale record, kept for history only. S1 is now RESOLVED (see submission_readiness below) -- submission is blocked by a failed PAIRED Full-split gate (B29), not by S1.",
+    "agent": "claude-lead",
+    "note": "Promoted after the B42 Mini paired gate (100/100 MLPs improved, CI entirely negative, zero failure flags, per-MLP MSE unchanged within 5.0e-04 relative). Statistically identical to B25 by construction -- B26's COMPLETE Full-split MSE record (see previous_champion.full_gate) carries over for MSE, but the B42 champion's own Full-split effective-compute/score record is NOT yet measured (full_gate NOT_RUN below).",
     "previous_champion": {
-      "estimator_commit": "1598169",
-      "promoted_by": "B0-gpt-20260716T002459Z",
-      "superseded_by": "B25-claude-20260716T160000Z",
+      "estimator_commit": "2227ef3",
+      "promoted_by": "B25-claude-20260716T160000Z",
+      "superseded_by": "B42-claude-lead-20260717T011419Z",
+      "submitted": "S3-claude-lead-20260716T171600Z (submission_id 316676, graded; leaderboard 6.684538479656953e-07; local Full 8.507033588741281e-07 = last_submitted_score)",
       "full_gate": {
-        "status": "COMPLETE (stale -- measured on 1598169, not the current champion)",
+        "status": "COMPLETE",
         "n_mlps_evaluated": 1000,
         "n_mlps_total_in_full_split": 1000,
-        "method": "Two independent 500-MLP subprocess-runner slices (indices 0-499 and 500-999 of the immutable Full split, zero overlap, zero duplicates, verified to cover all 1000 unique MLPs) via whestbench.scoring.evaluate_estimator + whestbench.runner.SubprocessRunner driven directly (not the whest CLI), because a single 1000-MLP subprocess CLI run measured ~58 minutes and exceeded the available background-task execution window twice. MANDATORY correctness check before trusting this (per B24's requirement): cross-checked the chunked methodology against the official `whest run` CLI on 20 Full-split MLPs and 30 Mini-split MLPs -- final_layer_mse matched the CLI to the exact last printed digit in both checks (bit-identical predictions, as expected for a deterministic estimator/seed), with only the timing-derived score multiplier differing by an amount consistent with ordinary run-to-run wall-clock jitter (also observed between two separate official CLI runs of the same estimator).",
-        "adjusted_final_layer_score": 8.593710913140127e-07,
-        "final_layer_mse": 7.781365020775866e-06,
-        "mean_effective_compute": 30045397409.863068,
-        "flops_used": 27346176000.0,
-        "mean_score_multiplier": 0.11046101988920246,
+        "method": "B26: reused B24's chunked/resumable method (whestbench.cli._run_estimator_with_runner driven directly over explicit index ranges of the immutable Full split, ground truth read from the dataset's precomputed fields, never recomputed) for the new B25 champion. Ten independent 100-MLP subprocess-runner chunks (indices 0-99 through 900-999, zero overlap, zero duplicates, verified via globally-unique mlp_name across all chunks) run sequentially in the foreground -- smaller than B24's two 500-MLP chunks because concurrent/backgrounded chunk runs were unreliable in this session (killed partway through with no output, both with and without a scheduled wakeup in between; single foreground chunks of 100 MLPs, ~5 minutes each, completed reliably every time). MANDATORY correctness check before trusting the chunked path (per B24's precedent, redone because the estimator is new): cross-checked against the official `whest run` CLI on 20 Full-split MLPs and 30 Mini-split MLPs -- aggregate final_layer_mse matched the CLI to the exact last printed digit in both checks. CRITICAL bug caught and fixed by that same check: an initial version called whestbench.scoring.make_contest_from_dataset on a pre-sliced dataset (ds.select(range(start,end))), which silently lost the weakref metadata side-channel (a new Dataset object is not a key in whestbench's WeakKeyDictionary metadata store) and fell back to the wrong default seed_protocol_version (\"2.0\" instead of this dataset's real \"3.0\"), corrupting MLP reconstruction -- confirmed empirically (final_layer_mse diverged by up to ~6x per MLP from the CLI despite identical flops_used and clean budget/time flags on both sides). Fixed by reading seed_protocol_version from whestbench.metadata() on the ORIGINAL unsliced dataset before slicing, then building ContestData manually with the correct protocol version; the fix was reverified against the CLI (exact-digit match) before running any of the ten real chunks.",
+        "adjusted_final_layer_score": 8.507033588741281e-07,
+        "final_layer_mse": 7.69252006307397e-06,
+        "mean_effective_compute": 30079472132.079395,
+        "flops_used": 27349512192.0,
+        "mean_score_multiplier": 0.11058629460323308,
         "n_failed_mlps": 0,
-        "failure_breakdown": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
-        "measured_at": "2026-07-16T14:00:00Z",
+        "failure_breakdown": {
+          "budget_exhausted": 0,
+          "time_exhausted": 0,
+          "residual_wall_time_exhausted": 0,
+          "combined_budget_exhausted": 0,
+          "error": 0
+        },
+        "measured_at": "2026-07-16T17:00:00Z",
         "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
         "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
         "split": "full",
         "flop_budget": 272000000000,
         "runner": "subprocess",
         "whestbench": "0.12.0rc3",
+        "flopscope": "0.8.0rc5",
+        "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f",
         "raw_reports": [
-          "experiments/results/claude/champion-full-gate-partial500-20260716T133000Z-1598169.json",
-          "experiments/results/claude/champion-full-gate-slice500-1000-20260716T140000Z-1598169.json",
-          "experiments/results/claude/champion-full-gate-COMPLETE-20260716T140000Z-1598169.json"
-        ]
-      }
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk0-100.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk100-200.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk200-300.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk300-400.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk400-500.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk500-600.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk600-700.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk700-800.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk800-900.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk900-1000.json",
+          "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json"
+        ],
+        "note": "Full-split score (final_layer_mse=7.6925e-06) is consistent with, and marginally better than, the Mini-split champion numbers (7.2108e-06 mini vs 7.6925e-06 full -- within the expected suite-sampling range, not a large divergence) -- no evidence of Mini-split overfitting. Sanity check: the combined 1000-MLP aggregate's final_layer_mse matches the unweighted mean of the ten chunks' own independently-reported final_layer_mse values to 10 significant figures, confirming correct combination. This was a single-estimator Full-split score, not a paired comparison -- B29 (2026-07-16T18:30:00Z) has since computed the paired Full-split comparison against the B0 champion using this report plus B0's own complete Full-split report from B24; see submission_readiness below for the result."
+      },
+      "mini_reference": {
+        "adjusted_final_layer_score": 7.949243932452441e-07,
+        "final_layer_mse": 7.210787749158953e-06,
+        "mean_effective_compute": 29956575592.22443,
+        "flops_used": 27346176000.0
+      },
+      "note": "B25 radial-exact champion record preserved on supersession by B42. B42 changes NO statistics (same seeded draw, same directions; predictions within 7.7e-08); its full_gate above therefore characterizes the new champion's MSE exactly, but the new champion's own Full-split multiplier/effective-compute record must still be measured fresh before any submission (AGENTS.md step 7)."
     },
     "full_gate": {
-      "status": "COMPLETE",
-      "n_mlps_evaluated": 1000,
-      "n_mlps_total_in_full_split": 1000,
-      "method": "B26: reused B24's chunked/resumable method (whestbench.cli._run_estimator_with_runner driven directly over explicit index ranges of the immutable Full split, ground truth read from the dataset's precomputed fields, never recomputed) for the new B25 champion. Ten independent 100-MLP subprocess-runner chunks (indices 0-99 through 900-999, zero overlap, zero duplicates, verified via globally-unique mlp_name across all chunks) run sequentially in the foreground -- smaller than B24's two 500-MLP chunks because concurrent/backgrounded chunk runs were unreliable in this session (killed partway through with no output, both with and without a scheduled wakeup in between; single foreground chunks of 100 MLPs, ~5 minutes each, completed reliably every time). MANDATORY correctness check before trusting the chunked path (per B24's precedent, redone because the estimator is new): cross-checked against the official `whest run` CLI on 20 Full-split MLPs and 30 Mini-split MLPs -- aggregate final_layer_mse matched the CLI to the exact last printed digit in both checks. CRITICAL bug caught and fixed by that same check: an initial version called whestbench.scoring.make_contest_from_dataset on a pre-sliced dataset (ds.select(range(start,end))), which silently lost the weakref metadata side-channel (a new Dataset object is not a key in whestbench's WeakKeyDictionary metadata store) and fell back to the wrong default seed_protocol_version (\"2.0\" instead of this dataset's real \"3.0\"), corrupting MLP reconstruction -- confirmed empirically (final_layer_mse diverged by up to ~6x per MLP from the CLI despite identical flops_used and clean budget/time flags on both sides). Fixed by reading seed_protocol_version from whestbench.metadata() on the ORIGINAL unsliced dataset before slicing, then building ContestData manually with the correct protocol version; the fix was reverified against the CLI (exact-digit match) before running any of the ten real chunks.",
-      "adjusted_final_layer_score": 8.507033588741281e-07,
-      "final_layer_mse": 7.69252006307397e-06,
-      "mean_effective_compute": 30079472132.079395,
-      "flops_used": 27349512192.0,
-      "mean_score_multiplier": 0.11058629460323308,
-      "n_failed_mlps": 0,
-      "failure_breakdown": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0},
-      "measured_at": "2026-07-16T17:00:00Z",
-      "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
-      "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
-      "split": "full",
-      "flop_budget": 272000000000,
-      "runner": "subprocess",
-      "whestbench": "0.12.0rc3",
-      "flopscope": "0.8.0rc5",
-      "uv_lock_commit": "2c84f3b0131859397fbfecea333503af142fd50f",
-      "raw_reports": [
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk0-100.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk100-200.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk200-300.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk300-400.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk400-500.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk500-600.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk600-700.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk700-800.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk800-900.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-chunk900-1000.json",
-        "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json"
-      ],
-      "note": "Full-split score (final_layer_mse=7.6925e-06) is consistent with, and marginally better than, the Mini-split champion numbers (7.2108e-06 mini vs 7.6925e-06 full -- within the expected suite-sampling range, not a large divergence) -- no evidence of Mini-split overfitting. Sanity check: the combined 1000-MLP aggregate's final_layer_mse matches the unweighted mean of the ten chunks' own independently-reported final_layer_mse values to 10 significant figures, confirming correct combination. This was a single-estimator Full-split score, not a paired comparison -- B29 (2026-07-16T18:30:00Z) has since computed the paired Full-split comparison against the B0 champion using this report plus B0's own complete Full-split report from B24; see submission_readiness below for the result."
+      "status": "NOT_RUN",
+      "note": "Required before any submission (AGENTS.md step 7). Expected: final_layer_mse ~= B26's 7.6925e-06 (predictions within 7.7e-08 of B25); mean multiplier ~0.1057 vs B25's ~0.1094-0.1106 => expected Full adjusted score ~8.13e-07, i.e. ~-4.4% vs last_submitted_score 8.507e-07 -- LIKELY BELOW the >=5% submission bar on its own. Submission route: stack with B43 (claimed by gpt) or further residual reduction, then run the paired Full gate vs the submitted B25 champion."
     }
   },
   "submission_readiness": {
-    "status": "FIRST_SUBMISSION_GRADED",
-    "current_state": "S3 executed 2026-07-16T17:18Z: submission_id 316676, graded, leaderboard score 6.684538479656953e-07. last_submitted_score is now the non-null local Full score 8.507033588741281e-07. From here on, every submission requires the FULL AGENTS.md step 7 gate: paired Full-split comparison vs THIS submitted champion, >=5% improvement over last_submitted_score under the same full-split contract, and the reservation protocol. The first-submission lead ruling below is spent and does not apply again.",
+    "status": "BLOCKED_BELOW_5PCT_EXPECTED",
+    "current_state": "B42 promoted 2026-07-17: champion is now statistically-identical-to-B25 with ~3.3% lower Mini multiplier. Every submission requires the FULL AGENTS.md step 7 gate vs last_submitted_score 8.507033588741281e-07 (from S3/B25): paired Full-split comparison vs the submitted champion, >=5% improvement, reservation protocol. B42 alone is expected ~-4.4% on Full (see champion.full_gate.note) -- below the bar; do not reserve a submission until a stacked improvement (e.g. +B43) plus a fresh paired Full gate clears >=5%.",
     "lead_ruling": {
       "ruled_at": "2026-07-16T17:08:00Z",
       "ruled_by": "claude-lead",
@@ -110,7 +108,10 @@
       "n_improved": 500,
       "n_regressed": 500,
       "paired_mean_delta": -8.667732439883427e-09,
-      "paired_95pct_ci": [-2.8513493899975915e-08, 1.1178029020209062e-08],
+      "paired_95pct_ci": [
+        -2.8513493899975915e-08,
+        1.1178029020209062e-08
+      ],
       "gate_criterion": "mean paired difference negative AND 95% CI entirely below zero",
       "result": "FAIL -- CI upper bound (+1.118e-08) is positive, does not clear zero. Verified robust to t_crit choice (1.96 to 2.0, all same conclusion).",
       "note": "B25's paired advantage over B0 was real and significant on the 100-MLP Mini split at promotion time (CI=[-2.581e-07,-2.868e-08]) but shrinks to statistically-indistinguishable-from-zero on the 10x-larger, independent Full split -- exactly the suite-sampling-overfitting risk AGENTS.md's two-tier Mini/Full gate design exists to catch. Does not invalidate B25's promotion (which correctly used the Mini-split-only promotion gate); B25 remains champion. Aggregate final_layer_mse still improves on Full (-1.14%), just not enough to clear the paired significance bar."
@@ -122,8 +123,16 @@
     "experiment_id": "B28-claude-20260716T180000Z",
     "method": "The dataset's ground-truth `final_means`/`all_layer_means` are themselves a Monte Carlo estimate (whestbench.scoring.sample_layer_statistics), so they carry their own sampling noise -- a lower bound on how low any estimator's final_layer_mse could ever go. Calibrated FLOPs-per-sample for sample_layer_statistics directly via flopscope.budget() at n_samples=1,000,000 (large enough that chunking/fixed-overhead effects are negligible; measured 4,632,529.741312 FLOPs/sample, converging from smaller-n estimates at n=500/2000/5000 which showed some chunking-related variance). Backed out the implied ground-truth sample count n_gt = row.sampling_budget_breakdown.flops_used / flops_per_sample for all 100 Mini-split MLPs; identical for every row (909,050,195 samples, ~909 million), consistent with a fixed generation policy (same width=256, same target flop_budget=1e15 for every Phase 1 MLP). Combined with each row's own avg_variance (the mean per-neuron single-sample variance at the final layer, already stored per-row, not the same quantity as an estimator's own MC variance) via the standard MC variance-of-mean formula Var(ground-truth mean) = avg_variance / n_gt.",
     "n_ground_truth_samples_per_mlp": 909050195,
-    "avg_variance_across_mini_split": {"mean": 0.0495, "min": 0.0153, "max": 0.2024},
-    "implied_noise_floor_variance": {"mean": 5.445e-11, "min": 1.683e-11, "max": 2.226e-10},
+    "avg_variance_across_mini_split": {
+      "mean": 0.0495,
+      "min": 0.0153,
+      "max": 0.2024
+    },
+    "implied_noise_floor_variance": {
+      "mean": 5.445e-11,
+      "min": 1.683e-11,
+      "max": 2.226e-10
+    },
     "comparison": "Champion's current final_layer_mse is 7.211e-06 (mini, B25) / 7.693e-06 (full, B26) -- the ground-truth noise floor (~1.7e-11 to 2.2e-10, mean 5.4e-11) is roughly 5-6 orders of magnitude (100,000x to 1,000,000x) smaller. The ground truth is effectively exact at any precision level current or plausible future estimators could reach.",
     "conclusion": "No meaningful noise floor limits further estimator improvement. The gap between any estimator's final_layer_mse and zero is essentially entirely attributable to the estimator's own sampling variance, not ground-truth imprecision. Further MSE reductions (if a valid mechanism is found) would show up as genuine score improvements, not be swamped by irreducible ground-truth noise.",
     "raw_computation": "Not persisted as a separate raw report -- this is a closed-form calculation from already-public dataset fields (sampling_budget_breakdown, avg_variance) plus a one-off flopscope calibration measurement, not a harness run. Full derivation and calibration values in experiments/log-claude.md's B28 entry."
@@ -132,7 +141,10 @@
   "last_submitted_score": 8.507033588741281e-07,
   "last_submitted_score_note": "Set by S3 (attempt S3-claude-lead-20260716T171600Z, submission_id 316676, graded 2026-07-16). Per AGENTS.md this is the exact recorded LOCAL Full-split score of the submitted champion (B26 report), the reference for future 5% improvement comparisons under the same full-split/environment contract. The AIcrowd leaderboard scored the same artifact 6.684538479656953e-07 (primary) / 6.488121769052668e-06 (secondary) on the private evaluation -- recorded in the submission entry, not used for the 5% rule.",
   "submissions_board": "https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026/submissions",
-  "team_names": ["noahmacaulay", "DalTeam"],
+  "team_names": [
+    "noahmacaulay",
+    "DalTeam"
+  ],
   "submissions": [
     {
       "attempt_id": "S3-claude-lead-20260716T171600Z",
@@ -152,11 +164,24 @@
       "artifact_note": "Packaged by `whest package` (manifest created_at_utc 2026-07-16T17:16:13Z); packaged estimator.py sha256 matches the repo champion exactly (manifest cross-check). Artifact retained locally on the claude-lead machine (*.tar.gz is gitignored per repo convention); hash above is authoritative.",
       "local_full_score": 8.507033588741281e-07,
       "local_full_report": "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json",
-      "environment": {"whestbench": "0.12.0rc3", "flopscope": "0.8.0rc5", "uv_lock_last_changed": "9b677e2"},
+      "environment": {
+        "whestbench": "0.12.0rc3",
+        "flopscope": "0.8.0rc5",
+        "uv_lock_last_changed": "9b677e2"
+      },
       "authorized_by": "Lead ruling 2026-07-16T17:08Z (experiments/log-claude-lead.md) under the user's S1 addendum; first scored submission only.",
       "leaderboard_score": 6.684538479656953e-07,
       "leaderboard_score_secondary": 6.488121769052668e-06,
-      "grading_response": {"id": 316676, "challenge_id": 1174, "challenge_round_id": 1428, "created_at": "2026-07-16T17:18:08.660Z", "grading_status_cd": "graded", "grading_message": "Graded successfully", "score": 6.684538479656953e-07, "score_secondary": 6.488121769052668e-06},
+      "grading_response": {
+        "id": 316676,
+        "challenge_id": 1174,
+        "challenge_round_id": 1428,
+        "created_at": "2026-07-16T17:18:08.660Z",
+        "grading_status_cd": "graded",
+        "grading_message": "Graded successfully",
+        "score": 6.684538479656953e-07,
+        "score_secondary": 6.488121769052668e-06
+      },
       "note": "Reservation for the FIRST scored submission. Timestamp correction for the record: the S3 claim edit was labeled 2026-07-16T17:35:00Z but actually pushed ~17:14Z (label written ahead of the clock; commit b2c4e3c is authoritative). If this entry is ever found stuck in status=submitting with a null submission_id, reconcile ONLY via this exact attempt_id in the submission description field -- never by timestamp."
     },
     {
