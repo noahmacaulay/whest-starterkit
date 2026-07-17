@@ -15,9 +15,22 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B48** (infra, exploit) - CLAIMED claude 2026-07-17T10:00:00Z - Diagnose the
-  S4 B46 grader "Evaluation error" (submission 316800 failed on AICrowd,
-  score null) so the lead/user can decide the path forward. B46 passes
+- [x] **B48** (infra, exploit) - DONE claude 2026-07-17T10:00:00Z - Diagnosed the
+  S4 B46 grader "Evaluation error" (submission 316800). FINDING: NOT
+  locally reproducible -- B46 runs clean under flopscope-budget, the
+  subprocess runner (1000 MLPs, B47), the SERVER runner (grader-like),
+  and passes validate/validate-package; qr/sign/diagonal/concatenate are
+  NOT in flopscope.remote_unsupported_ops. KEY: the artifact bundles only
+  estimator.py + manifest (NO requirements pin), so the grader uses its
+  OWN whestbench/flopscope, which may differ from ours. Conclusion: the
+  failure is AICrowd-ENVIRONMENT-SPECIFIC; prime suspect is the grader
+  lacking/differing on fnp.linalg.qr support (the standout op vs the
+  successful S3/B25 which used only version-stable ops). Options for
+  lead/user (NOT acted on): (a) one careful resubmit to test
+  transient-vs-systematic; (b) re-package with a requirements pin forcing
+  our flopscope; (c) a QR-FREE orthogonal construction (most robust);
+  (d) keep gradeable B25/B42 submitted while B46 stays local champion.
+  Detail: log-claude.md B48 entry; champion.submission_readiness. B46 passes
   all local gates and runs cleanly on 1000 MLPs via the subprocess
   runner, so the failure is grader-environment-specific. Prime suspect:
   the orthogonal-block ops (fnp.linalg.qr/sign/diagonal/concatenate) --

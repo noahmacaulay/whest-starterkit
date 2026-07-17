@@ -2066,3 +2066,52 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   B25/B42 while B46 stays the local champion of record. Did NOT spend
   further submission attempts on diagnostics without direction.
 - Full/submission gate: submission ATTEMPTED, grading FAILED (id 316800).
+
+## 2026-07-17T10:00:00Z - B48-claude: Diagnose the S4 B46 grader Evaluation error
+- Goal: determine why submission 316800 (B46) failed AICrowd grading
+  ("Error : Evaluation error", score null) while all local gates passed,
+  so the lead/user can decide the path. NO submission attempts consumed.
+- Local diagnostics run (all NEGATIVE -- B46 works everywhere locally):
+  * flopscope budget context: qr + sign + diagonal + concatenate run
+    fine, ~4.59e7 FLOPs/block charged, no error.
+  * flopscope.remote_unsupported_ops = {apply_along_axis, apply_over_axes,
+    fromfunction, fromiter, piecewise} -- does NOT include qr/linalg/sign/
+    diagonal/concatenate.
+  * `whest run --runner subprocess` (B47): clean on all 1000 Full MLPs,
+    zero failure flags.
+  * `whest run --runner server` (grader-like isolation) on 5 Mini MLPs
+    with the pinned dataset: ran successfully, valid JSON, no error.
+  * `whest validate` and `whest validate-package`: both pass.
+  So the failure is NOT reproducible in our local environment under any
+  runner or flopscope mode.
+- KEY structural finding: the submission artifact bundles ONLY
+  estimator.py + manifest.json -- there is NO requirements file. The
+  manifest RECORDS our versions (whestbench 0.12.0rc3, flopscope
+  0.8.0rc5, numpy 2.2.6, python 3.10.20) but does not PIN/enforce them,
+  so the AICrowd grader runs the estimator against ITS OWN environment's
+  whestbench/flopscope, which may differ from ours.
+- Conclusion: the B46 grader failure is AICrowd-ENVIRONMENT-SPECIFIC, not
+  a bug in the estimator or artifact. Prime suspect remains the
+  orthogonal-block ops (fnp.linalg.qr the standout): the only prior
+  SUCCESSFUL submission S3 (B25 radial-exact) used only
+  standard_normal/matmul/maximum/mean/norm/stack -- ops stable across
+  versions -- whereas B46 adds qr/sign/diagonal/concatenate. If the
+  grader's flopscope build does not support (or raises on) fnp.linalg.qr,
+  that explains a clean-locally / fails-on-grader split exactly. A
+  grader-side resource limit or a transient error cannot be excluded.
+- OPTIONS for the lead/user (I did NOT act on these -- resubmission and
+  champion/artifact choices are lead/user calls):
+  (a) ONE careful resubmission to distinguish transient vs systematic
+      (if it fails identically, it is systematic).
+  (b) Re-package with a requirements pin (`whest package --requirements`
+      forcing flopscope==0.8.0rc5 / whestbench==0.12.0rc3) so the grader
+      uses our qr-supporting versions -- worth trying IF a version
+      mismatch is the cause.
+  (c) Develop a QR-FREE construction that achieves the orthogonal-block
+      variance reduction (sidesteps grader op-support entirely) -- the
+      most robust fix; a real research item.
+  (d) Keep the gradeable B25/B42 as the SUBMITTED artifact (leaderboard
+      stays 6.6845e-07) while B46 remains the local champion of record.
+- champion.submission_readiness updated (status
+  BLOCKED_B46_GRADER_EVALUATION_ERROR) with this diagnosis.
+- Full/submission gate: N/A (diagnostic; no submission attempted).
