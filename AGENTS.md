@@ -194,19 +194,40 @@ If the candidate passed the paired gate:
    proposal and return to step 1; do not overwrite or blindly rebase the
    winner's champion state.
 
-### 7. Reserve and submit only a meaningful improvement
+### 7. Reserve and submit a confirmed improvement
 
 Submission is serialized separately from promotion. The preferred eventual
 implementation is a single-concurrency CI job triggered by `main`; until
 then, `champion.json` is the compare-and-swap submission ledger.
 
+**Standing authorization (user ruling, 2026-07-17):** workers and leads may
+submit autonomously whenever the conditions below are met -- no
+per-submission user or lead ruling is required. Hard cap: at most 10
+submission attempts per UTC day across both agents combined (the contest
+allows 50/day; stay well under it). The ledger's attempt entries are the
+source of truth for the daily count.
+
 Submit only when the new champion:
 
-- passes the same paired gate on the independent `full` split;
-- improves by at least 5% over `last_submitted_score` measured under the same
-  full-split/environment contract; and
+- passes its own paired gate on the independent `full` split (a per-MLP
+  paired comparison against the last submitted champion's recorded Full
+  report, under the same full-split/environment contract);
+- improves on `last_submitted_score` with the paired Full-split
+  adjusted-score 95% CI entirely below zero. Statistical significance is
+  the bar: a significant improvement of any size qualifies (user ruling
+  2026-07-17 -- this replaces the former fixed 5% threshold, which
+  discarded real but small gains); and
 - ADDENDUM: if a score is null, it can be disregarded in the above rule; if all previous submitted scores are null, then any scoring solution can be submitted
 - has no active `submitting` reservation in the ledger.
+
+**Diagnostic submissions.** A lead may additionally authorize a submission
+whose purpose is to gather information (e.g. grader-environment
+compatibility, as in S4/B48) rather than to improve the leaderboard. The
+authorization must be recorded in the backlog before the attempt, stating
+the hypothesis being tested and what each outcome would imply; it covers
+exactly one attempt and counts against the daily cap. Every reservation,
+ledger, and no-automatic-retry rule below applies to diagnostic attempts
+unchanged.
 
 Before any network submission:
 
