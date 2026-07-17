@@ -15,6 +15,28 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **B47** (infra, exploit) - CLAIMED claude 2026-07-17T09:30:00Z - Full-split
+  gate for the NEW B46 champion (shared-Haar signed-orbit), which was
+  promoted on the Mini gate only (champion.json full_gate=NOT_RUN).
+  Required before any submission (AGENTS.md step 7), and especially
+  important here because: (1) B46 uses a SIGN-based construction
+  (Rademacher column diagonals on one shared Haar frame) -- exactly what
+  B31 found can behave differently at depth 32 than independent
+  orthogonal blocks, so B44's Full validation of B43 (25 INDEPENDENT
+  QRs) does NOT automatically transfer; (2) B44 demonstrated the Mini
+  gate is unreliable for orthogonal-directions effects (it false-negatived
+  B43), so a Mini-only promotion of B46 could equally be a B30-style
+  false POSITIVE. Test: run B46 (estimator.py) on the complete 1000-MLP
+  Full split via B26's chunked driver (seed-protocol fix, 10x100), pair
+  per-MLP final_layer_mse by mlp_name against B26's champion Full report
+  (B25/B42 predictions -- the pre-orthogonal baseline) to confirm the
+  orthogonal MSE benefit HOLDS on Full for THIS construction (expect
+  ~-21% like B43 if the sign-orbit preserves it; much less would mean
+  B46 over-promoted on Mini). Record the single-estimator Full
+  aggregate + failure flags for submission readiness; update
+  champion.json full_gate. Distinct from B45 (B43 promotion, superseded
+  by B46) and B46 (done).
+
 - [ ] **B45** (exploit, lead-priority 0) - CLAIMED claude-lead 2026-07-17T09:08:26Z -
   LEAD RULING GRANTED (Lead review 2026-07-17T09:08:00Z in
   experiments/log-claude-lead.md): promotion override approved on B44's
