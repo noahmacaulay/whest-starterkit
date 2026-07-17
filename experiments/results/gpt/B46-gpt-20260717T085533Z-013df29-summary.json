@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "record_type": "paired_mini_result",
+  "experiment_id": "B46-gpt-20260717T085533Z",
+  "title": "Shared-Haar signed-orbit blocks",
+  "agent": "gpt",
+  "status": "MINI_GATE_PASS_PRE_PROMOTION",
+  "created_utc": "2026-07-17T09:07:33Z",
+  "base_champion": {
+    "experiment_id": "B42-claude-lead-20260717T011419Z",
+    "promotion_commit": "013df2902d15cdc1143eca2a8f874afdd4a529bc",
+    "source_result_commit": "ba03635",
+    "candidate_commit": "c81496b1b003c24eec60cd398f8c9119bb540b36",
+    "claim_commit": "1381f00"
+  },
+  "environment": {
+    "whestbench": "0.12.0rc3",
+    "flopscope": "0.8.0rc5",
+    "uv_lock_commit": "9b677e2b91b0b4791c73c9449b6d5e5491093ddb"
+  },
+  "evaluation": {
+    "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+    "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+    "split": "mini",
+    "n_mlps": 100,
+    "width": 256,
+    "depth": 32,
+    "flop_budget": 272000000000,
+    "runner": "subprocess",
+    "commands": {
+      "validate": "uv run --frozen whest validate --estimator candidate_gpt.py",
+      "champion": "uv run --frozen whest run --estimator estimator.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json",
+      "candidate": "uv run --frozen whest run --estimator candidate_gpt.py --runner subprocess --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 --split mini --flop-budget 272000000000 --format json"
+    },
+    "command_exit_codes": {
+      "validate": 0,
+      "champion": 0,
+      "candidate": 0
+    },
+    "raw_reports": {
+      "champion": {
+        "path": "experiments/results/gpt/B46-gpt-20260717T085533Z-013df29-champion-mini.json",
+        "sha256": "c487df44aeb938e1888ce10047415083abf24108da680ff870f52c75eb85d728",
+        "bytes": 1096900,
+        "duration_s": 241.06463265419006,
+        "json_parse_ok": true
+      },
+      "candidate": {
+        "path": "experiments/results/gpt/B46-gpt-20260717T085533Z-013df29-candidate-mini.json",
+        "sha256": "e478e30ae48e3719dfdbf5d972b3422308e837453d5a809350f3f3825a6e39ee",
+        "bytes": 1425504,
+        "duration_s": 243.5535819530487,
+        "json_parse_ok": true
+      },
+      "champion_stderr": "experiments/results/gpt/B46-gpt-20260717T085533Z-013df29-champion-mini.stderr.txt",
+      "candidate_stderr": "experiments/results/gpt/B46-gpt-20260717T085533Z-013df29-candidate-mini.stderr.txt"
+    }
+  },
+  "aggregate": {
+    "champion_adjusted_score": 7.616174219616072e-7,
+    "candidate_adjusted_score": 5.345888128337731e-7,
+    "relative_adjusted_score_change": -0.298087468302791,
+    "champion_final_layer_mse": 7.210819040324168e-6,
+    "candidate_final_layer_mse": 5.016990630792862e-6,
+    "relative_final_layer_mse_change": -0.304241223814248,
+    "champion_mean_effective_compute": 28749035201.19754,
+    "candidate_mean_effective_compute": 28882521300.658184,
+    "champion_mean_score_multiplier": 0.10569498235734388,
+    "candidate_mean_score_multiplier": 0.1061857400759492,
+    "champion_mean_flops_used": 27349504000,
+    "candidate_mean_flops_used": 27364338604,
+    "champion_mean_residual_wall_time_s": 0.0139953120119753,
+    "candidate_mean_residual_wall_time_s": 0.0151818269665819
+  },
+  "paired_adjusted_score": {
+    "metric": "candidate_adjusted_final_layer_score - champion_adjusted_final_layer_score",
+    "n": 100,
+    "mean_delta": -2.2702860912783395e-7,
+    "sample_sd": 1.1029642823318962e-6,
+    "standard_error": 1.1029642823318961e-7,
+    "conservative_95pct_ci_method": "mean +/- 2 * sample_sd / sqrt(n)",
+    "conservative_95pct_ci": [
+      -4.476214655942132e-7,
+      -6.435752661454718e-9
+    ],
+    "n_improved": 55,
+    "n_regressed": 45,
+    "n_tied": 0,
+    "worst_regressions": [
+      {"mlp_name": "savannah-hayes", "mlp_index": 71, "delta": 1.7563195084820226e-6},
+      {"mlp_name": "mary-nichols", "mlp_index": 68, "delta": 1.4591265945310961e-6},
+      {"mlp_name": "kyle-braun", "mlp_index": 37, "delta": 6.828430959613754e-7},
+      {"mlp_name": "bobby-vasquez", "mlp_index": 35, "delta": 6.522597993642687e-7},
+      {"mlp_name": "joseph-shaffer", "mlp_index": 16, "delta": 6.515330746076567e-7}
+    ]
+  },
+  "paired_final_layer_mse": {
+    "metric": "candidate_final_layer_mse - champion_final_layer_mse",
+    "n": 100,
+    "mean_delta": -2.1938284095313066e-6,
+    "sample_sd": 1.0616705686228679e-5,
+    "standard_error": 1.0616705686228679e-6,
+    "conservative_95pct_ci_method": "mean +/- 2 * sample_sd / sqrt(n)",
+    "conservative_95pct_ci": [
+      -4.317169546777042e-6,
+      -7.04872722855708e-8
+    ],
+    "n_improved": 55,
+    "n_regressed": 45
+  },
+  "failure_flags": {
+    "champion": {
+      "budget_exhausted": 0,
+      "combined_budget_exhausted": 0,
+      "time_exhausted": 0,
+      "residual_wall_time_exhausted": 0,
+      "error": 0,
+      "traceback": 0
+    },
+    "candidate": {
+      "budget_exhausted": 0,
+      "combined_budget_exhausted": 0,
+      "time_exhausted": 0,
+      "residual_wall_time_exhausted": 0,
+      "error": 0,
+      "traceback": 0
+    }
+  },
+  "verdict": {
+    "mini_promotion_gate": "PASS",
+    "reason": "The paired adjusted-score mean is negative and its conservative 95% confidence interval is entirely below zero; both runs have zero failure flags. The MSE-only paired interval is also entirely below zero.",
+    "promotion_status": "NOT_YET_ATTEMPTED",
+    "full_submission_gate": "NOT_RUN"
+  }
+}

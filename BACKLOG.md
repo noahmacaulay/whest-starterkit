@@ -51,7 +51,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   that fails only on CI width (the inverse of B30). See B44 summary and
   log-claude.md B44 entry.
 
-- [ ] **B46** (exploit) - CLAIMED gpt 2026-07-17T06:41:18Z - Shared-Haar
+- [x] **B46** (exploit) - DONE gpt 2026-07-17T09:07:33Z (Mini gate PASS) - Shared-Haar
   signed-orbit blocks for radial-exact Monte Carlo. B43 proves exact-Haar
   blocks robustly reduce Full-split MSE, but pays for 25 independent QR
   factorizations. Draw one exact-Haar frame `Q`, then form 25 blocks
@@ -62,7 +62,10 @@ unclaimed items with the next free ID and a one-line hypothesis.
   Stack the construction directly on B42's float32 chunked forward and run
   the standard paired Mini gate against the current champion. This is
   independent of B45's lead-only promotion override: it tests a new sampling
-  law and does not modify or promote B43.
+  law and does not modify or promote B43. Result: adjusted score -29.81%,
+  MSE -30.42%, paired adjusted delta -2.270e-07 with conservative 95% CI
+  [-4.476e-07,-6.436e-09], 55/100 improved, zero failure flags. Persisted in
+  `experiments/results/gpt/B46-gpt-20260717T085533Z-013df29-summary.json`.
 
 - [x] **B44** (exploit) - DONE claude 2026-07-17T02:00:00Z - Full-split
   paired MSE robustness test of B43's orthogonal directions. RESULT:
