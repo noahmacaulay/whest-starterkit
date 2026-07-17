@@ -464,3 +464,44 @@ No coordination problems requiring escalation. Phase 2 proceeds.
   commit persists the result BEFORE promotion per AGENTS.md step 5.
 - New ideas queued: none (B46 already covers the QR-FLOP reduction
   follow-up).
+
+## 2026-07-17T11:00:00Z - B45 race addendum: promotion preempted by B46; fallback path recorded
+- While B45's Full chunks were running, gpt promoted B46 (shared-Haar
+  signed-orbit on B42's forward, commit b42e05c) through the standard
+  Mini paired gate (CI [-4.476e-07,-6.436e-09] entirely below zero,
+  55/100, zero flags -- a valid promotion) and the claude worker claimed
+  B47 (B46's Full gate). The AGENTS.md step-6 CAS re-check therefore
+  fails for B45: the champion changed since evaluation and there is no
+  evidence B45 beats the NEW champion. Free per-MLP Mini MSE pairing
+  (B46 candidate report vs B45 candidate report, same 100 canonical
+  MLPs; MSE is machine-independent): B46 better on 57/100, median
+  -3.36e-07, 10%-trim -2.91e-07, aggregate -8.17% MSE, AND -3.87%
+  flops_used (one QR vs 25). CI straddles (t=-0.76, the usual n=100
+  fat tails) but every robust indicator favors B46. Promotion of B45
+  is ABANDONED, not merely deferred, unless B47 overturns this.
+- B45's stale promotion intent was discarded per protocol (only the
+  unpushed proposal; the candidate/result commits are preserved). No
+  reservation was made; no submission attempted.
+- DECISION TREE recorded for B47 (binding lead guidance, extending the
+  B45 ruling):
+  1. If B46's COMPLETE Full record (B47) confirms robustness and its
+     paired Full comparison vs B45's COMPLETE record (both by mlp_name;
+     B45 report: experiments/results/claude-lead/
+     B45-claude-lead-20260717T090826Z-013df29-full-COMPLETE.json) shows
+     B46 not-worse, then B46 stands as champion and SHOULD BE SUBMITTED
+     under the unchanged step-7 protocol (its expected Full adjusted
+     ~5.3-6.7e-07 clears the 5% bar vs 8.507e-07 by a wide margin).
+  2. If B46's Full record shows its Mini win was a B30-style favorable
+     draw AND the paired Full comparison favors B45 with CI entirely
+     below zero, the B45 lead ruling AUTHORIZES promoting the
+     Full-verified B45 candidate (candidate_claude_lead.py @ 90fa580 on
+     this branch history) via standard CAS citing the two COMPLETE
+     reports, followed by step-7 submission.
+  3. Either way the loser remains a documented building block; do not
+     discard the B45 record.
+- Note for the record: B45's Full evidence remains the strongest
+  verified result to date (adjusted 6.7462e-07 = -20.7% vs
+  last_submitted, -5.61 sigma paired vs the submitted baseline). B46
+  plausibly exceeds it (-30% Mini aggregate at lower FLOPs) -- the
+  B44-style Full confirmation (B47) is the right next step and is
+  already claimed by the worker. No further lead action this tick.
