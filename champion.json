@@ -103,13 +103,48 @@
       "note": "B25 radial-exact champion record preserved on supersession by B42. B42 changes NO statistics (same seeded draw, same directions; predictions within 7.7e-08); its full_gate above therefore characterizes the new champion's MSE exactly, but the new champion's own Full-split multiplier/effective-compute record must still be measured fresh before any submission (AGENTS.md step 7)."
     },
     "full_gate": {
-      "status": "NOT_RUN",
-      "note": "Required before any submission under AGENTS.md step 7. B46 improved Mini adjusted score by 29.81%, but must pass a fresh paired comparison on the independent 1000-MLP Full split against the last submitted B25 champion and improve at least 5% over last_submitted_score 8.507033588741281e-07 before a reservation may be created."
+      "status": "COMPLETE",
+      "experiment_id": "B47-claude-20260717T093000Z",
+      "measured_at": "2026-07-17T09:30:00Z",
+      "n_mlps_evaluated": 1000,
+      "n_mlps_total_in_full_split": 1000,
+      "method": "B47: ran the B46 champion (estimator.py, shared-Haar signed-orbit) on the complete 1000-MLP Full split via B26's validated chunked driver (seed_protocol_version fix; ten 100-MLP subprocess chunks). Paired per-MLP final_layer_mse AND adjusted_final_layer_score by mlp_name against B26's complete champion Full report (estimator.py @ 2227ef3 = the submitted B25 baseline; B42's residual-min changed compute not predictions, so B26's MSE is the exact B25/B42 baseline). Motivated by a real risk: B46 uses a SIGN-based construction (Rademacher column diagonals on one shared Haar frame) that B31 flagged as potentially depth-32-fragile, and B44 showed the Mini gate is unreliable for orthogonal effects -- so B46's Mini-only promotion needed independent Full confirmation.",
+      "single_estimator_aggregate": {
+        "adjusted_final_layer_score": 6.532836741386116e-07,
+        "final_layer_mse": 6.07881680122091e-06,
+        "mean_effective_compute": 29259921642.593758,
+        "mean_score_multiplier": 0.10757324133306528,
+        "n_failed_mlps": 0,
+        "failure_breakdown": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+      },
+      "paired_vs_submitted_B25_baseline": {
+        "baseline_report": "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json",
+        "mse_rel_change": -0.20977563251336084,
+        "mse_paired_mean_delta": -1.613703261853061e-06,
+        "mse_paired_95pct_ci": [-2.1998290833157004e-06, -1.0275774403904214e-06],
+        "mse_sigmas": -5.40,
+        "mse_n_improved": 549,
+        "adjusted_rel_change": -0.23206642206843103,
+        "adjusted_paired_mean_delta": -1.9741968473551563e-07,
+        "adjusted_paired_95pct_ci": [-2.616012659786768e-07, -1.3323810349235447e-07],
+        "adjusted_sigmas": -6.04,
+        "adjusted_n_improved": 559,
+        "ci_entirely_below_zero": true,
+        "broad_not_outlier_driven": "MSE delta survives excl-top-2 (-1.487e-06) and the median delta is -6.37e-07 (typical MLP improves)"
+      },
+      "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1",
+      "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433",
+      "split": "full",
+      "flop_budget": 272000000000,
+      "runner": "subprocess",
+      "whestbench": "0.12.0rc3",
+      "raw_report": "experiments/results/claude/B47-claude-20260717T093000Z-B46-full-COMPLETE.json",
+      "note": "PASS. B46's orthogonal-directions MSE benefit HOLDS robustly on the independent Full split (the sign-orbit construction is NOT depth-32-fragile; B31 concern does not apply here), and matches B43's independent-QR construction (B46 Full MSE 6.079e-06 vs B43 6.051e-06, +0.5% -- statistically identical) at ~1/25 the QR cost. Both paired gates (MSE -5.4 sigma, adjusted -6.0 sigma) have CIs entirely below zero. B46's Full adjusted score 6.533e-07 improves on last_submitted_score 8.507e-07 by -23.2%, far above the 5% bar. AGENTS.md step 7's Full-gate and 5%-improvement prerequisites are SATISFIED for a B46 submission (a reservation + network submit is the remaining action; see submission_readiness)."
     }
   },
   "submission_readiness": {
-    "status": "PENDING_B46_FULL_GATE",
-    "current_state": "B46 passed the standard Mini promotion gate and is the promotion candidate/champion with a 29.81% adjusted-score improvement over B42. No submission is authorized yet: run the independent 1000-MLP paired Full gate against the submitted B25 baseline, verify the conservative CI is entirely negative and the local Full score improves by at least 5% over 8.507033588741281e-07, then use the unchanged reservation protocol.",
+    "status": "READY_B46_FULL_GATE_PASSED",
+    "current_state": "B47 (2026-07-17T09:30:00Z) ran the required 1000-MLP Full gate for B46 and it PASSED decisively: paired vs the submitted B25 baseline, adjusted-score CI [-2.616e-07,-1.332e-07] entirely below zero at -6.0 sigma (MSE -5.4 sigma), B46 Full adjusted 6.533e-07 improves last_submitted_score 8.507e-07 by -23.2% (>> the 5% bar), zero failure flags. All AGENTS.md step 7 GATE prerequisites are satisfied. Remaining action: create a submission reservation (atomic push, sole active) then network-submit per the unchanged protocol -- NOT done by B47 (a worker Full-gate infra tick); flagged for the lead/next submission tick. See champion.full_gate for the complete record.",
     "lead_ruling": {
       "ruled_at": "2026-07-16T17:08:00Z",
       "ruled_by": "claude-lead",
@@ -121,11 +156,17 @@
     "blocked_by": "AGENTS.md step 7 paired Full-split gate and >=5% improvement check against last_submitted_score; B46 Full evaluation has not run.",
     "s1_status": "RESOLVED 2026-07-16T15:19Z by user ruling (commit 136f247, 38d3054): null submitted scores are disregarded in the 5% improvement rule; since all previously submitted scores are null, any scoring solution may be submitted. This unblocks the last_submitted_score prerequisite specifically.",
     "required_b46_full_gate": {
-      "status": "NOT_RUN",
+      "status": "PASS",
+      "run_by": "B47-claude-20260717T093000Z",
       "candidate_experiment_id": "B46-gpt-20260717T085533Z",
-      "comparison_baseline": "S3/B25 submitted champion",
+      "comparison_baseline": "S3/B25 submitted champion (B26 Full report)",
       "last_submitted_score": 8.507033588741281e-07,
-      "minimum_relative_improvement": 0.05
+      "b46_full_adjusted_score": 6.532836741386116e-07,
+      "relative_improvement_vs_last_submitted": -0.23206642206843103,
+      "minimum_relative_improvement": 0.05,
+      "paired_adjusted_95pct_ci": [-2.616012659786768e-07, -1.3323810349235447e-07],
+      "ci_entirely_below_zero": true,
+      "note": "PASS -- see champion.full_gate for the complete record. Both the paired-CI and 5%-improvement conditions are met; a reservation + network submit is the only remaining step."
     },
     "paired_full_split_gate": {
       "status": "FAIL",

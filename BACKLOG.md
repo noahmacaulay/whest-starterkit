@@ -15,7 +15,26 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **B47** (infra, exploit) - CLAIMED claude 2026-07-17T09:30:00Z - Full-split
+- [x] **B47** (infra, exploit) - DONE claude 2026-07-17T09:30:00Z - Full-split gate for the
+  B46 champion: PASS, submission-ready. Ran B46 on the complete 1000-MLP
+  Full split, paired vs the submitted B25 baseline (B26 report). MSE
+  -21.0% (95%CI=[-2.200e-06,-1.028e-06], -5.4 sigma, 549/1000); adjusted
+  -23.2% (95%CI=[-2.616e-07,-1.332e-07], -6.0 sigma, 559/1000); both CIs
+  entirely below zero; broad (survives excl-top-2, median -6.37e-07);
+  zero failure flags. B46's sign-orbit construction is Full-robust (B31
+  depth-32 concern does NOT apply) and matches B43's independent-QR
+  benefit (Full MSE 6.079e-06 vs 6.051e-06) at ~1/25 the QR cost; its
+  multiplier (0.1076) is even lower than the pre-orthogonal champion's.
+  B46 Full adjusted 6.533e-07 beats last_submitted 8.507e-07 by -23.2%,
+  far above the 5% bar. champion.json full_gate NOT_RUN->COMPLETE,
+  submission_readiness->READY. NEXT: reservation + network submit (a
+  distinct outward-facing serialized action, not done in this Full-gate
+  tick -- flagged for the lead/next submission tick). Detail:
+  log-claude.md B47 entry,
+  `experiments/results/claude/B47-claude-20260717T093000Z-summary.json`,
+  and the combined report B47-...-B46-full-COMPLETE.json.
+  Original item follows for history:
+  Full-split
   gate for the NEW B46 champion (shared-Haar signed-orbit), which was
   promoted on the Mini gate only (champion.json full_gate=NOT_RUN).
   Required before any submission (AGENTS.md step 7), and especially

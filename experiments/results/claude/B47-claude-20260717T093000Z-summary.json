@@ -1,0 +1,52 @@
+{
+  "experiment_id": "B47-claude-20260717T093000Z",
+  "agent": "claude",
+  "purpose": "Full-split gate for the new B46 champion (shared-Haar signed-orbit), promoted on the Mini gate only (champion.json full_gate was NOT_RUN). Required before submission (AGENTS.md step 7), and especially important because B46 uses a SIGN-based construction (Rademacher column diagonals on one shared Haar frame) that B31 flagged as potentially depth-32-fragile -- so B44's Full validation of B43 (25 INDEPENDENT QRs) does NOT automatically transfer -- and B44 showed the Mini gate is unreliable for orthogonal effects (it false-negatived B43), so a Mini-only promotion of B46 could equally be a B30-style false POSITIVE.",
+  "method": "Ran B46 (estimator.py) on the complete 1000-MLP Full split via B26's validated chunked driver (seed_protocol_version fix, ten 100-MLP subprocess chunks). Paired per-MLP final_layer_mse and adjusted_final_layer_score by mlp_name against B26's champion Full report (estimator.py @ 2227ef3 = the submitted B25 baseline). Also compared B46's per-MLP MSE to B43's (B44 report) to check the two orthogonal constructions agree.",
+  "environment": {"whestbench": "0.12.0rc3", "flopscope": "0.8.0rc5", "dataset": "hf://aicrowd/arc-whestbench-public-2026@v1-phase1", "dataset_sha256": "5b00938b6bd809fe80acef08772c5654edf467863225ca9e304b76c779ecf433", "split": "full", "flop_budget": 272000000000, "runner": "subprocess"},
+  "raw_report": "experiments/results/claude/B47-claude-20260717T093000Z-B46-full-COMPLETE.json",
+  "result": {
+    "n_mlps": 1000,
+    "b46_single_estimator": {
+      "adjusted_final_layer_score": 6.532836741386116e-07,
+      "final_layer_mse": 6.07881680122091e-06,
+      "mean_effective_compute": 29259921642.593758,
+      "mean_score_multiplier": 0.10757324133306528,
+      "failure_flags_total": 0
+    },
+    "paired_vs_submitted_B25": {
+      "baseline_adjusted": 8.507033588741269e-07,
+      "mse_rel_change": -0.20977563251336084,
+      "mse_paired_95pct_ci": [-2.1998290833157004e-06, -1.0275774403904214e-06],
+      "mse_sigmas": -5.40,
+      "mse_n_improved": 549,
+      "adjusted_rel_change": -0.23206642206843103,
+      "adjusted_paired_95pct_ci": [-2.616012659786768e-07, -1.3323810349235447e-07],
+      "adjusted_sigmas": -6.04,
+      "adjusted_n_improved": 559,
+      "ci_entirely_below_zero": true,
+      "mse_excl_top2_mean": -1.4874673599970338e-06,
+      "mse_median_delta": -6.36813638266176e-07
+    },
+    "b46_vs_b43": {
+      "b46_full_mse": 6.07881680122091e-06,
+      "b43_full_mse": 6.050640002683849e-06,
+      "rel_diff": 0.00466,
+      "note": "statistically identical -- B46's single shared-Haar frame + Rademacher diagonals achieves B43's 25-independent-QR benefit at ~1/25 the QR cost"
+    },
+    "submission_readiness": {
+      "last_submitted_score": 8.507033588741281e-07,
+      "b46_full_adjusted": 6.532836741386116e-07,
+      "improvement_vs_last_submitted": -0.23206642206843103,
+      "exceeds_5pct_bar": true
+    }
+  },
+  "verdict": "PASS -- B46's Full gate is COMPLETE and PASSES all AGENTS.md step-7 prerequisites. The orthogonal-directions MSE benefit holds robustly on the independent Full split (-21% MSE, -5.4 sigma; adjusted -23.2%, -6.0 sigma; both CIs entirely below zero; broad, not outlier-driven; zero failure flags). The B31 depth-32-sign-fragility concern does NOT apply to this construction, and B46 matches B43's benefit at ~1/25 the QR cost. B46's Full adjusted score beats last_submitted by -23.2%, far above the 5% bar.",
+  "important_findings": [
+    "B46's sign-orbit construction is Full-robust -- its Mini promotion was NOT a false positive (contrast B44, where the Mini gate false-negatived B43). Verifying this was worthwhile precisely because the Mini gate has proven unreliable in both directions for orthogonal effects.",
+    "The two orthogonal constructions (B43 25-independent-QR, B46 1-shared-Haar+Rademacher) give statistically identical Full MSE -- the cheaper one is preferred and is the champion.",
+    "B46's multiplier (0.1076) is even lower than the pre-orthogonal champion's (~0.111) because it inherits B42's residual-min forward and pays only 1 QR -- so B46 wins on BOTH MSE and compute."
+  ],
+  "next_action": "B46 is submission-ready. The remaining step is a submission reservation (atomic, sole-active) + network submit per AGENTS.md step 7 -- NOT performed by this B47 Full-gate infra tick (submission is a distinct, outward-facing, serialized action; the lead executed the first submission S3). Flagged in champion.submission_readiness (status READY_B46_FULL_GATE_PASSED) for the lead / next submission tick.",
+  "full_submission_gate": "PASS"
+}
