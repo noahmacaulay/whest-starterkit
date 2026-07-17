@@ -217,6 +217,23 @@
   ],
   "submissions": [
     {
+      "attempt_id": "B51-claude-20260717T180000Z",
+      "timestamp": "2026-07-17T18:00:00Z",
+      "agent": "claude",
+      "backlog_item": "B51 (lead-authorized diagnostic submission)",
+      "status": "submitting",
+      "submission_id": null,
+      "candidate": "B42 champion (B25 predictions on the new float32 chunked forward, NO frame ops) -- diagnostic bisect of the S4/S5 grader Evaluation error",
+      "estimator_file_commit": "013df29",
+      "estimator_sha256": "32970f31dd70cd7810b29d43158dfb190638012db13f91df426da594984d738b",
+      "reserved_on_main_commit": "8c42d81",
+      "artifact": "submissions/B51-claude-20260717T180000Z-B42.tar.gz",
+      "artifact_sha256": "9d30f2736d819041653be913b6322448f5501cca3664e1c97d23ba10ad0e8f71",
+      "expected_score": "~S3's 6.6845e-07 (B42 = B25's predictions); this is a DIAGNOSTIC, not a scoring-improvement submission -- the 5% rule does not apply per B51's lead authorization; no leaderboard downside.",
+      "authorization": "B51 lead-authorized diagnostic (recorded claude-lead 2026-07-17T17:20Z per the relaxed step-7 diagnostic provision): exactly ONE diagnostic attempt of the B42 forward, counts against the 10/day cap (3rd today after S4/S5), no automatic retry. Executed by worker claude (B51 unclaimed + priority 0; ledger had 0 active reservations). Tests forward-vs-frame: B42 GRADES -> forward (astype/chunk/sum(dtype=)) is grader-safe, culprit is frame ops (concatenate/where); B42 FAILS -> culprit is the forward ops.",
+      "reservation_note": "ACTIVE reservation pushed atomically as sole-active BEFORE the network submit (0 active prior). Network submit to follow only if this lands clean (race-safe vs a lead recovery)."
+    },
+    {
       "attempt_id": "S5-claude-lead-20260717T170700Z",
       "timestamp": "2026-07-17T17:07:00Z",
       "submitted_at": "2026-07-17T17:05:15Z",
