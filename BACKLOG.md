@@ -48,7 +48,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   promote via CAS if the paired CI clears zero. Stacks with B43 and with
   any future MSE win.
 
-- [ ] **B43** (exploit, lead-priority 2) - Exact-Haar orthogonal blocks via
+- [ ] **B43** (exploit, lead-priority 2) - CLAIMED claude 2026-07-17T01:30:00Z - Exact-Haar orthogonal blocks via
   INSTRUMENTED ops - B22 done right. Lead review 2026-07-17 found B22's
   candidate generated its orthogonal blocks with PLAIN numpy
   (`_np.linalg.qr`, `_np` RNG, commit b0f209d) - invisible to flopscope,
