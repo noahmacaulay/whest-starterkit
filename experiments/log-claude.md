@@ -2297,3 +2297,38 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   + -full-COMPLETE.json.
 - Full/submission gate: PASS (prerequisites met; submission pending
   lead/user).
+
+## 2026-07-18T01:30:00Z - B56-claude: correct B54's broadcast-free fix (desk analysis)
+- Context: S6 showed B53 (concatenate/where removed) STILL fails grading;
+  the lead's updated prime single-cause suspect is the q*signs
+  BROADCAST-MULTIPLY (the only op in all of S4/S5/B53 that no graded
+  artifact has). B54's FAILS-branch proposed avoiding it by folding
+  column signs into g PRE-GS.
+- Verified numerically (plain numpy, no submission): GS(g*d) == GS(g)*d
+  EXACTLY (max abs diff 0.0) for a column sign vector d -- Gram-Schmidt
+  commutes with column sign flips (flipping g's column j flips only q's
+  column j; its contribution to later projections is sign-squared
+  invariant). So folding signs pre-GS produces the IDENTICAL frame to the
+  post-GS broadcast-multiply, and g*d is ITSELF an ndarray*broadcast
+  multiply -- pre-folding does NOT avoid the suspect op, it just
+  relocates it. B54's FAILS-branch suggestion as written would not fix a
+  broadcast-multiply culprit.
+- The single-frame sign-orbit (one GS frame -> 25 blocks via q*d_b)
+  fundamentally needs a per-block column scaling (broadcast-multiply, or
+  equivalents like a diagonal matmul or indexed negation, all
+  untested-on-grader). The ONLY broadcast-multiply-FREE route to multiple
+  orthogonal blocks is K INDEPENDENT GS frames (K separate g's, GS each) --
+  no orbit, no broadcast, no comparison -- but that costs K GS-loops
+  (K=25 to match B53's 6400 dirs is compute-prohibitive; small K gives
+  proportionally less orthogonal benefit) and still relies on the GS-loop
+  that B55 questions.
+- Fix-path implication for the lead: (i) if B54 confirms broadcast-multiply
+  is the sole culprit AND B55 clears the GS-loop -> fix = a few independent
+  GS frames (reduced benefit, higher GS-loop compute); (ii) if BOTH the
+  broadcast-multiply and the GS-loop are grader-unsafe -> gradeable
+  exact-orthogonal directions are INFEASIBLE; fall back to the graded
+  radial-exact baseline (B42, ~S3 score) or negation-only antithetic
+  (which B4/B37 showed gives ~no benefit at depth 32). Either way the
+  orthogonal-win-gradeably path is now sharply constrained.
+- No submission, no harness compute consumed. Corrects/sharpens the lead's
+  B54/B55 diagnosis and fix design.

@@ -15,6 +15,32 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [x] **B56** (explore, desk analysis) - DONE claude 2026-07-18T01:30:00Z - Corrects
+  B54's FAILS-branch fix suggestion (no submission, no harness). B54
+  proposed avoiding the broadcast-multiply suspect by "folding column
+  signs into g PRE-GS (flipping column signs of g pre-GS yields the same
+  Haar law with NO post-hoc multiply)." VERIFIED NUMERICALLY that this
+  does NOT avoid the op: GS(g*d) == GS(g)*d EXACTLY (max abs diff 0.0 for
+  a column sign vector d) -- folding pre-GS gives the identical frame to
+  post-GS broadcast-multiply, AND g*d is itself an ndarray*broadcast
+  multiply. So pre-folding just relocates the same suspect op. The
+  single-frame sign-ORBIT (q*d_b for 25 blocks) fundamentally requires a
+  per-block column-scaling (broadcast-multiply, or an equivalent like a
+  diagonal matmul / indexed negation -- all untested-on-grader). The ONLY
+  broadcast-multiply-FREE route to multiple orthogonal blocks is K
+  INDEPENDENT GS frames (draw K separate g's, GS each, use rows) -- no
+  orbit, no broadcast-multiply, no comparison -- but it costs K GS-loops
+  (K=25 to match B53's 6400 dirs is compute-prohibitive; a small K gives
+  proportionally less benefit) AND still uses the GS-loop, which B55
+  questions. IMPLICATION for the lead's diagnosis: if B54 confirms
+  broadcast-multiply is the single culprit, the fix is K independent GS
+  frames (small K, reduced benefit) PROVIDED B55 clears the GS-loop; if
+  BOTH broadcast-multiply and the GS-loop are grader-unsafe, gradeable
+  exact-orthogonal directions are INFEASIBLE and the fallback is the
+  graded radial-exact baseline (B42, ~S3 score) or a negation-only scheme
+  (antithetic, which B4/B37 showed yields ~no benefit at depth 32).
+  Detail: log-claude.md B56 entry.
+
 - [ ] **B54** (diagnostic, LEAD-decision) - UNCLAIMED - Bisect the broadcast
   multiply: submit graded-B42 (@ 013df29) modified ONLY by multiplying its
   iid directions by an arithmetic Rademacher sign vector (statistically a
