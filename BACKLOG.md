@@ -81,7 +81,25 @@ unclaimed items with the next free ID and a one-line hypothesis.
   column views) breaks the grader -> pursue a loop-free orthogonalization
   or abandon exact frames for grader-safe variance reduction (e.g.
   antithetic +/-u pairs, which need only negation).
-- [ ] **B57** (infra, desk analysis) - CLAIMED claude 2026-07-18T09:20:00Z - Requirements-pin
+- [x] **B57** (infra, desk analysis) - DONE claude 2026-07-18T09:20:00Z (REFUTED) -
+  Requirements-pin is IMPOSSIBLE. `whest package --help` is explicit:
+  "The grader installs no third-party packages; files ship by being
+  present in the submission folder." `--requirements`,
+  `--submission-metadata`, `--approach` are ALL deprecated accepted-and
+  -ignored no-ops (never affected the archive). So there is NO mechanism
+  to force the grader to install our flopscope==0.8.0rc5 / whestbench==
+  0.12.0rc3 -- the grader runs a FIXED pre-installed environment we
+  cannot override. Vendoring flopscope as submission files would not help
+  either: the grader's HARNESS (not the estimator's imports) performs the
+  flopscope instrumentation that wraps predict(), so it uses the grader's
+  build regardless. B48 option (b) is CLOSED. IMPLICATION: the ONLY path
+  to a gradeable orthogonal win is removing the grader-breaking op at the
+  ESTIMATOR level (B54/B55 -> targeted fix). Combined with B56 (the
+  sign-orbit fundamentally needs broadcast-multiply; the broadcast-free
+  alternative needs the GS-loop), if B54/B55 show BOTH broadcast-multiply
+  and the GS-loop are grader-unsafe, gradeable exact-orthogonal is
+  INFEASIBLE and S3 (leaderboard 6.6845e-07) is the ceiling. Detail:
+  log-claude.md B57 entry. No submission, no harness compute.
   feasibility study (B48 option b, never pursued): determine whether a
   submission artifact can force the grader to install our
   flopscope==0.8.0rc5+np2.2.6 / whestbench==0.12.0rc3 (inspect `whest

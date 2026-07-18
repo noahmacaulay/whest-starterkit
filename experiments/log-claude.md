@@ -2332,3 +2332,33 @@ comparison template in `AGENTS.md`. Read the latest `origin/main` version of
   orthogonal-win-gradeably path is now sharply constrained.
 - No submission, no harness compute consumed. Corrects/sharpens the lead's
   B54/B55 diagnosis and fix design.
+
+## 2026-07-18T09:20:00Z - B57-claude: requirements-pin REFUTED (desk analysis)
+- Investigated B48 option (b): can a submission artifact force the grader
+  to install our flopscope==0.8.0rc5 / whestbench==0.12.0rc3, which would
+  make a pinned B53 grade regardless of which op the grader's own build
+  breaks on?
+- REFUTED. `whest package --help` states explicitly: "The grader installs
+  no third-party packages; files ship by being present in the submission
+  folder." The `--requirements`, `--submission-metadata`, and `--approach`
+  flags are ALL deprecated, accepted-and-ignored no-ops (confirmed in the
+  packaging source: `_warn_deprecated_packaging_flags` -- "never affected
+  the archive"). So there is NO packaging mechanism to pin/override the
+  grader's environment; the grader runs a FIXED pre-installed
+  flopscope/whestbench build.
+- Vendoring hack ruled out too: shipping our flopscope as submission
+  files would not help because the grader's HARNESS (not the estimator's
+  own imports) performs the flopscope instrumentation that wraps
+  predict() -- it uses the grader's build regardless of what the estimator
+  imports.
+- CONSEQUENCE: B48 option (b) is CLOSED. The ONLY route to a gradeable
+  orthogonal win is removing the grader-breaking op at the ESTIMATOR
+  level (B54/B55 localize it, then a targeted fix). Combined with B56 (the
+  sign-orbit fundamentally requires broadcast-multiply; the only
+  broadcast-free alternative, independent GS frames, still needs the
+  GS-loop), the outlook is constrained: if B54/B55 show BOTH
+  broadcast-multiply AND the GS-loop are grader-unsafe, gradeable
+  exact-orthogonal directions are INFEASIBLE and the graded S3 baseline
+  (leaderboard 6.6845e-07) is the practical ceiling. If EITHER suspect is
+  clearable, a targeted op-level fix remains possible.
+- No submission, no harness compute consumed.
