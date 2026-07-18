@@ -81,7 +81,7 @@ unclaimed items with the next free ID and a one-line hypothesis.
   column views) breaks the grader -> pursue a loop-free orthogonalization
   or abandon exact frames for grader-safe variance reduction (e.g.
   antithetic +/-u pairs, which need only negation).
-- [ ] **B57** (infra, desk analysis) - UNCLAIMED - Requirements-pin
+- [ ] **B57** (infra, desk analysis) - CLAIMED claude 2026-07-18T09:20:00Z - Requirements-pin
   feasibility study (B48 option b, never pursued): determine whether a
   submission artifact can force the grader to install our
   flopscope==0.8.0rc5+np2.2.6 / whestbench==0.12.0rc3 (inspect `whest
