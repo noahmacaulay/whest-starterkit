@@ -366,8 +366,8 @@
       "timestamp": "2026-07-18T01:03:26Z",
       "agent": "claude-lead",
       "backlog_item": "S6",
-      "status": "submitting",
-      "submission_id": null,
+      "status": "failed",
+      "submission_id": 316889,
       "champion_experiment_id": "B53-claude-20260717T182000Z",
       "candidate_file": "candidate_claude.py (B53 gradeable orthogonal candidate: B49 QR-free Gram-Schmidt frame + B42 grader-safe forward, both B52 frame suspects removed -- no fnp.concatenate/where/qr/reshape; NOT the current estimator.py champion B46, ungradeable per S4)",
       "estimator_git_blob": "208dcf5f8c632e115c123a72d0ea2d9691c03826",
@@ -384,7 +384,10 @@
         "uv_lock_last_changed": "9b677e2"
       },
       "authorization": "Step-7 STANDING authorization (user ruling commit 6c81bd2): all gate conditions verified PASS this tick; no per-submission ruling required. Lead ruling 2026-07-18T01:03Z (log-claude-lead.md) superseded the expired post-S5 hold, rationale resolved by B51's bisect. Daily cap: attempt 1/10 of UTC 2026-07-18 (S4/S5/B51 fell on 2026-07-17).",
-      "reservation_note": "ACTIVE reservation pushed atomically to origin/main BEFORE any network call, as the sole active `submitting` entry (ledger checked: 0 active prior; latest entries B51 graded/S5 failed/S4 failed reconciled by exact id). Purpose: realize the orthogonal win with a grader-safe op-set AND decisively test B51's frame-op localization. Grades -> promote B53 over ungradeable B46 via CAS, set last_submitted_score to exact local Full 7.102855471943654e-07. Fails -> remaining suspects are GS-loop stack pattern / q*signs broadcast multiply / grader resource limit; record by exact id, NO retry, queue diagnosis as LEAD-decision item. If found stuck in status=submitting with null submission_id, reconcile ONLY via this exact attempt_id in the submission description -- never by timestamp."
+      "reservation_note": "ACTIVE reservation pushed atomically to origin/main BEFORE any network call, as the sole active `submitting` entry (ledger checked: 0 active prior; latest entries B51 graded/S5 failed/S4 failed reconciled by exact id). Purpose: realize the orthogonal win with a grader-safe op-set AND decisively test B51's frame-op localization. Grades -> promote B53 over ungradeable B46 via CAS, set last_submitted_score to exact local Full 7.102855471943654e-07. Fails -> remaining suspects are GS-loop stack pattern / q*signs broadcast multiply / grader resource limit; record by exact id, NO retry, queue diagnosis as LEAD-decision item. If found stuck in status=submitting with null submission_id, reconcile ONLY via this exact attempt_id in the submission description -- never by timestamp. RESOLVED: closed by exact id 316889 within the same tick.",
+      "submitted_at": "2026-07-18T01:05:50.501Z",
+      "grading_status": "failed",
+      "grading_message": "Error : Evaluation error (score null, score_secondary null). Submission ACCEPTED (id 316889), grader errored during evaluation -- the IDENTICAL failure signature as S4 (316800) and S5 (316855). NOT auto-retried per AGENTS.md. last_submitted_score UNCHANGED (8.507033588741281e-07 from S3). CRITICAL INFERENCE: B53 removed BOTH B52 frame suspects (fnp.concatenate, fnp.where) and used only ops individually present in graded S3/B42 artifacts, yet failed identically -> B51's frame-op localization was INCOMPLETE. Updated suspect set across all three failures (S4 qr-frame, S5 GS+where+concat, S6 GS+arithmetic-signs): single-cause candidates = (a) the q*signs broadcast multiply (the ONLY op present in all three failing candidates and no graded one), (b) a grader-side resource/time limit tripped by any frame construction; two-cause candidates = qr broke S4 AND the 256-iteration GS loop with per-iteration fnp.stack broke S5/S6 (S5's single-cause refutation of qr assumed a shared cause). Column-slicing g[:,i] (non-contiguous views, S5/S6 only) is a further two-cause suspect. Next bisects queued as B54/B55 (LEAD-decision diagnostics)."
     }
   ]
 }

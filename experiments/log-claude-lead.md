@@ -697,3 +697,51 @@ No coordination problems requiring escalation. Phase 2 proceeds.
   exact id, do NOT retry, and queue the remaining-suspect diagnosis
   (GS-loop stack pattern vs broadcast multiply vs resource limit) as a
   LEAD-decision item.
+
+## 2026-07-18T01:10:00Z - S6-claude-lead-20260718T010300Z: B53 submission -- grading FAILED identically; B51 localization INCOMPLETE
+- Hypothesis (S6/B53): removing both B52 frame suspects (fnp.concatenate,
+  fnp.where) while keeping B51's grader-safe forward yields a gradeable
+  orthogonal candidate; op-set is a subset of ops present in graded
+  S3/B42 artifacts.
+- Execution (protocol-exact): artifact submissions/S6-claude-lead-
+  20260718T010300Z-B53-208dcf5.tar.gz (sha256 7c8f1a57cc5d20ca7e15482130
+  1c1fae804d81257f986ba31573255304de00b9; packaged estimator.py verified
+  bit-identical to blob 208dcf5; validate + validate-package OK);
+  sole-active reservation pushed (commit 7db47ba) BEFORE the network
+  call; `whest submit <artifact> --watch --format json --description
+  "S6-claude-lead-20260718T010300Z B53-claude-20260717T182000Z"`.
+- Result: ACCEPTED, submission_id 316889 (server created_at
+  2026-07-18T01:05:50Z). Grading FAILED: "Error : Evaluation error",
+  score null -- IDENTICAL signature to S4 (316800) and S5 (316855).
+  Ledger closed by exact id (submitting -> failed) in the same tick; NOT
+  retried; last_submitted_score UNCHANGED (8.507033588741281e-07, S3);
+  NO promotion (B46 remains local champion of record; leaderboard
+  remains S3/B25 6.6845e-07). Attempt 1/10 of UTC 2026-07-18.
+- KEY INFERENCE: B53 contained NO concatenate/where/qr/reshape, yet
+  failed identically -> B51's "frame ops (concatenate/where)"
+  localization is REFUTED as stated. Reconciling all five data points
+  (S3 graded, B51/B42 graded, S4/S5/S6 failed):
+  * Single-cause candidates: (a) the q*signs BROADCAST MULTIPLY -- now
+    the only fnp op present in ALL three failing candidates and NO
+    graded one; (b) a grader-side resource/time limit tripped by any
+    orthogonal-frame construction (though the GS loop is only ~width^3
+    flops and ran in seconds locally).
+  * Two-cause candidates: fnp.linalg.qr broke S4 AND the 256-iteration
+    GS loop (per-iteration fnp.stack on a growing list, g[:,i]
+    non-contiguous column slicing) broke S5/S6. NOTE: S5's refutation
+    of the qr-hypothesis assumed a SINGLE shared cause; with S6's
+    failure that assumption is no longer safe.
+- Queued B54 (B42 + arithmetic-Rademacher broadcast multiply, a
+  statistical no-op vs graded B42 -- isolates the broadcast multiply in
+  one attempt) and B55 (B42 predictions + build-and-discard GS frame --
+  isolates the GS-loop ops) as UNCLAIMED LEAD-decision diagnostic items
+  with both outcome branches pre-registered. Either single attempt
+  collapses the suspect set; together they decide single- vs two-cause.
+  Also worth noting for workers: if frames stay ungradeable, antithetic
+  +/-u pairs (negation only, no signs/frames) are a grader-safe partial
+  variance-reduction fallback worth a Mini experiment.
+- Verdict: submission FAILED grading; S6 consumed; state fully
+  reconciled by exact id within the tick; no ambiguity outstanding.
+- Full/submission gate: Full PASS (B53, pre-existing); submission
+  attempt closed as failed (316889); reservation opened and closed by
+  exact id within this tick.

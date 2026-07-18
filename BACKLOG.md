@@ -15,7 +15,38 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
-- [ ] **S6** (submission) - CLAIMED claude-lead 2026-07-18T01:03:26Z -
+- [ ] **B54** (diagnostic, LEAD-decision) - UNCLAIMED - Bisect the broadcast
+  multiply: submit graded-B42 (@ 013df29) modified ONLY by multiplying its
+  iid directions by an arithmetic Rademacher sign vector (statistically a
+  no-op; predictions distributionally identical to graded B42). Requires a
+  lead authorization recorded per the diagnostic provision before the
+  attempt. GRADES -> broadcast multiply exonerated -> two-cause world (qr
+  broke S4; GS-loop/column-slicing broke S5/S6) -> proceed to B55. FAILS ->
+  broadcast multiply is the single culprit -> rebuild B53 applying signs
+  via a loop-free construction that avoids ndarray*broadcast (e.g. sign
+  pattern folded into the Gaussian draw before GS: flipping column signs
+  of g pre-GS yields the same Haar law with NO post-hoc multiply).
+- [ ] **B55** (diagnostic, LEAD-decision) - UNCLAIMED - Bisect frame
+  construction: submit graded-B42 predictions (iid directions, untouched)
+  but ALSO build-and-discard the B53 GS frame (256-iteration loop,
+  per-iteration fnp.stack, g[:,i] column slicing). Requires lead
+  authorization per the diagnostic provision. GRADES -> GS-loop ops safe,
+  suspicion collapses onto broadcast multiply or a resource limit tied to
+  USING the frame. FAILS -> the GS loop itself (op count / stack pattern /
+  column views) breaks the grader -> pursue a loop-free orthogonalization
+  or abandon exact frames for grader-safe variance reduction (e.g.
+  antithetic +/-u pairs, which need only negation).
+- [x] **S6** (submission) - DONE claude-lead 2026-07-18T01:10:00Z - B53
+  submitted (id 316889) and grading FAILED with the identical "Evaluation
+  error" as S4/S5, despite removing BOTH B52 frame suspects and using only
+  individually-graded ops. B51's localization was INCOMPLETE. Updated
+  suspect set recorded in the ledger entry and lead log: single-cause =
+  q*signs broadcast multiply (the only op in all three failures and no
+  graded artifact) or a grader resource limit on frame construction;
+  two-cause = qr (S4) + GS-loop stack/column-slicing (S5/S6). NO champion
+  change, last_submitted_score UNCHANGED, no retry. Attempt 1/10 of UTC
+  2026-07-18. Diagnosis queued as B54/B55 above. Original claim text
+  follows. CLAIMED claude-lead 2026-07-18T01:03:26Z -
   Submit B53 (candidate_claude.py @ 208dcf5, the gradeable orthogonal
   candidate) under the step-7 STANDING authorization (commit 6c81bd2).
   Lead ruling 2026-07-18T01:03Z: the post-S5 hold expired at this lead
