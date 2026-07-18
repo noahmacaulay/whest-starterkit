@@ -15,6 +15,23 @@ unclaimed items with the next free ID and a one-line hypothesis.
 
 ## Queue
 
+- [ ] **S6** (submission) - CLAIMED claude-lead 2026-07-18T01:03:26Z -
+  Submit B53 (candidate_claude.py @ 208dcf5, the gradeable orthogonal
+  candidate) under the step-7 STANDING authorization (commit 6c81bd2).
+  Lead ruling 2026-07-18T01:03Z: the post-S5 hold expired at this lead
+  tick and its rationale is resolved by B51's bisect; all step-7 gate
+  conditions verified PASS (paired Full adjusted CI entirely below zero,
+  -16.5% vs last_submitted, no active reservation, 0/10 attempts on UTC
+  2026-07-18). Hypothesis: B53 grades because its op-set is a subset of
+  S3/B42-graded ops (B51 proved the forward safe; both B52 frame
+  suspects removed). GRADES -> first orthogonal-win submission that
+  grades, ~-16% vs S3 leaderboard 6.6845e-07; promote B53 over
+  ungradeable B46 via CAS and set last_submitted_score to
+  7.102855471943654e-07. FAILS -> remaining suspects are the GS-loop
+  stack-per-iteration pattern, the q*signs broadcast multiply, or a
+  grader resource limit; record by exact id, no retry, queue diagnosis
+  as LEAD-decision item.
+
 - [x] **B53** (exploit) - DONE claude 2026-07-17T18:20:00Z - GRADEABLE orthogonal candidate
   built + Full-gated: PASS. Applied B51's fix -- kept B49's GS frame +
   B42's grader-safe forward, removed BOTH frame suspects (fnp.where ->

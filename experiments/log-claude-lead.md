@@ -633,3 +633,67 @@ No coordination problems requiring escalation. Phase 2 proceeds.
   graded and failing artifacts, cross-checked against the installed
   flopscope/whestbench grader-relevant registries, to rank suspects and
   minimize further diagnostic attempts).
+
+## Lead review 2026-07-18T01:03Z
+- Rebase onto origin/main clean (b9790a4). Worktree clean, branch lead/claude.
+- Ledger reconciliation (exact-id only): B51-claude-20260717T180000Z ->
+  submission_id 316871 GRADED (6.9403e-07), recorded correctly; S5 (316855)
+  and S4 (316800) remain `failed`; S3 (316676) `graded`. ZERO active
+  `submitting` reservations. The two 2026-06-11 pre-scaffold entries remain
+  `pending` with no submission_id -- per AGENTS.md these are manual-recovery
+  items (user backfill from the submissions board); left untouched, as in
+  every prior review.
+- Daily cap: S4/S5/B51 all fell on UTC 2026-07-17 (3 attempts). It is now
+  UTC 2026-07-18 -> 0/10 used today (also true under the known ~5-7 min
+  server clock drift, checked before any submit below).
+- Champion audit: champion.json still records B46 (gpt, blob c81496b),
+  metadata internally consistent with its result report, but B46 is
+  UNGRADEABLE in practice (S4 failure). last_submitted_score
+  8.507033588741281e-07 (S3/B25 local Full) correctly unchanged after the
+  B51 diagnostic (B51 graded WORSE than S3, so the S3 baseline stands).
+- B53 audit (the submission-ready candidate): blob verified --
+  candidate_claude.py at origin/main hashes to 208dcf5, matching the log,
+  summary JSON, and Full report. Math audited: GS-of-Gaussian frame is
+  exactly Haar, so rows are exactly uniform sphere directions; per-column
+  Rademacher signing preserves Haar marginals; bias-free ReLU positive
+  homogeneity justifies the closed-form chi-mean radial factor
+  sqrt(2)*exp(lgamma((w+1)/2)-lgamma(w/2)); per-block float64 sums are
+  exactly the concatenated-batch sums. Unbiased. Source inspected: live
+  code contains NO fnp.concatenate/where/qr/reshape calls (dead analytic
+  code below `return` also present in graded S3 -- established harmless).
+  Full gate re-checked from the persisted report: adjusted CI
+  [-2.059e-07,-7.492e-08] entirely below zero, -4.21 sigma, 546/1000, zero
+  failures, -16.5% vs last_submitted. Step-7 prerequisites all PASS.
+  Honest caveat (also in the worker log): the 256-iteration GS loop
+  (stack-per-iteration) and the q*signs broadcast multiply are not
+  individually exonerated by B51; a failure would implicate them.
+- Reproducibility: uv.lock last changed @ 9b677e2; `uv sync --frozen`
+  clean; whestbench 0.12.0rc3 / flopscope 0.8.0rc5 / numpy 2.2.6 verified;
+  `whest validate --estimator candidate_claude.py` PASSES.
+- Governance ruling (lead): the post-S5 hold ("no resubmission without a
+  new user ruling") recorded by the 2026-07-17T17:07Z lead review was
+  explicitly binding only until the next lead tick -- this one. Its
+  rationale (grader failure of unknown cause) is resolved: B51's bisect
+  proved the forward grader-safe and localized the failure to the frame
+  ops, and B53 removes exactly those ops. The step-7 STANDING user
+  authorization (commit 6c81bd2) therefore applies: all gate conditions
+  are met, so a lead submission of B53 needs no fresh per-submission user
+  ruling. Hold SUPERSEDED; recorded as backlog item S6.
+- Backlog rulings: no unclaimed research items and no reordering needed
+  (all items DONE with persisted results). Added S6 (submit B53 under
+  standing authorization; hypothesis + both outcome branches in the item)
+  and claimed it for Phase 2. Workers should continue adding new research
+  ideas next tick regardless of the S6 outcome; if S6 grades, the queued
+  follow-up is recovering the ~3.6% margin gap to GS (iid tail
+  reinstatement via a grader-safe pad, or blocked/vectorized GS).
+- Phase 2: proceeding to execute S6 as a submission tick under the
+  unchanged step-7 reservation protocol (package blob 208dcf5 as-is,
+  sha256, sole-active reservation pushed BEFORE any network call, exact
+  attempt-id S6-claude-lead-20260718T010300Z, no automatic retry of any
+  ambiguous outcome). On a successful grade: set last_submitted_score to
+  B53's exact local Full adjusted 7.102855471943654e-07 and promote B53
+  over the ungradeable B46 via standard CAS (same submittability
+  precedent as the planned S5/GS promotion). On a failed grade: record by
+  exact id, do NOT retry, and queue the remaining-suspect diagnosis
+  (GS-loop stack pattern vs broadcast multiply vs resource limit) as a
+  LEAD-decision item.
