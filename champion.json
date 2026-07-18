@@ -115,18 +115,30 @@
         "mean_effective_compute": 29259921642.593758,
         "mean_score_multiplier": 0.10757324133306528,
         "n_failed_mlps": 0,
-        "failure_breakdown": {"budget_exhausted": 0, "time_exhausted": 0, "residual_wall_time_exhausted": 0, "combined_budget_exhausted": 0, "error": 0}
+        "failure_breakdown": {
+          "budget_exhausted": 0,
+          "time_exhausted": 0,
+          "residual_wall_time_exhausted": 0,
+          "combined_budget_exhausted": 0,
+          "error": 0
+        }
       },
       "paired_vs_submitted_B25_baseline": {
         "baseline_report": "experiments/results/claude/B26-claude-20260716T170000Z-2227ef3-full-COMPLETE.json",
         "mse_rel_change": -0.20977563251336084,
         "mse_paired_mean_delta": -1.613703261853061e-06,
-        "mse_paired_95pct_ci": [-2.1998290833157004e-06, -1.0275774403904214e-06],
-        "mse_sigmas": -5.40,
+        "mse_paired_95pct_ci": [
+          -2.1998290833157004e-06,
+          -1.0275774403904214e-06
+        ],
+        "mse_sigmas": -5.4,
         "mse_n_improved": 549,
         "adjusted_rel_change": -0.23206642206843103,
         "adjusted_paired_mean_delta": -1.9741968473551563e-07,
-        "adjusted_paired_95pct_ci": [-2.616012659786768e-07, -1.3323810349235447e-07],
+        "adjusted_paired_95pct_ci": [
+          -2.616012659786768e-07,
+          -1.3323810349235447e-07
+        ],
         "adjusted_sigmas": -6.04,
         "adjusted_n_improved": 559,
         "ci_entirely_below_zero": true,
@@ -168,7 +180,10 @@
       "b46_full_adjusted_score": 6.532836741386116e-07,
       "relative_improvement_vs_last_submitted": -0.23206642206843103,
       "minimum_relative_improvement": 0.05,
-      "paired_adjusted_95pct_ci": [-2.616012659786768e-07, -1.3323810349235447e-07],
+      "paired_adjusted_95pct_ci": [
+        -2.616012659786768e-07,
+        -1.3323810349235447e-07
+      ],
       "ci_entirely_below_zero": true,
       "note": "PASS -- see champion.full_gate for the complete record. Both the paired-CI and 5%-improvement conditions are met; a reservation + network submit is the only remaining step."
     },
@@ -257,7 +272,7 @@
       "artifact_sha256": "cda55d67c44fb86b1257178f456a0780f5f53528b9cc8d2d90b909771d1726bf",
       "artifact_note": "Packaged by `whest package --estimator candidate_claude.py`; validate-package OK; extracted estimator.py verified bit-identical to git blob f54b23b (the exact B49/B50/S5 candidate). Artifact retained locally (*.tar.gz gitignored); hashes authoritative.",
       "reserved_on_main_commit": "5ebc560",
-      "local_full_score": 6.7972266077423043e-07,
+      "local_full_score": 6.797226607742304e-07,
       "local_full_report": "experiments/results/claude/B50-claude-20260717T110000Z-GS-full-COMPLETE.json",
       "full_gate_reference": "B50-claude-20260717T110000Z: GS candidate's OWN complete 1000-MLP Full gate, paired vs the submitted S3/B25 baseline (B26 report): adjusted -20.1% (95%CI [-2.360e-07,-1.060e-07] entirely below zero, -5.16 sigma, 543/1000), MSE -21.0% (-5.40 sigma), zero failure flags; -20.1% vs last_submitted_score 8.507033588741281e-07.",
       "environment": {
@@ -345,6 +360,31 @@
       "leaderboard_score": null,
       "status": "pending",
       "note": "Pre-scaffold manual submission by the user. Backfill leaderboard_score from the submissions board (match by timestamp under the team names above)."
+    },
+    {
+      "attempt_id": "S6-claude-lead-20260718T010300Z",
+      "timestamp": "2026-07-18T01:03:26Z",
+      "agent": "claude-lead",
+      "backlog_item": "S6",
+      "status": "submitting",
+      "submission_id": null,
+      "champion_experiment_id": "B53-claude-20260717T182000Z",
+      "candidate_file": "candidate_claude.py (B53 gradeable orthogonal candidate: B49 QR-free Gram-Schmidt frame + B42 grader-safe forward, both B52 frame suspects removed -- no fnp.concatenate/where/qr/reshape; NOT the current estimator.py champion B46, ungradeable per S4)",
+      "estimator_git_blob": "208dcf5f8c632e115c123a72d0ea2d9691c03826",
+      "estimator_sha256": "0cac8c84aef197449515f83e60ef092ab01bac6fee95fa39f67b62956d887148",
+      "artifact": "submissions/S6-claude-lead-20260718T010300Z-B53-208dcf5.tar.gz",
+      "artifact_sha256": "7c8f1a57cc5d20ca7e154821301c1fae804d81257f986ba31573255304de00b9",
+      "artifact_note": "Packaged by `whest package --estimator candidate_claude.py`; validate + validate-package OK; extracted estimator.py verified bit-identical to git blob 208dcf5 (the exact B53 candidate). Artifact retained locally (*.tar.gz gitignored); hashes authoritative.",
+      "local_full_score": 7.102855471943654e-07,
+      "local_full_report": "experiments/results/claude/B53-claude-20260717T182000Z-full-COMPLETE.json",
+      "full_gate_reference": "B53-claude-20260717T182000Z: B53's OWN complete 1000-MLP Full gate, paired vs the submitted S3/B25 baseline (B26 report): adjusted -16.5% (95%CI [-2.059e-07,-7.492e-08] entirely below zero, -4.21 sigma, 546/1000), MSE -20.3% (-5.26 sigma, 566/1000), zero failure flags; -16.5% vs last_submitted_score 8.507033588741281e-07.",
+      "environment": {
+        "whestbench": "0.12.0rc3",
+        "flopscope": "0.8.0rc5+np2.2.6",
+        "uv_lock_last_changed": "9b677e2"
+      },
+      "authorization": "Step-7 STANDING authorization (user ruling commit 6c81bd2): all gate conditions verified PASS this tick; no per-submission ruling required. Lead ruling 2026-07-18T01:03Z (log-claude-lead.md) superseded the expired post-S5 hold, rationale resolved by B51's bisect. Daily cap: attempt 1/10 of UTC 2026-07-18 (S4/S5/B51 fell on 2026-07-17).",
+      "reservation_note": "ACTIVE reservation pushed atomically to origin/main BEFORE any network call, as the sole active `submitting` entry (ledger checked: 0 active prior; latest entries B51 graded/S5 failed/S4 failed reconciled by exact id). Purpose: realize the orthogonal win with a grader-safe op-set AND decisively test B51's frame-op localization. Grades -> promote B53 over ungradeable B46 via CAS, set last_submitted_score to exact local Full 7.102855471943654e-07. Fails -> remaining suspects are GS-loop stack pattern / q*signs broadcast multiply / grader resource limit; record by exact id, NO retry, queue diagnosis as LEAD-decision item. If found stuck in status=submitting with null submission_id, reconcile ONLY via this exact attempt_id in the submission description -- never by timestamp."
     }
   ]
 }
