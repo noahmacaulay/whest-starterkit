@@ -745,3 +745,53 @@ No coordination problems requiring escalation. Phase 2 proceeds.
 - Full/submission gate: Full PASS (B53, pre-existing); submission
   attempt closed as failed (316889); reservation opened and closed by
   exact id within this tick.
+
+## Lead review 2026-07-18T09:02:38Z
+- Rebase onto origin/main clean (49c015c). Worktree clean, branch lead/claude.
+- Ledger reconciliation (exact-id only): S6-claude-lead-20260718T010300Z ->
+  submission_id 316889, status `failed` ("Error : Evaluation error"),
+  closed by exact id within the S6 tick -- correctly recorded; B51 (316871)
+  `graded`, S5 (316855) / S4 (316800) `failed`, S3 (316676) `graded`. ZERO
+  active `submitting` reservations. The two 2026-06-11 pre-scaffold entries
+  remain `pending`/manual-recovery (user backfill), untouched as always.
+- Daily cap: S6 was attempt 1/10 of UTC 2026-07-18; no other attempts today.
+- Champion audit: champion.json still records B46 (blob c81496b) as local
+  champion of record, internally consistent with its B46/B47 reports;
+  B46 remains UNGRADEABLE in practice (S4). last_submitted_score
+  8.507033588741281e-07 (S3/B25 local Full) correctly unchanged after S6's
+  failed grade. Leaderboard best remains S3/B25 (6.6845e-07). No champion
+  change is warranted this tick: every gradeable improvement path runs
+  through the grader-failure diagnosis.
+- Reproducibility: uv sync --frozen clean; whestbench 0.12.0rc3, flopscope
+  0.8.0rc5+np2.2.6, numpy 2.2.6 verified -- matches the ledger contract;
+  uv.lock last changed @ 9b677e2.
+- Reviewed B56 (worker desk analysis, pushed since last tick): verified its
+  argument -- GS commutes with column sign flips, so GS(g*d)==GS(g)*d and
+  pre-folding signs into the Gaussian draw does NOT avoid the broadcast
+  multiply (g*d IS one). Accepted; B54's FAILS-branch fix suggestion was
+  corrected in place in the backlog (only-lead-reorders rule observed; the
+  correction is a lead edit incorporating a worker finding, with both
+  original branches preserved).
+- Additional lead observation sharpening B54: graded B42's own source
+  (blob b6ea9a6, re-extracted and inspected this tick) already contains a
+  broadcast DIVIDE (z / norms[:, None]) and a scalar*ndarray multiply
+  ((e_r/n) * stack) -- so broadcasting per se and multiply per se are
+  grader-safe. The genuinely untested surface B54 isolates is the
+  sign-application block: ndarray*ndarray broadcast multiply +
+  comparison/bool-astype sign construction. That block is present in all
+  three failed candidates (S4/S5/S6) and no graded artifact, making it the
+  prime single-cause suspect; B54 tests exactly it on otherwise-graded B42.
+- Backlog rulings: B54 kept at top priority and CLAIMED for Phase 2 with
+  its diagnostic authorization recorded in the item (hypothesis + both
+  outcome branches + cap accounting, per the provision). B55 stays queued
+  second (its outcome matters in every B54 branch). Added B57 (unclaimed,
+  desk): requirements-pin feasibility (B48 option b) -- if the artifact can
+  pin our flopscope/whestbench, a pinned B53 could realize the -16.5% win
+  in one attempt; high value whichever op the bisects implicate. No other
+  reordering needed; no coordination problems found.
+- Phase 2: proceeding to execute B54 as a full worker iteration under my
+  identity (candidate_claude_lead.py), with a single-estimator Mini sanity
+  run (expect score ~B42's, zero flags) before packaging, then the
+  unchanged sole-active reservation protocol, exact attempt-id
+  B54-claude-lead-20260718T090238Z, no automatic retry of any ambiguous
+  outcome.

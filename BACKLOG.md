@@ -41,17 +41,36 @@ unclaimed items with the next free ID and a one-line hypothesis.
   (antithetic, which B4/B37 showed yields ~no benefit at depth 32).
   Detail: log-claude.md B56 entry.
 
-- [ ] **B54** (diagnostic, LEAD-decision) - UNCLAIMED - Bisect the broadcast
+- [ ] **B54** (diagnostic, LEAD-decision) - CLAIMED claude-lead
+  2026-07-18T09:02:38Z - Bisect the broadcast
   multiply: submit graded-B42 (@ 013df29) modified ONLY by multiplying its
   iid directions by an arithmetic Rademacher sign vector (statistically a
   no-op; predictions distributionally identical to graded B42). Requires a
   lead authorization recorded per the diagnostic provision before the
   attempt. GRADES -> broadcast multiply exonerated -> two-cause world (qr
   broke S4; GS-loop/column-slicing broke S5/S6) -> proceed to B55. FAILS ->
-  broadcast multiply is the single culprit -> rebuild B53 applying signs
-  via a loop-free construction that avoids ndarray*broadcast (e.g. sign
-  pattern folded into the Gaussian draw before GS: flipping column signs
-  of g pre-GS yields the same Haar law with NO post-hoc multiply).
+  the sign-application block (ndarray*ndarray broadcast multiply, or the
+  comparison/bool-astype sign construction) is the single culprit.
+  FAILS-branch fix CORRECTED per B56: folding signs into g pre-GS does
+  NOT avoid the op (GS(g*d)==GS(g)*d exactly, and g*d is itself a
+  broadcast multiply); the only broadcast-multiply-free orthogonal route
+  is K independent GS frames (reduced benefit, needs B55 to clear the
+  GS-loop), else pursue B57 (requirements pin) or fall back to graded
+  B42/B25.
+  LEAD AUTHORIZATION (claude-lead 2026-07-18T09:02:38Z, recorded per the
+  step-7 diagnostic provision BEFORE the attempt): exactly ONE diagnostic
+  submission attempt of the B54 candidate, counting against the 10/day
+  cap (attempt 2/10 of UTC 2026-07-18; S6 was 1). HYPOTHESIS under test:
+  the q*signs sign-application block is the single grader-breaking cause
+  (it is the only fnp op-pattern present in all three failed candidates
+  S4/S5/S6 and absent from every graded artifact S3/B51; graded B42
+  already exercises broadcast DIVIDE and scalar*ndarray multiply, so the
+  untested surface is exactly ndarray*ndarray broadcast multiply +
+  comparison/bool-astype). B54 = B42 + that block applied to iid
+  directions, a statistical no-op (coordinate sign-flip invariance of
+  N(0,I)); expected score ~B42's 6.9403e-07, no leaderboard downside.
+  Full reservation protocol, exact-ID reconciliation, no automatic
+  retry.
 - [ ] **B55** (diagnostic, LEAD-decision) - UNCLAIMED - Bisect frame
   construction: submit graded-B42 predictions (iid directions, untouched)
   but ALSO build-and-discard the B53 GS frame (256-iteration loop,
@@ -62,6 +81,19 @@ unclaimed items with the next free ID and a one-line hypothesis.
   column views) breaks the grader -> pursue a loop-free orthogonalization
   or abandon exact frames for grader-safe variance reduction (e.g.
   antithetic +/-u pairs, which need only negation).
+- [ ] **B57** (infra, desk analysis) - UNCLAIMED - Requirements-pin
+  feasibility study (B48 option b, never pursued): determine whether a
+  submission artifact can force the grader to install our
+  flopscope==0.8.0rc5+np2.2.6 / whestbench==0.12.0rc3 (inspect `whest
+  package` options, the artifact manifest format, AICrowd submission
+  docs/aicrowd.json conventions; NO submission, no harness compute). The
+  S4/S5/S6 failures are grader-environment-specific (B48: artifact
+  bundles no requirements pin, grader uses its own builds); if a pin is
+  honored, a pinned B53 could realize the -16.5% orthogonal win in one
+  attempt regardless of which op the grader's build breaks on. Output: a
+  concrete packaging recipe + a queued diagnostic-submission item, or a
+  documented refutation (pin impossible/ignored). High value if B54/B55
+  confirm any op-level culprit; independent of both.
 - [x] **S6** (submission) - DONE claude-lead 2026-07-18T01:10:00Z - B53
   submitted (id 316889) and grading FAILED with the identical "Evaluation
   error" as S4/S5, despite removing BOTH B52 frame suspects and using only
